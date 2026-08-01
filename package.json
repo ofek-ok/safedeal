@@ -1,0 +1,13 @@
+{
+  "name": "safedeal",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SafeDeal – PropTech Due Diligence Platform",
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:backend": "pnpm --filter backend build"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

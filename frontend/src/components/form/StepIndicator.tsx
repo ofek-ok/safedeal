@@ -1,11 +1,10 @@
 "use client";
 
 const STEPS = [
-  { id: 1, label: "פרטים אישיים" },
-  { id: 2, label: "זיהוי נכס" },
-  { id: 3, label: "פרטי עסקה" },
-  { id: 4, label: "מסמכים" },
-  { id: 5, label: "סיכום ודוח" },
+  { id: 1, label: "סוג נכס" },
+  { id: 2, label: "כתובת" },
+  { id: 3, label: "פרטים" },
+  { id: 4, label: "תשלום" },
 ];
 
 export function StepIndicator({ current }: { current: number }) {

@@ -4,11 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ArrowLeft, ExternalLink, FileText } from "lucide-react";
 import { StepIndicator } from "./StepIndicator";
-import { Step1Personal } from "./Step1Personal";
-import { Step2PropertyId } from "./Step2PropertyId";
-import { Step3DealDetails } from "./Step3DealDetails";
-import { Step4Documents } from "./Step4Documents";
-import { Step5Summary } from "./Step5Summary";
+import { Step1PropertyType } from "./Step1PropertyType";
+import { Step2Address } from "./Step2Address";
+import { Step3Details } from "./Step3Details";
+import { Step4Checkout } from "./Step4Checkout";
 import { SafeDealLogo } from "@/components/SafeDealLogo";
 import type { WizardFormData } from "@/types/property";
 import { INITIAL_FORM_DATA } from "@/types/property";
@@ -20,7 +19,7 @@ export function MultiStepForm() {
   const [submitted, setSubmitted]       = useState(false);
   const [jobId, setJobId]               = useState<string | null>(null);
 
-  const TOTAL = 5;
+  const TOTAL = 4;
 
   const next = () => { if (step < TOTAL) setStep((s) => s + 1); };
   const back = () => { if (step > 1)    setStep((s) => s - 1); };
@@ -63,13 +62,10 @@ export function MultiStepForm() {
         <div className="mb-12">
           <div className="w-8 h-[1px] bg-[#00C896] mx-auto mb-6"></div>
           <h2 className="text-3xl md:text-4xl text-white mb-6" style={{ fontFamily: "var(--font-serif)" }}>
-            הדוח הופק בהצלחה
+            הבדיקה שלכם התקבלה בהצלחה ✅
           </h2>
           <p className="text-slate-400 text-sm tracking-wider leading-relaxed max-w-md mx-auto">
-            {formData.step1.fullName
-              ? <>שלום {formData.step1.fullName.split(" ")[0]}, הד</>
-              : <>הד</>}
-            וח המשוקלל עבור{" "}
+            הדוח המשוקלל עבור{" "}
             {formData.step2.street ? (
               <span className="text-white">
                 {formData.step2.street} {formData.step2.houseNumber},{" "}
@@ -78,7 +74,7 @@ export function MultiStepForm() {
             ) : (
               <span className="text-white">הנכס המבוקש</span>
             )}{" "}
-            נוצר בהצלחה מ-8 מקורות מידע.
+            נוצר בהצלחה מ-8 מקורות מידע. נשלח אותו למייל שהזנתם ברגע שיהיה מוכן.
           </p>
           <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-6">
             מספר בקשה:{" "}
@@ -125,39 +121,42 @@ export function MultiStepForm() {
     <div className="w-full">
       <StepIndicator current={step} />
 
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 py-4 mb-8 border-b border-white/[0.06] text-[10px] uppercase tracking-widest text-slate-400">
+        <span className="flex items-center gap-1.5">🕒 דוח תוך דקות</span>
+        <span className="text-white/10 hidden sm:inline">|</span>
+        <span className="flex items-center gap-1.5">🔒 תשלום מאובטח</span>
+        <span className="text-white/10 hidden sm:inline">|</span>
+        <span className="flex items-center gap-1.5">📊 מידע ממקורות רשמיים</span>
+      </div>
+
       <div className="min-h-[400px]">
         {step === 1 && (
-          <Step1Personal
-            data={formData.step1}
-            onChange={(step1) => setFormData((f) => ({ ...f, step1 }))}
-            showErrors={false}
+          <Step1PropertyType
+            data={{ dealType: formData.step3.dealType }}
+            onChange={(dealType) => setFormData((f) => ({ ...f, step3: { ...f.step3, dealType } }))}
+            onAutoAdvance={next}
           />
         )}
         {step === 2 && (
-          <Step2PropertyId
+          <Step2Address
             data={formData.step2}
             onChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
             showErrors={false}
           />
         )}
         {step === 3 && (
-          <Step3DealDetails
-            data={formData.step3}
-            onChange={(step3) => setFormData((f) => ({ ...f, step3 }))}
+          <Step3Details
+            data={formData}
+            onChange={setFormData}
             showErrors={false}
           />
         )}
         {step === 4 && (
-          <Step4Documents
-            data={formData.step4}
-            onChange={(step4) => setFormData((f) => ({ ...f, step4 }))}
-          />
-        )}
-        {step === 5 && (
-          <Step5Summary
+          <Step4Checkout
             data={formData}
             isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
+            onChange={setFormData}
           />
         )}
       </div>

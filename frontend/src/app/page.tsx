@@ -37,31 +37,31 @@ function Reveal({
    Data — 8 official intelligence sources
 ───────────────────────────────────────────────────────────── */
 const SOURCES = [
-  { num: "01", title: "נסח טאבו", desc: "אימות בעלות, שעבודים, הערות אזהרה וצווי בית משפט" },
-  { num: "02", title: "GovMap", desc: "זיהוי קדסטרלי, מיפוי גושים, חלקות ותשריטי עירייה" },
-  { num: "03", title: "רשות המסים", desc: "מחירי עסקאות אמת בסביבה ושומת מקרקעין עדכנית" },
-  { num: "04", title: "מדד הנדל״ן", desc: "תשואות שכירות, מחירי ממוצע למ״ר ומגמות אזוריות" },
-  { num: "05", title: "XPLAN", desc: "תוכניות בניין עיר, תב״ע, ייעודי קרקע ומגבלות תכנון" },
-  { num: "06", title: "התחדשות עירונית", desc: "סטטוס פינוי-בינוי, תמ״א 38 ומתחמים מועדפים" },
-  { num: "07", title: "ארכיב ההנדסה", desc: "תיק בניין עירוני, היתרי בנייה וחריגות מתוכנית" },
-  { num: "08", title: "רישוי ומבנים", desc: "טופס 4, תעודת גמר ואכלוס חוקי בנכס" },
+  { num: "01", title: "בדיקת זכויות ורישומים", desc: "אימות בעלות, שעבודים, הערות אזהרה וצווי בית משפט" },
+  { num: "02", title: "חריגות בנייה וסיכונים תכנוניים", desc: "בדיקת היתרי בנייה, חריגות ומגבלות תכנוניות בנכס" },
+  { num: "03", title: "תוכניות עתידיות באזור", desc: "תוכניות תשתיות, התחדשות עירונית והשפעות על ערך הנכס" },
+  { num: "04", title: "מחירי עסקאות דומות", desc: "השוואת מחירים ותשואות מעסקאות אמת שבוצעו בסביבה" },
+  { num: "05", title: "מידע על המוכר / הקבלן", desc: "בדיקת רקע, פרויקטים קודמים ומצב משפטי של הצד השני" },
+  { num: "06", title: "נתונים על הסביבה", desc: "תחבורה, חינוך, מסחר ואיכות חיים באזור הנכס" },
+  { num: "07", title: "SafeScore", desc: "ציון כולל שמסכם את רמת הסיכון והאיכות של העסקה" },
+  { num: "08", title: "המלצות והערות", desc: "תובנות מקצועיות וסיכום ממוקד לפני חתימה" },
 ];
 
 const PAIN_POINTS = [
   {
     num: "א",
-    title: "מידע מבוזר ומורכב",
-    desc: "הנתונים פזורים בין 8 רשויות שונות. כל אחת עם ממשק נפרד, מונחים משפטיים סבוכים ותורים ממושכים.",
+    title: "האם אתם משלמים מחיר הוגן?",
+    desc: "ניתוח עסקאות דומות באזור מול המחיר המבוקש, כדי שתדעו אם מדובר בעסקה סבירה.",
   },
   {
     num: "ב",
-    title: "הפתעות ברישום הזכויות",
-    desc: "שיעבוד פעיל שלא צוין, הערת אזהרה ישנה מ-2003, או חובות פתוחים שהמוכר לא גילה בטרם המכירה.",
+    title: "האם קיימים סיכונים משפטיים או תכנוניים?",
+    desc: "בדיקת שעבודים, הערות אזהרה, חריגות בנייה ומגבלות תכנוניות שעלולות להשפיע על הנכס.",
   },
   {
     num: "ג",
-    title: "מגבלות תכנוניות נסתרות",
-    desc: "תוכניות תשתיות עתידיות ליד הבניין, היטלי השבחה צפויים, או סגירת מרפסת שבוצעה ללא היתר בנייה.",
+    title: "האם יש מידע שעלול להשפיע על ערך הנכס?",
+    desc: "תוכניות תשתיות עתידיות, היטלי השבחה צפויים, ומצב רישום הזכויות — כל מה שחייבים לדעת.",
   },
 ];
 
@@ -131,7 +131,7 @@ export default function HomePage() {
           <p
             className="text-xs sm:text-sm font-bold tracking-[0.2em] text-teal-400 mb-6 uppercase"
           >
-            בדיקת נאותות מקיפה לדירות יד שנייה בישראל
+            בדיקת נאותות חכמה לנדל״ן בישראל
           </p>
         </Reveal>
 
@@ -140,20 +140,20 @@ export default function HomePage() {
             className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.15] max-w-4xl mb-8 tracking-tight"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            לקנות דירה בלי לבדוק מה מופיע בטאבו ובתב״ע —{" "}
-            <span className="text-teal-400">זה סיכון מיותר.</span>
+            לא קונים דירה לפני שעושים{" "}
+            <span className="text-teal-400">SafeDeal.</span>
             <br className="hidden md:block" />
             <span className="text-cream-50">
-              SafeDeal מרכזת בדיקת נאותות יסודית תוך דקות.
+              כי יש דברים שפשוט אסור לגלות אחרי שחותמים.
             </span>
           </h1>
         </Reveal>
 
         <Reveal delay={0.35}>
           <p className="text-base sm:text-lg text-slate-200 max-w-2xl leading-relaxed mb-12 font-normal">
-            8 מקורות מידע רשמיים. דוח משפטי ותכנוני מקיף.
+            SafeDeal בודקת עבורכם את הנכס, המוכר, התכנון, הרישומים, העסקאות באזור ועוד — ומרכזת את כל המידע הקריטי לדוח אחד ברור, לפני שאתם מתחייבים לעסקה.
             <br />
-            כי ההחלטה הפיננסית הכי גדולה בחייכם דורשת שקיפות וביטחון מלא.
+            ✓ תוך דקות · ✓ מידע ממקורות רשמיים · ✓ ציון סיכון ברור — SafeScore
           </p>
         </Reveal>
 
@@ -164,13 +164,13 @@ export default function HomePage() {
               className="sd-btn-primary text-sm sm:text-base px-8 py-4 font-bold"
             >
               <Search size={18} />
-              התחל בדיקת נכס עכשיו
+              בדקו את הדירה עכשיו
             </Link>
             <Link
               href="/analyze"
               className="text-sm font-bold text-slate-300 hover:text-white transition-colors underline underline-offset-4 decoration-slate-600 hover:decoration-slate-300"
             >
-              סיור ללא התחייבות
+              ראו דוח לדוגמה
             </Link>
           </div>
         </Reveal>
@@ -194,7 +194,7 @@ export default function HomePage() {
           <div className="flex items-center gap-4 mb-6">
             <div className="w-10 h-[1px] bg-teal-500" />
             <span className="text-xs font-bold tracking-[0.2em] text-teal-400 uppercase">
-              האתגר ברכישת דירה
+              למה זה חשוב?
             </span>
           </div>
         </Reveal>
@@ -204,14 +204,14 @@ export default function HomePage() {
             className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.15] mb-6 max-w-3xl text-white"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            מדי שנה, אלפי רוכשים חותמים על חוזה במליוני שקלים —{" "}
-            <span className="text-slate-300">ללא בדיקה מלאה של המצב המשפטי והתכנוני.</span>
+            עסקת נדל״ן היא אחת ההחלטות היקרות בחיים.{" "}
+            <span className="text-slate-300">רוב האנשים בודקים את המטבח ואת הנוף. מעטים בודקים את מה שבאמת יכול להשפיע על שווי העסקה.</span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.15}>
           <p className="text-base text-slate-200 max-w-2xl mb-16 leading-relaxed font-normal">
-            נתוני המקרקעין פזורים בין גופים רשמיים שונים. ללא מצב נתונים מרכזי, קשה לקבל תמונה מלאה של הזכויות והסיכונים בטרם חתימה.
+            SafeDeal מרכזת את כל המידע החשוב בדוח אחד ברור — לפני שאתם מתחייבים.
           </p>
         </Reveal>
 
@@ -248,7 +248,7 @@ export default function HomePage() {
           <div className="flex items-center gap-4 mb-6">
             <div className="w-10 h-[1px] bg-teal-500" />
             <span className="text-xs font-bold tracking-[0.2em] text-teal-400 uppercase">
-              הפתרון המקיף
+              מה תקבלו בדוח?
             </span>
           </div>
         </Reveal>
@@ -258,14 +258,14 @@ export default function HomePage() {
             className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.15] mb-6 max-w-3xl text-white"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            8 מקורות מידע רשמיים.{" "}
-            <span className="text-teal-400">דוח בדיקה יסודי אחד.</span>
+            כל מה שצריך לדעת לפני שחותמים —{" "}
+            <span className="text-teal-400">בדוח אחד ברור ומקצועי.</span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.15}>
           <p className="text-base text-slate-200 max-w-2xl mb-16 leading-relaxed font-normal">
-            SafeDeal מאגדת ומצליבה נתונים מ-8 מאגרים רשמיים לכדי דוח נאותות שקוף, מפורט ומבוסס עובדות — לקבלת החלטה מושכלת בביטחון מלא.
+            SafeDeal מאגדת ומצליבה נתונים ממקורות רשמיים, ומציגה אותם בצורה נגישה ומובנת — כדי שתוכלו לקבל החלטה מושכלת.
           </p>
         </Reveal>
 
@@ -417,7 +417,7 @@ export default function HomePage() {
           <div className="flex items-center gap-4 mb-6">
             <div className="w-10 h-[1px] bg-teal-500" />
             <span className="text-xs font-bold tracking-[0.2em] text-teal-400 uppercase">
-              חוויות משתמשים
+              מה אומרים הלקוחות?
             </span>
           </div>
         </Reveal>
@@ -462,15 +462,15 @@ export default function HomePage() {
             className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] max-w-3xl mx-auto mb-8 text-white"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            העסקה הכי גדולה בחייכם?{" "}
+            אל תשאלו רק 'כמה עולה הדירה.'{" "}
             <br className="hidden sm:block" />
-            <span className="text-teal-400">תקבלו אותה מתוך ביטחון מלא.</span>
+            <span className="text-teal-400">תשאלו גם 'כמה היא באמת שווה.'</span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.2}>
           <p className="text-base text-slate-200 max-w-md mx-auto mb-12 leading-relaxed font-normal">
-            בדיקה מקיפה מ-8 מקורות מידע רשמיים, מרוכזת בדוח אחד ברור.
+            המטרה של SafeDeal היא לעזור לכם לגלות את הדברים האלה — לפני שאתם מתחייבים למליונים.
           </p>
         </Reveal>
 
@@ -481,14 +481,14 @@ export default function HomePage() {
               className="sd-btn-primary text-base px-10 py-5 font-bold shadow-lg shadow-teal-500/25"
             >
               <Search size={18} />
-              התחל בדיקת נכס עכשיו
+              בדקו את הדירה עכשיו
               <ArrowLeft size={18} />
             </Link>
             <Link
               href="/analyze"
               className="text-sm font-bold text-slate-300 hover:text-white transition-colors underline underline-offset-4 decoration-slate-600 hover:decoration-slate-300"
             >
-              סיור ללא התחייבות
+              ראו דוח לדוגמה
             </Link>
           </div>
         </Reveal>

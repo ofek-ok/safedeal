@@ -112,7 +112,7 @@ export function Step4Checkout({ data, isSubmitting, onSubmit, onChange }: Props)
         disabled={isSubmitting || !data.step1.agreeToTerms}
         className="w-full py-4 px-6 flex items-center justify-center gap-3 bg-[#00C896] hover:bg-[#00C896]/90 text-navy-950 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
       >
-        {isSubmitting ? "מעבד תשלום..." : "מעבר לתשלום מאובטח 🔒"}
+        {isSubmitting ? "מעבד תשלום..." : <>{"מעבר לתשלום מאובטח"} <Lock size={16} /></>}
       </button>
 
       {/* Security note */}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowLeft, ExternalLink, FileText } from "lucide-react";
+import { ArrowRight, ArrowLeft, ExternalLink, FileText, Clock, Lock, BarChart3 } from "lucide-react";
 import { StepIndicator } from "./StepIndicator";
 import { Step1PropertyType } from "./Step1PropertyType";
 import { Step2Address } from "./Step2Address";
@@ -62,7 +62,7 @@ export function MultiStepForm() {
         <div className="mb-12">
           <div className="w-8 h-[1px] bg-[#00C896] mx-auto mb-6"></div>
           <h2 className="text-3xl md:text-4xl text-white mb-6" style={{ fontFamily: "var(--font-serif)" }}>
-            הבדיקה שלכם התקבלה בהצלחה ✅
+            הבדיקה שלכם התקבלה בהצלחה
           </h2>
           <p className="text-slate-400 text-sm tracking-wider leading-relaxed max-w-md mx-auto">
             הדוח המשוקלל עבור{" "}
@@ -122,11 +122,11 @@ export function MultiStepForm() {
       <StepIndicator current={step} />
 
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 py-4 mb-8 border-b border-white/[0.06] text-[10px] uppercase tracking-widest text-slate-400">
-        <span className="flex items-center gap-1.5">🕒 דוח תוך דקות</span>
+        <span className="flex items-center gap-1.5"><Clock size={14} /> דוח תוך דקות</span>
         <span className="text-white/10 hidden sm:inline">|</span>
-        <span className="flex items-center gap-1.5">🔒 תשלום מאובטח</span>
+        <span className="flex items-center gap-1.5"><Lock size={14} /> תשלום מאובטח</span>
         <span className="text-white/10 hidden sm:inline">|</span>
-        <span className="flex items-center gap-1.5">📊 מידע ממקורות רשמיים</span>
+        <span className="flex items-center gap-1.5"><BarChart3 size={14} /> מידע ממקורות רשמיים</span>
       </div>
 
       <div className="min-h-[400px]">

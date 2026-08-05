@@ -1,5 +1,6 @@
 "use client";
 
+import { Home, Building2 } from "lucide-react";
 import type { DealType } from "@/types/property";
 
 interface Props {
@@ -40,7 +41,7 @@ export function Step1PropertyType({ data, onChange, onAutoAdvance }: Props) {
               : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.2]"
           }`}
         >
-          <span className="text-5xl opacity-80 mb-2">🏠</span>
+          <Home size={32} className="text-[#00C896] opacity-80 mb-2" />
           <div>
             <h3 className={`text-xl mb-3 ${data.dealType === "second-hand" ? "text-white" : "text-slate-200"}`} style={{ fontFamily: "var(--font-serif)" }}>דירה יד שנייה</h3>
             <p className="text-sm text-slate-400 leading-relaxed max-w-[200px] mx-auto">בדיקת הנכס, הרישומים, המוכר, העסקאות באזור והסביבה.</p>
@@ -56,7 +57,7 @@ export function Step1PropertyType({ data, onChange, onAutoAdvance }: Props) {
               : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.2]"
           }`}
         >
-          <span className="text-5xl opacity-80 mb-2">🏗️</span>
+          <Building2 size={32} className="text-[#00C896] opacity-80 mb-2" />
           <div>
             <h3 className={`text-xl mb-3 ${data.dealType === "developer" ? "text-white" : "text-slate-200"}`} style={{ fontFamily: "var(--font-serif)" }}>דירה חדשה מקבלן</h3>
             <p className="text-sm text-slate-400 leading-relaxed max-w-[200px] mx-auto">בדיקת הפרויקט, הקבלן, המפרט, התוכניות והסביבה.</p>

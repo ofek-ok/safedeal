@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info } from "lucide-react";
+import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp } from "lucide-react";
 import type { WizardFormData, UploadedFile, Step3DealDetails } from "@/types/property";
 import { ROOMS_OPTIONS } from "@/types/property";
 import { formatThousands, stripFormatting, calcYield, formatBytes, isValidEmail } from "@/lib/utils";
@@ -12,11 +12,11 @@ interface Props {
   showErrors: boolean;
 }
 
-const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasParking" | "hasStorage" | "hasMamad" | "hasElevator">; label: string; icon: string }[] = [
-  { key: "hasParking",  label: "חניה צמודה",    icon: "🚗" },
-  { key: "hasStorage",  label: "מחסן צמוד",      icon: "📦" },
-  { key: "hasMamad",    label: 'ממ"ד',            icon: "🛡️" },
-  { key: "hasElevator", label: "מעלית",           icon: "🔼" },
+const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasParking" | "hasStorage" | "hasMamad" | "hasElevator">; label: string; Icon: React.ElementType }[] = [
+  { key: "hasParking",  label: "חניה צמודה",    Icon: Car },
+  { key: "hasStorage",  label: "מחסן צמוד",      Icon: Package },
+  { key: "hasMamad",    label: 'ממ"ד',            Icon: Shield },
+  { key: "hasElevator", label: "מעלית",           Icon: ArrowUp },
 ];
 
 function toMeta(file: File): UploadedFile {
@@ -320,7 +320,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           <div className="space-y-4">
             <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">תוספות ואביזרים</p>
             <div className="grid grid-cols-2 gap-4">
-              {AMENITIES.map(({ key, label, icon }) => {
+              {AMENITIES.map(({ key, label, Icon }) => {
                 const checked = data.step3[key];
                 return (
                   <label
@@ -332,7 +332,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                   >
                     <input id={key} type="checkbox" checked={checked as boolean} onChange={(e) => setStep3(key, e.target.checked as never)} className="sr-only" />
                     <div className="flex items-center gap-3">
-                      <span className="text-lg opacity-80">{icon}</span>
+                      <Icon size={18} className="text-[#00C896] opacity-80" />
                       <span className={`text-[11px] uppercase tracking-widest ${checked ? "text-white" : "text-slate-400"}`}>{label}</span>
                     </div>
                     <div className={`w-3 h-3 border transition-all duration-300 flex items-center justify-center ${

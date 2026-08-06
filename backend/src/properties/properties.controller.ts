@@ -1,7 +1,9 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
+  Param,
   HttpCode,
   HttpStatus,
   Logger,
@@ -17,15 +19,30 @@ export class PropertiesController {
 
   /**
    * POST /api/v1/properties/analyze
-   *
-   * Accepts property details from the SafeDeal multi-step form,
-   * validates the payload using class-validator, and enqueues
-   * a background analysis job.
+   * Enqueues property analysis job and initiates 11-source pipeline.
    */
   @Post('analyze')
   @HttpCode(HttpStatus.ACCEPTED)
   async analyze(@Body() dto: CreatePropertyAnalysisDto) {
     this.logger.log('POST /api/v1/properties/analyze received');
     return this.propertiesService.initiateAnalysis(dto);
+  }
+
+  /**
+   * GET /api/v1/properties/status/:jobId
+   * Returns live progress status of the 11-source pipeline (0-100%).
+   */
+  @Get('status/:jobId')
+  async getStatus(@Param('jobId') jobId: string) {
+    return this.propertiesService.getJobStatus(jobId);
+  }
+
+  /**
+   * GET /api/v1/properties/report/:jobId
+   * Returns the final synthesized due-diligence report object.
+   */
+  @Get('report/:jobId')
+  async getReport(@Param('jobId') jobId: string) {
+    return this.propertiesService.getReport(jobId);
   }
 }

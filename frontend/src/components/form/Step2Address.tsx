@@ -2,6 +2,7 @@
 
 import { Info, AlertCircle } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
+import { GovAutocomplete } from "./GovAutocomplete";
 
 interface Props {
   data: Step2PropertyId;
@@ -100,10 +101,11 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
       <div className="space-y-8">
         {/* City */}
         <Field id="city" label="עיר / יישוב *" error={errors.city}>
-          <EditorialInput
+          <GovAutocomplete
             id="city"
+            type="city"
             value={data.city}
-            onChange={(e) => set("city", e.target.value)}
+            onChange={(val) => set("city", val)}
             placeholder="לדוגמה: תל אביב-יפו"
             hasError={!!errors.city}
           />
@@ -113,10 +115,12 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2">
             <Field id="street" label="רחוב *" error={errors.street}>
-              <EditorialInput
+              <GovAutocomplete
                 id="street"
+                type="street"
+                cityFilter={data.city}
                 value={data.street}
-                onChange={(e) => set("street", e.target.value)}
+                onChange={(val) => set("street", val)}
                 placeholder="שם הרחוב"
                 hasError={!!errors.street}
               />

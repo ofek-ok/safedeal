@@ -17,7 +17,7 @@ import { Type } from 'class-transformer';
 
 export class PersonalDto {
   @IsOptional() @IsString() fullName?: string;
-  @IsOptional() @IsEmail() email?: string;
+  @IsOptional() @IsString() email?: string;
   @IsOptional() @IsString() phone?: string;
   @IsOptional() @IsString() purpose?: string;
   @IsOptional() @IsBoolean() agreeToTerms?: boolean;
@@ -25,7 +25,7 @@ export class PersonalDto {
 }
 
 export class LocationDto {
-  @IsString() @IsNotEmpty() @MaxLength(100) city: string;
+  @IsOptional() @IsString() @MaxLength(100) city?: string;
   @IsOptional() @IsString() @MaxLength(100) street?: string;
   @IsOptional() @IsString() @MaxLength(100) streetName?: string; // legacy alias
   @IsOptional() @IsString() @MaxLength(20)  houseNumber?: string;

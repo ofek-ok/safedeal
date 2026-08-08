@@ -9,5 +9,8 @@
     "build:frontend": "pnpm --filter frontend build",
     "build:backend": "pnpm --filter backend build"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.0.0",
+  "dependencies": {
+    "puppeteer": "^25.5.0"
+  }
 }

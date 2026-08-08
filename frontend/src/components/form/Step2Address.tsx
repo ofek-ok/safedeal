@@ -1,6 +1,7 @@
 "use client";
 
-import { Info, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Info, AlertCircle, Wand2, Loader2 } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
 import { GovAutocomplete } from "./GovAutocomplete";
 
@@ -71,8 +72,56 @@ function EditorialInput({
 }
 
 export function Step2Address({ data, onChange, showErrors }: Props) {
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [lookupSuccess, setLookupSuccess] = useState(false);
+
   const set = <K extends keyof Step2PropertyId>(k: K, v: string) =>
     onChange({ ...data, [k]: v });
+
+  const handleAutoLookup = async () => {
+    if (!data.city || !data.street || !data.houseNumber) {
+      setLookupError("יש למלא עיר, רחוב ומספר בית לפני האיתור האוטומטי.");
+      return;
+    }
+    
+    setIsLookingUp(true);
+    setLookupError(null);
+    setLookupSuccess(false);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      const res = await fetch(`${apiUrl}/api/v1/properties/cadastral-lookup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          city: data.city,
+          street: data.street,
+          houseNumber: data.houseNumber,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || "לא נמצאו נתוני גוש וחלקה לכתובת זו.");
+      }
+
+      const result = await res.json();
+      
+      onChange({
+        ...data,
+        block: result.block || data.block,
+        parcel: result.parcel || data.parcel,
+      });
+      
+      setLookupSuccess(true);
+      setTimeout(() => setLookupSuccess(false), 5000);
+    } catch (err: any) {
+      setLookupError(err.message);
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
 
   const errors = showErrors
     ? {
@@ -139,13 +188,33 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         </div>
 
         {/* Cadastral divider */}
-        <div className="flex items-center gap-4 py-4">
+        <div className="flex items-center gap-4 py-4 mt-6">
           <div className="flex-1 h-[1px] bg-white/[0.06]" />
           <span className="text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-2">
             <Info size={12} />
             זיהוי קדסטרלי
           </span>
           <div className="flex-1 h-[1px] bg-white/[0.06]" />
+        </div>
+
+        {/* Auto Lookup Button */}
+        <div className="flex flex-col items-center mb-6 space-y-3">
+          <button
+            type="button"
+            onClick={handleAutoLookup}
+            disabled={isLookingUp}
+            className="flex items-center gap-2 text-xs text-[#00C896] hover:text-[#00C896]/80 font-medium tracking-wide transition-colors bg-[#00C896]/10 px-4 py-2 rounded-full border border-[#00C896]/30 disabled:opacity-50"
+          >
+            {isLookingUp ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+            איתור אוטומטי מכתובת
+          </button>
+          
+          {lookupError && (
+            <span className="text-red-400 text-[10px] bg-red-400/10 px-3 py-1 rounded">{lookupError}</span>
+          )}
+          {lookupSuccess && (
+            <span className="text-[#00C896] text-[10px] bg-[#00C896]/10 px-3 py-1 rounded">אותר בהצלחה! אנא ודאו את הנתונים מול הטאבו.</span>
+          )}
         </div>
 
         {/* Block / Parcel / Sub-parcel */}

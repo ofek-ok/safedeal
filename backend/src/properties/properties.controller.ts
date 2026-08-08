@@ -19,12 +19,16 @@ import { extname } from 'path';
 import { randomUUID } from 'crypto';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyAnalysisDto } from './dto/create-property-analysis.dto';
+import { CadastralService } from './cadastral.service';
 
 @Controller('properties')
 export class PropertiesController {
   private readonly logger = new Logger(PropertiesController.name);
 
-  constructor(private readonly propertiesService: PropertiesService) {}
+  constructor(
+    private readonly propertiesService: PropertiesService,
+    private readonly cadastralService: CadastralService,
+  ) {}
 
   /**
    * POST /api/v1/properties/analyze
@@ -71,6 +75,11 @@ export class PropertiesController {
       originalName: file.originalname,
       size: file.size,
     };
+  }
+
+  @Post('cadastral-lookup')
+  async lookupCadastral(@Body() body: { city: string; street: string; houseNumber: string }) {
+    return this.cadastralService.lookup(body.city, body.street, body.houseNumber);
   }
 
   /**

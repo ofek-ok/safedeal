@@ -1,0 +1,33 @@
+{
+  "personal": {
+    "fullName": "Test",
+    "email": "test@test.com",
+    "phone": "0501234567",
+    "purpose": "buyer",
+    "agreeToTerms": true
+  },
+  "location": {
+    "city": "תל אביב",
+    "street": "הרצל",
+    "houseNumber": "1",
+    "block": "1234",
+    "parcel": "1",
+    "subParcel": ""
+  },
+  "deal": {
+    "dealType": "buy",
+    "askingPrice": "1,000,000",
+    "propertyArea": "100",
+    "roomsCount": "4",
+    "floorNumber": "1",
+    "hasParking": false,
+    "hasStorage": false,
+    "hasMamad": false,
+    "hasElevator": false,
+    "monthlyRent": ""
+  },
+  "documents": {
+    "tabuFileName": null,
+    "buildingFileName": null
+  }
+}

@@ -60,7 +60,10 @@ export function MultiStepForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          personal:  formData.step1,
+          personal:  {
+            ...formData.step1,
+            email: formData.step1.email || undefined,
+          },
           location:  formData.step2,
           deal:      formData.step3,
           documents: {

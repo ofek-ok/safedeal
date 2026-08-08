@@ -39,7 +39,7 @@ export class PropertiesService {
 
     const payload = {
       location: {
-        city: dto.location.city,
+        city: dto.location.city || '',
         street,
         houseNumber: dto.location.houseNumber || '',
         block: dto.location.block || '',

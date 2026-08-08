@@ -42,12 +42,36 @@ const NEXT_STEPS: StepItem[] = [
   },
 ];
 
-export function OperativeNextSteps() {
+const ICON_MAP: Record<string, React.ElementType> = {
+  'עורך דין': Scale,
+  'שמאי': Home,
+  'מוכר': FileText,
+  'בנק': ShieldAlert,
+};
+
+interface BackendStep {
+  id: string;
+  target: string;
+  title: string;
+  description: string;
+}
+
+export function OperativeNextSteps({ steps: realSteps }: { steps?: BackendStep[] } = {}) {
   const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({});
 
   const toggleCheck = (id: string) => {
     setCheckedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const displaySteps: StepItem[] = realSteps
+    ? realSteps.map((s) => ({
+        id: s.id,
+        target: s.target as StepItem['target'],
+        title: s.title,
+        description: s.description,
+        icon: ICON_MAP[s.target] || Scale,
+      }))
+    : NEXT_STEPS;
 
   const completedCount = Object.values(checkedIds).filter(Boolean).length;
 
@@ -68,12 +92,12 @@ export function OperativeNextSteps() {
         </div>
 
         <span className="sd-badge-teal text-xs py-1.5 px-3.5 font-bold shrink-0">
-          {completedCount} מתוך {NEXT_STEPS.length} הושלמו
+          {completedCount} מתוך {displaySteps.length} הושלמו
         </span>
       </div>
 
       <div className="space-y-4">
-        {NEXT_STEPS.map((item) => {
+        {displaySteps.map((item) => {
           const isDone = !!checkedIds[item.id];
           const Icon = item.icon;
           return (

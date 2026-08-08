@@ -160,7 +160,27 @@ function StatusBadge({ status }: { status: StatusType }) {
   );
 }
 
-export function DataHubPillars() {
+interface DataHubPillarsProps {
+  pillars?: {
+    cadastral?: { id: string; title: string; subtitle: string; metrics: PillarMetric[] };
+    economic?: { id: string; title: string; subtitle: string; metrics: PillarMetric[] };
+    planning?: { id: string; title: string; subtitle: string; metrics: PillarMetric[] };
+    engineering?: { id: string; title: string; subtitle: string; metrics: PillarMetric[] };
+  };
+  sourceStatuses?: Array<{ sourceId: string; sourceName: string; status: string }>;
+  warnings?: string[];
+}
+
+export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings }: DataHubPillarsProps = {}) {
+  const activePillars: Pillar[] = realPillars
+    ? [
+        realPillars.cadastral  && { ...PILLARS[0], ...realPillars.cadastral  },
+        realPillars.economic   && { ...PILLARS[1], ...realPillars.economic   },
+        realPillars.planning   && { ...PILLARS[2], ...realPillars.planning   },
+        realPillars.engineering && { ...PILLARS[3], ...realPillars.engineering },
+      ].filter(Boolean) as Pillar[]
+    : PILLARS;
+
   return (
     <div className="space-y-8 py-8 mb-12">
       <div className="flex flex-col space-y-2">
@@ -174,7 +194,7 @@ export function DataHubPillars() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {PILLARS.map((pillar) => {
+        {activePillars.map((pillar) => {
           const Icon = pillar.icon;
           return (
             <div
@@ -228,6 +248,37 @@ export function DataHubPillars() {
           );
         })}
       </div>
+
+      {warnings && warnings.length > 0 && (
+        <div className="p-4 border border-amber-500/20 bg-amber-500/5 rounded-lg text-right">
+          <p className="text-xs text-amber-400 font-bold uppercase tracking-widest mb-2">נתונים שלא אומתו אוטומטית</p>
+          <ul className="space-y-1">
+            {warnings.slice(0, 5).map((w, i) => (
+              <li key={i} className="text-xs text-slate-400">{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {sourceStatuses && sourceStatuses.length > 0 && (
+        <div className="pt-4 border-t border-white/[0.06]">
+          <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3">סטטוס מקורות מידע</p>
+          <div className="flex flex-wrap gap-2">
+            {sourceStatuses.map((s) => (
+              <span
+                key={s.sourceId}
+                className={`text-[10px] px-2 py-1 rounded border ${
+                  s.status === 'success'
+                    ? 'border-teal-500/30 text-teal-400 bg-teal-500/5'
+                    : 'border-amber-500/30 text-amber-400 bg-amber-500/5'
+                }`}
+              >
+                {s.sourceName}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -83,7 +83,7 @@ export function MultiStepForm() {
         </div>
 
         <Link
-          href="/report"
+          href={`/report/${jobId}`}
           className="group flex items-center justify-center gap-3 py-4 px-10 border border-[#00C896] bg-[#00C896]/10 hover:bg-[#00C896]/20 text-[#00C896] transition-all duration-300 w-full sm:w-auto uppercase tracking-widest text-xs mb-12"
         >
           <FileText size={14} />

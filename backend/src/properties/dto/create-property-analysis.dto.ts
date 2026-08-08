@@ -1,133 +1,81 @@
 import {
   IsString,
   IsOptional,
-  IsEnum,
-  IsNumberString,
-  IsBoolean,
-  ValidateNested,
-  IsArray,
   IsNotEmpty,
   MaxLength,
-  MinLength,
+  ValidateNested,
+  IsArray,
+  IsBoolean,
+  IsEmail,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-// ──────────────────────────────────────────────
-// Shared Enums
-// ──────────────────────────────────────────────
-export enum City {
-  TEL_AVIV = 'tel-aviv',
-  JERUSALEM = 'jerusalem',
-  HAIFA = 'haifa',
-  RISHON_LEZION = 'rishon-lezion',
-  HOLON = 'holon',
-  PETAH_TIKVA = 'petah-tikva',
-  BEER_SHEVA = 'beer-sheva',
-  NETANYA = 'netanya',
-  ASHDOD = 'ashdod',
-  BAT_YAM = 'bat-yam',
-  BNEI_BRAK = 'bnei-brak',
-  RAMAT_GAN = 'ramat-gan',
-  HERZLIYA = 'herzliya',
-  KFAR_SABA = 'kfar-saba',
-  MODIIN = 'modiin',
-  OTHER = 'other',
+/**
+ * DTO that exactly mirrors the frontend WizardFormData structure.
+ * Frontend sends: { personal, location, deal, documents }
+ */
+
+export class PersonalDto {
+  @IsOptional() @IsString() fullName?: string;
+  @IsOptional() @IsEmail() email?: string;
+  @IsOptional() @IsString() phone?: string;
+  @IsOptional() @IsString() purpose?: string;
+  @IsOptional() @IsBoolean() agreeToTerms?: boolean;
+  @IsOptional() @IsString() idNumber?: string;
 }
 
-export enum DealType {
-  SECOND_HAND = 'second-hand',
-  NEW_DEVELOPER = 'new-developer',
+export class LocationDto {
+  @IsString() @IsNotEmpty() @MaxLength(100) city: string;
+  @IsOptional() @IsString() @MaxLength(100) street?: string;
+  @IsOptional() @IsString() @MaxLength(100) streetName?: string; // legacy alias
+  @IsOptional() @IsString() @MaxLength(20)  houseNumber?: string;
+  @IsOptional() @IsString() @MaxLength(20)  block?: string;
+  @IsOptional() @IsString() @MaxLength(20)  parcel?: string;
+  @IsOptional() @IsString() @MaxLength(20)  subParcel?: string;
 }
 
-// ──────────────────────────────────────────────
-// Nested DTOs
-// ──────────────────────────────────────────────
-
-export class PropertyLocationDto {
-  @IsEnum(City, { message: 'עיר לא תקינה' })
-  city: City;
-
-  @IsString()
-  @IsNotEmpty({ message: 'שם הרחוב הוא שדה חובה' })
-  @MaxLength(100)
-  streetName: string;
-
-  @IsString()
-  @IsNotEmpty({ message: 'מספר הבית הוא שדה חובה' })
-  @MaxLength(10)
-  houseNumber: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  block?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  parcel?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  subParcel?: string;
+export class DealDto {
+  @IsOptional() @IsString() dealType?: string;
+  @IsOptional() @IsString() askingPrice?: string;
+  @IsOptional() @IsString() propertyArea?: string;
+  @IsOptional() @IsString() roomsCount?: string;
+  @IsOptional() @IsString() floorNumber?: string;
+  @IsOptional() @IsBoolean() hasParking?: boolean;
+  @IsOptional() @IsBoolean() hasStorage?: boolean;
+  @IsOptional() @IsBoolean() hasMamad?: boolean;
+  @IsOptional() @IsBoolean() hasElevator?: boolean;
+  @IsOptional() @IsString() monthlyRent?: string;
 }
 
-export class PropertyDetailsDto {
-  @IsEnum(DealType, { message: 'סוג עסקה לא תקין' })
-  dealType: DealType;
-
-  @IsString()
-  @IsNotEmpty({ message: 'מחיר מבוקש הוא שדה חובה' })
-  askingPrice: string;
-
-  @IsString()
-  @IsNotEmpty({ message: 'שטח הדירה הוא שדה חובה' })
-  propertyArea: string;
-
-  @IsString()
-  @IsNotEmpty({ message: 'מספר חדרים הוא שדה חובה' })
-  roomsCount: string;
-
-  @IsString()
-  @IsNotEmpty({ message: 'קומה הוא שדה חובה' })
-  floorNumber: string;
-
-  @IsBoolean()
-  hasParking: boolean;
-
-  @IsBoolean()
-  hasStorage: boolean;
-
-  @IsOptional()
-  @IsString()
-  monthlyRent?: string;
+export class DocumentsDto {
+  @IsOptional() @IsString() @MaxLength(255) tabuFileName?: string | null;
+  @IsOptional() @IsString() @MaxLength(255) buildingFileName?: string | null;
+  @IsOptional() @IsArray() @IsString({ each: true }) additionalDocNames?: string[];
 }
 
-export class DocumentMetaDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  tabuFileName?: string | null;
-
-  @IsArray()
-  @IsString({ each: true })
-  additionalDocNames: string[];
-}
-
-// ──────────────────────────────────────────────
-// Root DTO
-// ──────────────────────────────────────────────
 export class CreatePropertyAnalysisDto {
+  @IsOptional()
   @ValidateNested()
-  @Type(() => PropertyLocationDto)
-  location: PropertyLocationDto;
+  @Type(() => PersonalDto)
+  personal?: PersonalDto;
 
   @ValidateNested()
-  @Type(() => PropertyDetailsDto)
-  details: PropertyDetailsDto;
+  @Type(() => LocationDto)
+  location: LocationDto;
 
+  // Frontend sends as "deal", legacy support for "details"
+  @IsOptional()
   @ValidateNested()
-  @Type(() => DocumentMetaDto)
-  documents: DocumentMetaDto;
+  @Type(() => DealDto)
+  deal?: DealDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DealDto)
+  details?: DealDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DocumentsDto)
+  documents?: DocumentsDto;
 }

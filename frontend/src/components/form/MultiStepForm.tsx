@@ -80,12 +80,12 @@ export function MultiStepForm() {
       
       const json = await res.json();
       setJobId(json.jobId);
+      setSubmitted(true);
     } catch (err) {
       console.error("Submission error", err);
       alert("Submission connection error");
     } finally {
       setIsSubmitting(false);
-      setSubmitted(true);
     }
   };
 

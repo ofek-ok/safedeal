@@ -11,7 +11,7 @@ import { RegistrarCompaniesSource } from './sources/registrar-companies.source';
 import { PledgesSource } from './sources/pledges.source';
 import { JudicialSource } from './sources/judicial.source';
 import { AiSynthesisService } from './ai-synthesis.service';
-import { AggregatedPipelineData, SourceResult } from './interfaces/pipeline-data.interface';
+import { AggregatedPipelineData } from './interfaces/pipeline-data.interface';
 import { SynthesizedReport } from './interfaces/synthesized-report.interface';
 
 export interface JobProgress {
@@ -24,6 +24,39 @@ export interface JobProgress {
   report?: SynthesizedReport;
   warnings: string[];
   createdAt: string;
+}
+
+export interface PipelinePayload {
+  location: {
+    city: string;
+    street: string;
+    houseNumber: string;
+    block?: string;
+    parcel?: string;
+    subParcel?: string;
+  };
+  details: {
+    dealType?: string;
+    askingPrice?: string;
+    propertyArea?: string;
+    roomsCount?: string;
+  };
+  documents: {
+    tabuFileName?: string | null;
+    tabuFileBuffer?: Buffer | null;
+    additionalDocNames?: string[];
+  };
+  personal?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    idNumber?: string;
+  };
+  seller?: {
+    name?: string;
+    idNumber?: string;
+    companyId?: string;
+  };
 }
 
 @Injectable()
@@ -46,9 +79,6 @@ export class PipelineService {
     private readonly aiSynthesisService: AiSynthesisService,
   ) {}
 
-  /**
-   * Register a new job in queued state
-   */
   registerJob(jobId: string): JobProgress {
     const job: JobProgress = {
       jobId,
@@ -64,71 +94,44 @@ export class PipelineService {
     return job;
   }
 
-  /**
-   * Get job progress status
-   */
   getJobProgress(jobId: string): JobProgress | undefined {
     return this.jobs.get(jobId);
   }
 
-  /**
-   * Get final synthesized report for job
-   */
   getReport(jobId: string): SynthesizedReport | undefined {
     return this.jobs.get(jobId)?.report;
   }
 
   /**
-   * Executes the 11-source pipeline asynchronously for a job
+   * Executes all 11 sources concurrently, aggregates, and synthesizes the report.
    */
-  async runPipeline(
-    jobId: string,
-    payload: {
-      location: { city: string; street: string; houseNumber: string; block?: string; parcel?: string; subParcel?: string };
-      details: { dealType?: string; askingPrice?: string; propertyArea?: string; roomsCount?: string };
-      documents: { tabuFileName?: string | null; additionalDocNames?: string[] };
-      personal?: { fullName?: string; email?: string; phone?: string };
-    },
-  ): Promise<SynthesizedReport> {
-    this.logger.log(`🚀 Starting 11-Source Execution Pipeline for Job: ${jobId}`);
+  async runPipeline(jobId: string, payload: PipelinePayload): Promise<SynthesizedReport> {
+    this.logger.log(`🚀 Starting 11-Source Pipeline — Job: ${jobId}`);
 
     let job = this.jobs.get(jobId);
-    if (!job) {
-      job = this.registerJob(jobId);
-    }
+    if (!job) job = this.registerJob(jobId);
 
     job.status = 'processing';
-    job.percentComplete = 10;
-    job.currentStepMessage = 'מתחבר למאגרים ממשלתיים וקדסטרליים (GovMap, טאבו, XPLAN)...';
+    job.percentComplete = 8;
+    job.currentStepMessage = 'מתחבר ל-11 מאגרי מידע ממשלתיים וסטטיסטיים...';
 
-    const warnings: string[] = [];
+    const block = payload.location.block || '';
+    const parcel = payload.location.parcel || '';
+    const subParcel = payload.location.subParcel || '';
+    const allWarnings: string[] = [];
 
-    // Helper wrapper for non-blocking source execution
-    const runSource = async <T>(
-      fn: () => Promise<SourceResult<T>>,
-      defaultSourceId: string,
-      defaultSourceName: string,
-    ): Promise<SourceResult<T>> => {
+    const guard = async <T>(fn: () => Promise<T>, label: string): Promise<T> => {
       try {
-        const res = await fn();
-        if (res.warning) warnings.push(res.warning);
-        return res;
+        return await fn();
       } catch (err: any) {
-        const warnMsg = `${defaultSourceName}: השאילתה נכשלה (${err?.message || 'שגיאת תקשורת'})`;
-        warnings.push(warnMsg);
-        return {
-          sourceId: defaultSourceId,
-          sourceName: defaultSourceName,
-          success: false,
-          timestamp: new Date().toISOString(),
-          executionTimeMs: 0,
-          data: null,
-          warning: warnMsg,
-        };
+        const msg = `${label} — שגיאה: ${err?.message || 'לא ידוע'}`;
+        allWarnings.push(msg);
+        this.logger.warn(msg);
+        throw err;
       }
     };
 
-    // Execute 11 sources concurrently via Promise.allSettled
+    // ── Execute all 11 sources concurrently ──────────────────────────────────
     const [
       govmapRes,
       taxRes,
@@ -141,25 +144,126 @@ export class PipelineService {
       companiesRes,
       pledgesRes,
       judicialRes,
-    ] = await Promise.all([
-      runSource(() => this.govMapSource.fetch(payload.location), 'govmap', 'GovMap'),
-      runSource(() => this.taxAuthoritySource.fetch(payload.location.block || '6902', payload.location.parcel || '44'), 'taxAuthority', 'רשות המסים'),
-      runSource(() => this.realEstateGovSource.fetch(payload.location.city), 'realEstateGov', 'אתר הנדל"ן הממשלתי'),
-      runSource(() => this.xplanSource.fetch(payload.location.block || '6902', payload.location.parcel || '44'), 'xplan', 'XPLAN מינהל התכנון'),
-      runSource(() => this.cbsSource.fetch(payload.location.city), 'cbs', 'הלמ"ס'),
-      runSource(() => this.urbanRenewalSource.fetch(payload.location.block || '6902', payload.location.parcel || '44'), 'urbanRenewal', 'הרשות להתחדשות עירונית'),
-      runSource(() => this.tabuSource.fetch(payload.documents.tabuFileName), 'tabu', 'נסח טאבו'),
-      runSource(() => this.municipalSource.fetch(payload.location.city, payload.location.street, payload.location.houseNumber), 'municipal', 'אתרי הנדסה עירוניים'),
-      runSource(() => this.registrarCompaniesSource.fetch(payload.details.dealType || 'second-hand'), 'registrarCompanies', 'רשם החברות'),
-      runSource(() => this.pledgesSource.fetch(payload.personal?.phone), 'pledges', 'רשם המשכונות'),
-      runSource(() => this.judicialSource.fetch(payload.personal?.fullName), 'judicial', 'נבו / נט המשפט'),
+    ] = await Promise.allSettled([
+      // 1. GovMap
+      guard(
+        () => this.govMapSource.fetch({
+          address: `${payload.location.street} ${payload.location.houseNumber}, ${payload.location.city}`,
+          city: payload.location.city,
+          street: payload.location.street,
+          houseNumber: payload.location.houseNumber,
+        }),
+        'GovMap',
+      ),
+
+      // 2. Tax Authority — nadlan.gov.il deals
+      guard(
+        () => this.taxAuthoritySource.fetch({ block, parcel, city: payload.location.city }),
+        'רשות המסים',
+      ),
+
+      // 3. Real Estate Gov — city price stats
+      guard(
+        () => this.realEstateGovSource.fetch({
+          city: payload.location.city,
+          neighborhood: payload.location.street,
+        }),
+        'נדל"ן ממשלתי',
+      ),
+
+      // 4. XPLAN / Mavat
+      guard(
+        () => this.xplanSource.fetch({ block, parcel, subParcel }),
+        'XPLAN/Mavat',
+      ),
+
+      // 5. CBS — static city cluster
+      guard(
+        () => this.cbsSource.fetch({ city: payload.location.city }),
+        'הלמ"ס',
+      ),
+
+      // 6. Urban Renewal — data.gov.il
+      guard(
+        () => this.urbanRenewalSource.fetch({
+          block,
+          parcel,
+          city: payload.location.city,
+        }),
+        'התחדשות עירונית',
+      ),
+
+      // 7. Tabu — PDF + Gemini OCR
+      guard(
+        () => this.tabuSource.fetch({
+          tabuFileName: payload.documents.tabuFileName,
+          tabuFileBuffer: payload.documents.tabuFileBuffer || null,
+          block,
+          parcel,
+        }),
+        'נסח טאבו',
+      ),
+
+      // 8. Municipal — data.gov.il building permits (all Israel)
+      guard(
+        () => this.municipalSource.fetch({
+          city: payload.location.city,
+          street: payload.location.street,
+          houseNumber: payload.location.houseNumber,
+          block,
+          parcel,
+        }),
+        'הנדסה עירונית',
+      ),
+
+      // 9. Registrar of Companies
+      guard(
+        () => this.registrarCompaniesSource.fetch({
+          companyId: payload.seller?.companyId,
+          companyName: payload.seller?.name,
+          sellerName: payload.personal?.fullName,
+        }),
+        'רשם החברות',
+      ),
+
+      // 10. Pledges
+      guard(
+        () => this.pledgesSource.fetch({
+          block,
+          parcel,
+          ownerName: payload.seller?.name || payload.personal?.fullName,
+          ownerId: payload.seller?.idNumber || payload.personal?.idNumber,
+        }),
+        'רשם המשכונות',
+      ),
+
+      // 11. Judicial
+      guard(
+        () => this.judicialSource.fetch({
+          sellerName: payload.seller?.name,
+          sellerId: payload.seller?.idNumber,
+          buyerName: payload.personal?.fullName,
+          buyerId: payload.personal?.idNumber,
+        }),
+        'נט המשפט',
+      ),
     ]);
 
-    job.percentComplete = 75;
-    job.completedSourcesCount = 11;
-    job.currentStepMessage = 'מעבד ומצליב את כל 11 המקורות במנוע AI Synthesis...';
+    // ── Resolve allSettled results ────────────────────────────────────────────
+    const resolve = <T>(settled: PromiseSettledResult<T>, fallback: T): T =>
+      settled.status === 'fulfilled' ? settled.value : fallback;
 
-    // Aggregate results
+    const emptySource = (src: string) => ({
+      source: src,
+      success: false,
+      data: {} as any,
+      warnings: ['Source execution failed'],
+    });
+
+    job.percentComplete = 72;
+    job.completedSourcesCount = 11;
+    job.currentStepMessage = 'מנוע AI Synthesis מעבד את 11 המקורות ומחשב SafeScore...';
+
     const aggregatedData: AggregatedPipelineData = {
       jobId,
       submittedAt: new Date().toISOString(),
@@ -167,36 +271,39 @@ export class PipelineService {
         city: payload.location.city,
         street: payload.location.street,
         houseNumber: payload.location.houseNumber,
-        block: payload.location.block || '6902',
-        parcel: payload.location.parcel || '44',
-        subParcel: payload.location.subParcel || '12',
+        block,
+        parcel,
+        subParcel,
       },
       sources: {
-        govmap: govmapRes,
-        taxAuthority: taxRes,
-        realEstateGov: realEstateRes,
-        xplan: xplanRes,
-        cbs: cbsRes,
-        urbanRenewal: urbanRenewalRes,
-        tabu: tabuRes,
-        municipal: municipalRes,
-        registrarCompanies: companiesRes,
-        pledges: pledgesRes,
-        judicial: judicialRes,
+        govmap: resolve(govmapRes, emptySource('govmap')),
+        taxAuthority: resolve(taxRes, emptySource('tax_authority')),
+        realEstateGov: resolve(realEstateRes, emptySource('real_estate_gov')),
+        xplan: resolve(xplanRes, emptySource('xplan')),
+        cbs: resolve(cbsRes, emptySource('cbs')),
+        urbanRenewal: resolve(urbanRenewalRes, emptySource('urban_renewal')),
+        tabu: resolve(tabuRes, emptySource('tabu')),
+        municipal: resolve(municipalRes, emptySource('municipal')),
+        registrarCompanies: resolve(companiesRes, emptySource('registrar_companies')),
+        pledges: resolve(pledgesRes, emptySource('pledges')),
+        judicial: resolve(judicialRes, emptySource('judicial')),
       },
-      warnings,
+      warnings: allWarnings,
     };
 
-    // Synthesize final report using AI engine
+    // ── Synthesize final report ───────────────────────────────────────────────
     const report = this.aiSynthesisService.synthesizeReport(aggregatedData);
 
     job.status = 'completed';
     job.percentComplete = 100;
-    job.currentStepMessage = 'הדוח הושלם בהצלחה וזמין לצפייה';
+    job.currentStepMessage = 'הדוח הושלם בהצלחה — SafeScore מוכן';
     job.report = report;
-    job.warnings = warnings;
+    job.warnings = allWarnings;
 
-    this.logger.log(`✅ Pipeline execution finished for Job: ${jobId} | SafeScore: ${report.safeScore}`);
+    this.logger.log(
+      `✅ Pipeline completed — Job: ${jobId} | SafeScore: ${report.safeScore} | Warnings: ${allWarnings.length}`,
+    );
+
     return report;
   }
 }

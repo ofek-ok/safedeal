@@ -3,6 +3,8 @@ import { CreatePropertyAnalysisDto } from './dto/create-property-analysis.dto';
 import { PipelineService, JobProgress } from '../pipeline/pipeline.service';
 import { SynthesizedReport } from '../pipeline/interfaces/synthesized-report.interface';
 import { randomUUID } from 'crypto';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class PropertiesService {
@@ -24,6 +26,17 @@ export class PropertiesService {
 
     const jobProgress = this.pipelineService.registerJob(jobId);
 
+    let tabuFileBuffer: Buffer | null = null;
+    if (dto.documents?.tabuFileName) {
+      try {
+        const filePath = path.join(process.cwd(), 'uploads', dto.documents.tabuFileName);
+        tabuFileBuffer = await fs.readFile(filePath);
+        this.logger.log(`   Tabu file loaded: ${dto.documents.tabuFileName} (${tabuFileBuffer.length} bytes)`);
+      } catch (err) {
+        this.logger.warn(`   Failed to load tabu file ${dto.documents.tabuFileName}: ${err.message}`);
+      }
+    }
+
     const payload = {
       location: {
         city: dto.location.city,
@@ -41,7 +54,7 @@ export class PropertiesService {
       },
       documents: {
         tabuFileName: dto.documents?.tabuFileName ?? null,
-        tabuFileBuffer: null,
+        tabuFileBuffer,
         additionalDocNames: dto.documents?.additionalDocNames || [],
       },
       personal: {

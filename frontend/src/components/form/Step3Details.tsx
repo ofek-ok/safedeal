@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp } from "lucide-react";
-import type { WizardFormData, UploadedFile, Step3DealDetails } from "@/types/property";
+import type { WizardFormData, Step3DealDetails } from "@/types/property";
 import { ROOMS_OPTIONS } from "@/types/property";
 import { formatThousands, stripFormatting, calcYield, formatBytes, isValidEmail } from "@/lib/utils";
 
@@ -19,16 +19,12 @@ const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasParking" | "hasStorage"
   { key: "hasElevator", label: "מעלית",           Icon: ArrowUp },
 ];
 
-function toMeta(file: File): UploadedFile {
-  return { name: file.name, size: file.size, type: file.type };
-}
-
 function FileCard({
   file,
   tag,
   onRemove,
 }: {
-  file: UploadedFile;
+  file: File;
   tag?: string;
   onRemove: () => void;
 }) {
@@ -73,7 +69,7 @@ function Dropzone({
   label: string;
   sublabel: string;
   accept: string;
-  file: UploadedFile | null;
+  file: File | null;
   onSelect: (f: File) => void;
   onRemove: () => void;
   tag?: string;
@@ -398,7 +394,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               file={data.step4.tabuFile}
               tag="נסח טאבו"
               required
-              onSelect={(f) => setStep4("tabuFile", toMeta(f))}
+              onSelect={(f) => setStep4("tabuFile", f)}
               onRemove={() => setStep4("tabuFile", null)}
             />
           </div>
@@ -415,7 +411,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
               file={data.step4.buildingFile}
               tag="תיק בניין"
-              onSelect={(f) => setStep4("buildingFile", toMeta(f))}
+              onSelect={(f) => setStep4("buildingFile", f)}
               onRemove={() => setStep4("buildingFile", null)}
             />
           </div>

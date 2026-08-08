@@ -11,11 +11,7 @@ async function bootstrap() {
 
   // ── CORS ──
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      // Add production frontend URL here
-    ],
+    origin: true, // Allow all origins temporarily for development/cloud IDEs
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
@@ -33,8 +29,8 @@ async function bootstrap() {
   );
 
   const port = process.env.PORT ?? 3001;
-  await app.listen(port);
-  logger.log(`🚀 SafeDeal API running on http://localhost:${port}/api/v1`);
+  await app.listen(port, '0.0.0.0');
+  logger.log(`🚀 SafeDeal API running on port ${port}/api/v1`);
 }
 
 bootstrap();

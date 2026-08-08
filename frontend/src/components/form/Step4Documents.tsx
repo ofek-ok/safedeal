@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { Upload, FileText, X, AlertCircle } from "lucide-react";
-import type { Step4Documents, UploadedFile } from "@/types/property";
+import type { Step4Documents } from "@/types/property";
 import { formatBytes } from "@/lib/utils";
 
 interface Props {
@@ -10,16 +10,12 @@ interface Props {
   onChange: (d: Step4Documents) => void;
 }
 
-function toMeta(file: File): UploadedFile {
-  return { name: file.name, size: file.size, type: file.type };
-}
-
 function FileCard({
   file,
   tag,
   onRemove,
 }: {
-  file: UploadedFile;
+  file: File;
   tag?: string;
   onRemove: () => void;
 }) {
@@ -64,7 +60,7 @@ function Dropzone({
   label: string;
   sublabel: string;
   accept: string;
-  file: UploadedFile | null;
+  file: File | null;
   onSelect: (f: File) => void;
   onRemove: () => void;
   tag?: string;
@@ -149,7 +145,7 @@ export function Step4Documents({ data, onChange }: Props) {
             file={data.tabuFile}
             tag="נסח טאבו"
             required
-            onSelect={(f) => onChange({ ...data, tabuFile: toMeta(f) })}
+            onSelect={(f) => onChange({ ...data, tabuFile: f })}
             onRemove={() => onChange({ ...data, tabuFile: null })}
           />
         </div>
@@ -167,7 +163,7 @@ export function Step4Documents({ data, onChange }: Props) {
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
             file={data.buildingFile}
             tag="תיק בניין"
-            onSelect={(f) => onChange({ ...data, buildingFile: toMeta(f) })}
+            onSelect={(f) => onChange({ ...data, buildingFile: f })}
             onRemove={() => onChange({ ...data, buildingFile: null })}
           />
         </div>

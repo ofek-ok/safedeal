@@ -7,7 +7,16 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { randomUUID } from 'crypto';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyAnalysisDto } from './dto/create-property-analysis.dto';
 
@@ -26,6 +35,42 @@ export class PropertiesController {
   async analyze(@Body() dto: CreatePropertyAnalysisDto) {
     this.logger.log('POST /api/v1/properties/analyze received');
     return this.propertiesService.initiateAnalysis(dto);
+  }
+
+  /**
+   * POST /api/v1/properties/upload-doc
+   * Uploads a document (like Tabu PDF) to the server temporarily.
+   */
+  @Post('upload-doc')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+          const uniqueSuffix = randomUUID();
+          const ext = extname(file.originalname);
+          cb(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  async uploadDoc(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
+          new FileTypeValidator({ fileType: '.(pdf|jpg|jpeg|png|doc|docx)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    this.logger.log(`POST /api/v1/properties/upload-doc received: ${file.filename}`);
+    return {
+      filename: file.filename,
+      originalName: file.originalname,
+      size: file.size,
+    };
   }
 
   /**

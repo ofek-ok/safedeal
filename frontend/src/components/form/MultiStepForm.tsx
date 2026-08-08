@@ -28,6 +28,28 @@ export function MultiStepForm() {
     setIsSubmitting(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+      let savedTabuName = formData.step4.tabuFile?.name ?? null;
+
+      // 1. Upload file if it exists
+      if (formData.step4.tabuFile) {
+        const uploadData = new FormData();
+        uploadData.append("file", formData.step4.tabuFile);
+        
+        try {
+          const upRes = await fetch(`${apiUrl}/api/v1/properties/upload-doc`, {
+            method: "POST",
+            body: uploadData,
+          });
+          if (upRes.ok) {
+            const upJson = await upRes.json();
+            savedTabuName = upJson.filename; // Use the unique server-generated name
+          }
+        } catch (e) {
+          console.error("File upload failed", e);
+        }
+      }
+
+      // 2. Start analysis
       const res = await fetch(`${apiUrl}/api/v1/properties/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -36,7 +58,7 @@ export function MultiStepForm() {
           location:  formData.step2,
           deal:      formData.step3,
           documents: {
-            tabuFileName:     formData.step4.tabuFile?.name     ?? null,
+            tabuFileName:     savedTabuName,
             buildingFileName: formData.step4.buildingFile?.name ?? null,
           },
         }),

@@ -63,8 +63,8 @@ export interface UploadedFile {
 }
 
 export interface Step4Documents {
-  tabuFile: UploadedFile | null;       // נסח טאבו (required for full report)
-  buildingFile: UploadedFile | null;   // תיק בניין (optional)
+  tabuFile: File | null;
+  buildingFile: File | null;
 }
 
 // ── Full form state ───────────────────────────────────────────

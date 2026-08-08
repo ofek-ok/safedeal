@@ -1,8 +1,8 @@
 "use client";
 
 import { Info, AlertCircle } from "lucide-react";
-import Autocomplete from "react-google-autocomplete";
 import type { Step2PropertyId } from "@/types/property";
+import { GovAutocomplete } from "./GovAutocomplete";
 
 interface Props {
   data: Step2PropertyId;
@@ -99,44 +99,13 @@ export function Step2PropertyId({ data, onChange, showErrors }: Props) {
       </div>
 
       <div className="space-y-8">
-        <div className="space-y-3 p-5 bg-[#00C896]/5 border border-[#00C896]/30 rounded-xl mb-6">
-          <label className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-[#00C896] font-bold">
-            חיפוש מהיר של כתובת (Google)
-          </label>
-          <Autocomplete
-            apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
-            onPlaceSelected={(place: any) => {
-              if (!place?.address_components) return;
-              let city = "";
-              let street = "";
-              let houseNum = "";
-              
-              place.address_components.forEach((comp: any) => {
-                const types = comp.types;
-                if (types.includes("locality")) city = comp.long_name;
-                if (types.includes("route")) street = comp.long_name;
-                if (types.includes("street_number")) houseNum = comp.long_name;
-              });
-
-              onChange({
-                ...data,
-                city: city || data.city,
-                street: street || data.street,
-                houseNumber: houseNum || data.houseNumber,
-              });
-            }}
-            options={{ types: ["address"], componentRestrictions: { country: "il" } }}
-            placeholder="התחילו להקליד כתובת..."
-            className="w-full bg-transparent border-b border-[#00C896]/30 py-3 px-0 text-white text-sm placeholder:text-[#00C896]/60 focus:outline-none focus:border-[#00C896] transition-colors duration-300"
-          />
-        </div>
-
         {/* City */}
         <Field id="city" label="עיר / יישוב *" error={errors.city}>
-          <EditorialInput
+          <GovAutocomplete
             id="city"
+            type="city"
             value={data.city}
-            onChange={(e) => set("city", e.target.value)}
+            onChange={(val) => set("city", val)}
             placeholder="לדוגמה: תל אביב-יפו"
             hasError={!!errors.city}
           />
@@ -146,10 +115,12 @@ export function Step2PropertyId({ data, onChange, showErrors }: Props) {
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2">
             <Field id="street" label="רחוב *" error={errors.street}>
-              <EditorialInput
+              <GovAutocomplete
                 id="street"
+                type="street"
+                cityFilter={data.city}
                 value={data.street}
-                onChange={(e) => set("street", e.target.value)}
+                onChange={(val) => set("street", val)}
                 placeholder="שם הרחוב"
                 hasError={!!errors.street}
               />

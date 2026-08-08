@@ -27,7 +27,9 @@ export function MultiStepForm() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+      if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
+      
       let savedTabuName = formData.step4.tabuFile?.name ?? null;
 
       // 1. Upload file if it exists
@@ -43,9 +45,13 @@ export function MultiStepForm() {
           if (upRes.ok) {
             const upJson = await upRes.json();
             savedTabuName = upJson.filename; // Use the unique server-generated name
+          } else {
+            console.error("Upload failed with status", upRes.status);
+            alert(`Upload failed: ${upRes.status}`);
           }
         } catch (e) {
           console.error("File upload failed", e);
+          alert("File upload connection error");
         }
       }
 
@@ -63,10 +69,20 @@ export function MultiStepForm() {
           },
         }),
       });
-      const json = res.ok ? await res.json() : {};
-      setJobId(json.jobId ?? `SD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`);
-    } catch {
-      setJobId(`SD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Analysis failed:", res.status, errorText);
+        alert(`Analysis API failed: ${res.status}\nCheck console for details.\nURL: ${apiUrl}/api/v1/properties/analyze`);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const json = await res.json();
+      setJobId(json.jobId);
+    } catch (err) {
+      console.error("Submission error", err);
+      alert("Submission connection error");
     } finally {
       setIsSubmitting(false);
       setSubmitted(true);

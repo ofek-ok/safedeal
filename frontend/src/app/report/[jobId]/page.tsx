@@ -13,12 +13,11 @@ import type { SynthesizedReport, JobProgress } from "@/types/report";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-interface Props {
-  params: { jobId: string };
-}
+import { useParams } from "next/navigation";
 
-export default function ReportByIdPage({ params }: Props) {
-  const { jobId } = params;
+export default function ReportByIdPage() {
+  const params = useParams();
+  const jobId = params?.jobId as string;
   const [progress, setProgress] = useState<JobProgress | null>(null);
   const [report, setReport] = useState<SynthesizedReport | null>(null);
   const [error, setError] = useState<string | null>(null);

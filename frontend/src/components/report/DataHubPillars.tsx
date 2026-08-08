@@ -236,9 +236,14 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
                       </p>
 
                       {metric.details && (
-                        <p className="text-xs text-slate-300 leading-relaxed font-normal">
-                          {metric.details}
-                        </p>
+                        <div className="flex items-start gap-2 mt-2 bg-indigo-950/30 p-2.5 rounded-lg border border-indigo-500/20">
+                          <span className="shrink-0 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded">
+                            מקור נתונים
+                          </span>
+                          <p className="text-[11px] text-indigo-200/80 leading-relaxed font-normal">
+                            {metric.details}
+                          </p>
+                        </div>
                       )}
                     </div>
                   ))}

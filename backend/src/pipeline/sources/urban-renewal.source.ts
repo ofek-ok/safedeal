@@ -2,31 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SourceResult, UrbanRenewalData } from '../interfaces/pipeline-data.interface';
 
-interface DataGovRecord {
-  GUSH?: string;
-  HLK?: string;
-  PROJ_NAME?: string;
-  CITY?: string;
-  STATUS?: string;
-  APPROVAL_DATE?: string;
-  UNITS_DEMO?: number;
-  UNITS_BUILD?: number;
-  _id?: number;
-}
-
-interface DataGovResponse {
-  success: boolean;
-  result?: {
-    records: DataGovRecord[];
-    total: number;
-  };
-  error?: { message: string };
-}
-
 @Injectable()
 export class UrbanRenewalSource {
   private readonly logger = new Logger(UrbanRenewalSource.name);
-  private readonly baseUrl = 'https://data.gov.il/api/3/action/datastore_search';
+  private readonly gisUrl = 'https://gisserver.gov.il/arcgis/rest/services/UrbanRenewal/MapServer/0/query';
 
   constructor(private readonly config: ConfigService) {}
 
@@ -34,94 +13,106 @@ export class UrbanRenewalSource {
     block: string;
     parcel: string;
     city?: string;
+    xCoord?: number;
+    yCoord?: number;
   }): Promise<SourceResult<UrbanRenewalData>> {
-    const resourceId =
-      this.config.get<string>('URBAN_RENEWAL_RESOURCE_ID') ||
-      'd745a928-d861-4ffe-84a0-c8db5d90e7ee';
-
-    try {
-      // Try block/parcel lookup first
-      const filters = JSON.stringify({ GUSH: params.block });
-      const url = `${this.baseUrl}?resource_id=${resourceId}&filters=${encodeURIComponent(filters)}&limit=10`;
-
-      this.logger.log(`UrbanRenewal: Querying data.gov.il for block=${params.block}`);
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(10_000),
-        headers: { Accept: 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error(`data.gov.il HTTP ${response.status}`);
-      }
-
-      const json = (await response.json()) as DataGovResponse;
-
-      if (!json.success || !json.result) {
-        throw new Error(`data.gov.il API error: ${json.error?.message || 'Unknown'}`);
-      }
-
-      const records = json.result.records;
-      const hasProject = records.length > 0;
-
-      if (hasProject) {
-        const record = records[0];
-        return {
-          source: 'urban_renewal',
-          success: true,
-          data: {
-            hasActiveProject: true,
-            projectName: record.PROJ_NAME || 'פרויקט התחדשות עירונית',
-            status: record.STATUS || 'בתהליך',
-            approvalDate: record.APPROVAL_DATE || null,
-            unitsToDemo: record.UNITS_DEMO || null,
-            unitsToBuild: record.UNITS_BUILD || null,
-            nearbyProjects: records.length,
-            dataSource: 'הרשות הלאומית להתחדשות עירונית — data.gov.il',
-          },
-        };
-      }
-
-      // No project found for this block — check city-level
-      const cityFilters = JSON.stringify({ CITY: params.city });
-      const cityUrl = `${this.baseUrl}?resource_id=${resourceId}&filters=${encodeURIComponent(cityFilters)}&limit=5`;
-      const cityResponse = await fetch(cityUrl, { signal: AbortSignal.timeout(8_000) });
-      const cityJson = (await cityResponse.json()) as DataGovResponse;
-      const cityRecords = cityJson.result?.records || [];
-
+    
+    // Check if coordinates were provided by a previous pipeline step (e.g., GovMap)
+    if (!params.xCoord || !params.yCoord) {
+      this.logger.warn(`UrbanRenewal: Missing ITM coordinates for block ${params.block}. Skipping GIS intersect.`);
       return {
         source: 'urban_renewal',
         success: true,
         data: {
           hasActiveProject: false,
           projectName: null,
-          status: 'לא נמצאו פרויקטים פעילים בגוש זה',
-          approvalDate: null,
-          unitsToDemo: null,
-          unitsToBuild: null,
-          nearbyProjects: cityRecords.length,
-          dataSource: 'הרשות הלאומית להתחדשות עירונית — data.gov.il',
-        },
-        warnings: cityRecords.length > 0
-          ? [`נמצאו ${cityRecords.length} פרויקטים ב${params.city || 'העיר'} — לא בגוש זה ספציפית`]
-          : [],
-      };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`UrbanRenewalSource failed: ${msg}`);
-      return {
-        source: 'urban_renewal',
-        success: true,
-        data: {
-          hasActiveProject: false,
-          projectName: null,
-          status: 'לא ניתן לאמת — נא לבדוק ישירות מול הרשות להתחדשות עירונית',
+          status: 'חסרות קואורדינטות מדויקות לבדיקת מתחם',
           approvalDate: null,
           unitsToDemo: null,
           unitsToBuild: null,
           nearbyProjects: 0,
-          dataSource: 'הרשות הלאומית להתחדשות עירונית — data.gov.il',
+          dataSource: 'הרשות הממשלתית להתחדשות עירונית — GIS',
         },
-        warnings: [`Urban renewal API unavailable: ${msg}`],
+      };
+    }
+
+    try {
+      this.logger.log(`UrbanRenewal: Querying GIS spatial intersect at X:${params.xCoord}, Y:${params.yCoord}`);
+      
+      const searchParams = new URLSearchParams({
+        f: 'json',
+        returnGeometry: 'false',
+        spatialRel: 'esriSpatialRelIntersects',
+        geometry: JSON.stringify({ x: params.xCoord, y: params.yCoord }),
+        geometryType: 'esriGeometryPoint',
+        inSR: '2039',
+        outFields: 'COMPLEX_NAME,COMPLEX_STATUS,HOUSING_UNITS_ADD,DEVELOPER_NAME,DECLARATION_DATE'
+      });
+
+      const response = await fetch(`${this.gisUrl}?${searchParams.toString()}`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!response.ok) {
+        throw new Error(`GIS Server HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const features = data.features || [];
+
+      if (features.length === 0) {
+        return {
+          source: 'urban_renewal',
+          success: true,
+          data: {
+            hasActiveProject: false,
+            projectName: null,
+            status: 'הנכס אינו ממוקם בתוך מתחם התחדשות עירונית מוכרז',
+            approvalDate: null,
+            unitsToDemo: null,
+            unitsToBuild: null,
+            nearbyProjects: 0,
+            dataSource: 'הרשות הממשלתית להתחדשות עירונית — GIS',
+          },
+        };
+      }
+
+      const siteInfo = features[0].attributes || {};
+      
+      return {
+        source: 'urban_renewal',
+        success: true,
+        data: {
+          hasActiveProject: true,
+          projectName: siteInfo.COMPLEX_NAME || 'מתחם התחדשות עירונית',
+          status: siteInfo.COMPLEX_STATUS || 'מוכרז',
+          approvalDate: siteInfo.DECLARATION_DATE || null,
+          unitsToDemo: null, // Endpoint doesn't explicitly return demo units
+          unitsToBuild: siteInfo.HOUSING_UNITS_ADD || null,
+          nearbyProjects: features.length,
+          dataSource: 'הרשות הממשלתית להתחדשות עירונית — GIS',
+        },
+        warnings: siteInfo.DEVELOPER_NAME ? [`היזם המבצע: ${siteInfo.DEVELOPER_NAME}`] : undefined
+      };
+
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`UrbanRenewalSource failed: ${msg}`);
+      
+      return {
+        source: 'urban_renewal',
+        success: true,
+        data: {
+          hasActiveProject: false,
+          projectName: null,
+          status: 'לא ניתן לאמת מרחבית — נא לבדוק במפות העירייה / רשות להתחדשות עירונית',
+          approvalDate: null,
+          unitsToDemo: null,
+          unitsToBuild: null,
+          nearbyProjects: 0,
+          dataSource: 'הרשות הממשלתית להתחדשות עירונית — GIS (Fallback)',
+        },
+        warnings: [`Urban renewal GIS unavailable: ${msg}`],
       };
     }
   }

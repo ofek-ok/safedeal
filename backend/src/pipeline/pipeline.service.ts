@@ -11,7 +11,7 @@ import { RegistrarCompaniesSource } from './sources/registrar-companies.source';
 import { PledgesSource } from './sources/pledges.source';
 import { JudicialSource } from './sources/judicial.source';
 import { AiSynthesisService } from './ai-synthesis.service';
-import { AggregatedPipelineData } from './interfaces/pipeline-data.interface';
+import { AggregatedPipelineData, SourceResult, GovMapData } from './interfaces/pipeline-data.interface';
 import { SynthesizedReport } from './interfaces/synthesized-report.interface';
 
 export interface JobProgress {
@@ -131,9 +131,28 @@ export class PipelineService {
       }
     };
 
-    // ── Execute all 11 sources concurrently ──────────────────────────────────
+    // ── 1. GovMap (Run first to provide coordinates for spatial APIs) ──────────
+    let govmapRes: PromiseSettledResult<SourceResult<GovMapData>>;
+    try {
+      const data = await guard(
+        () => this.govMapSource.fetch({
+          address: `${payload.location.street} ${payload.location.houseNumber}, ${payload.location.city}`,
+          city: payload.location.city,
+          street: payload.location.street,
+          houseNumber: payload.location.houseNumber,
+        }),
+        'GovMap',
+      );
+      govmapRes = { status: 'fulfilled', value: data };
+    } catch (err) {
+      govmapRes = { status: 'rejected', reason: err };
+    }
+
+    const xCoord = govmapRes.status === 'fulfilled' ? govmapRes.value.data.itmCoordinates?.x : undefined;
+    const yCoord = govmapRes.status === 'fulfilled' ? govmapRes.value.data.itmCoordinates?.y : undefined;
+
+    // ── Execute remaining 10 sources concurrently ────────────────────────────
     const [
-      govmapRes,
       taxRes,
       realEstateRes,
       xplanRes,
@@ -145,17 +164,6 @@ export class PipelineService {
       pledgesRes,
       judicialRes,
     ] = await Promise.allSettled([
-      // 1. GovMap
-      guard(
-        () => this.govMapSource.fetch({
-          address: `${payload.location.street} ${payload.location.houseNumber}, ${payload.location.city}`,
-          city: payload.location.city,
-          street: payload.location.street,
-          houseNumber: payload.location.houseNumber,
-        }),
-        'GovMap',
-      ),
-
       // 2. Tax Authority — nadlan.gov.il deals
       guard(
         () => this.taxAuthoritySource.fetch({ block, parcel, city: payload.location.city }),
@@ -183,12 +191,14 @@ export class PipelineService {
         'הלמ"ס',
       ),
 
-      // 6. Urban Renewal — data.gov.il
+      // 6. Urban Renewal — GIS Intersection
       guard(
         () => this.urbanRenewalSource.fetch({
           block,
           parcel,
           city: payload.location.city,
+          xCoord,
+          yCoord,
         }),
         'התחדשות עירונית',
       ),

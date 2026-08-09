@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SourceResult, TaxAuthorityData } from '../interfaces/pipeline-data.interface';
+import { chromium } from 'playwright-extra';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+
+chromium.use(StealthPlugin());
 
 interface NadlanDeal {
   DEALDATE?: string;
@@ -26,41 +31,58 @@ interface NadlanResponse {
 @Injectable()
 export class TaxAuthoritySource {
   private readonly logger = new Logger(TaxAuthoritySource.name);
-  private readonly baseUrl: string;
 
-  constructor(private readonly config: ConfigService) {
-    this.baseUrl =
-      this.config.get<string>('NADLAN_BASE_URL') ||
-      'https://www.nadlan.gov.il/Nadlan.REST';
-  }
+  constructor(private readonly config: ConfigService) {}
 
   async fetch(params: {
     block: string;
     parcel: string;
     city?: string;
   }): Promise<SourceResult<TaxAuthorityData>> {
+    let browser: any = null;
     try {
-      // Use nadlan.gov.il internal API (used by their own SPA)
-      const url =
-        `${this.baseUrl}/getDealsByBlock` +
-        `?block=${params.block}&parcel=${params.parcel}&subtypeId=0&assestStatusId=0`;
-
-      this.logger.log(`TaxAuthority: Querying nadlan.gov.il block=${params.block} parcel=${params.parcel}`);
-
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(12_000),
-        headers: {
-          Accept: 'application/json',
-          Referer: 'https://www.nadlan.gov.il/',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
+      this.logger.log(`TaxAuthority: Launching headless browser for block=${params.block} parcel=${params.parcel}`);
+      
+      browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       });
 
-      if (!response.ok) {
-        throw new Error(`nadlan.gov.il HTTP ${response.status}`);
+      const context = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: { width: 1280, height: 720 },
+      });
+      const page = await context.newPage();
+
+      this.logger.log(`TaxAuthority: Navigating to nadlan.gov.il to bypass WAF`);
+      await page.goto('https://www.nadlan.gov.il/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+      
+      this.logger.log(`TaxAuthority: Executing internal fetch in browser context`);
+      // Execute the request inside the browser to leverage WAF cookies
+      const jsonStr = await page.evaluate(async ({ b, p }) => {
+        try {
+          const res = await fetch(`https://www.nadlan.gov.il/Nadlan.REST/getDealsByBlock?block=${b}&parcel=${p}&subtypeId=0&assestStatusId=0`, {
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Referer': 'https://www.nadlan.gov.il/'
+            }
+          });
+          return await res.text();
+        } catch (e: any) {
+          return JSON.stringify({ Success: false, ErrorMessage: e.message });
+        }
+      }, { b: params.block, p: params.parcel });
+
+      let json: NadlanResponse = {};
+      try {
+        json = JSON.parse(jsonStr) as NadlanResponse;
+      } catch (parseErr) {
+        throw new Error(`Failed to parse Nadlan API response: HTML/WAF block detected`);
       }
 
-      const json = (await response.json()) as NadlanResponse;
+      await browser.close();
+      browser = null;
 
       if (!json.Success && json.ErrorMessage) {
         throw new Error(`nadlan.gov.il: ${json.ErrorMessage}`);
@@ -78,7 +100,7 @@ export class TaxAuthoritySource {
             lastSaleDate: null,
             lastSalePrice: null,
             totalDeals: 0,
-            dataSource: 'רשות המסים — פורטל נדל"ן gov.il',
+            dataSource: 'רשות המסים — פורטל נדל"ן gov.il (Scraper)',
           },
           warnings: ['No transactions found for this block/parcel'],
         };
@@ -118,12 +140,13 @@ export class TaxAuthoritySource {
           lastSaleDate: lastDeal?.DEALDATE || null,
           lastSalePrice: lastDeal?.DEALPRICE || null,
           totalDeals: deals.length,
-          dataSource: 'רשות המסים — פורטל נדל"ן gov.il',
+          dataSource: 'רשות המסים — פורטל נדל"ן gov.il (Scraper)',
         },
       };
     } catch (err: unknown) {
+      if (browser) await browser.close().catch(() => {});
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`TaxAuthoritySource failed: ${msg}`);
+      this.logger.warn(`TaxAuthoritySource Playwright failed: ${msg}`);
 
       // Graceful fallback with clear indication
       return {
@@ -135,7 +158,7 @@ export class TaxAuthoritySource {
           lastSaleDate: null,
           lastSalePrice: null,
           totalDeals: 0,
-          dataSource: 'רשות המסים — פורטל נדל"ן gov.il',
+          dataSource: 'רשות המסים — פורטל נדל"ן gov.il (Fallback)',
         },
         warnings: [`Tax authority API unavailable: ${msg}. Check nadlan.gov.il manually.`],
       };

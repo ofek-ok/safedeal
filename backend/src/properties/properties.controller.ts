@@ -69,7 +69,9 @@ export class PropertiesController {
     )
     file: Express.Multer.File,
   ) {
-    this.logger.log(`POST /api/v1/properties/upload-doc received: ${file.filename}`);
+    this.logger.log(
+      `POST /api/v1/properties/upload-doc received: ${file.filename}`,
+    );
     return {
       filename: file.filename,
       originalName: file.originalname,
@@ -78,8 +80,14 @@ export class PropertiesController {
   }
 
   @Post('cadastral-lookup')
-  async lookupCadastral(@Body() body: { city: string; street: string; houseNumber: string }) {
-    return this.cadastralService.lookup(body.city, body.street, body.houseNumber);
+  async lookupCadastral(
+    @Body() body: { city: string; street: string; houseNumber: string },
+  ) {
+    return this.cadastralService.lookup(
+      body.city,
+      body.street,
+      body.houseNumber,
+    );
   }
 
   /**

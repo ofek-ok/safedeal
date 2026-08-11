@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SourceResult, PledgesData } from '../interfaces/pipeline-data.interface';
+import {
+  SourceResult,
+  PledgesData,
+} from '../interfaces/pipeline-data.interface';
 
 /**
  * ── רשם המשכונות (Source 10) ────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Mail, Phone, AlertCircle } from "lucide-react";
+import { User, Mail, Phone, AlertCircle, Home, ClipboardList, TrendingUp } from "lucide-react";
 import type { Step1Personal, UserPurpose } from "@/types/property";
 import { USER_PURPOSE_LABELS } from "@/types/property";
 import { isValidEmail } from "@/lib/utils";
@@ -11,10 +11,10 @@ interface Props {
   showErrors: boolean;
 }
 
-const PURPOSES: { value: UserPurpose; emoji: string }[] = [
-  { value: "buyer",    emoji: "🏠" },
-  { value: "seller",   emoji: "📋" },
-  { value: "investor", emoji: "📈" },
+const PURPOSES: { value: UserPurpose; icon: React.ElementType }[] = [
+  { value: "buyer",    icon: Home },
+  { value: "seller",   icon: ClipboardList },
+  { value: "investor", icon: TrendingUp },
 ];
 
 function Field({
@@ -158,7 +158,7 @@ export function Step1Personal({ data, onChange, showErrors }: Props) {
         {/* Purpose */}
         <Field id="purpose" label="מטרת הבדיקה">
           <div className="grid grid-cols-3 gap-4">
-            {PURPOSES.map(({ value, emoji }) => {
+            {PURPOSES.map(({ value, icon: Icon }) => {
               const active = data.purpose === value;
               return (
                 <button
@@ -172,7 +172,7 @@ export function Step1Personal({ data, onChange, showErrors }: Props) {
                       : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.2]"
                   }`}
                 >
-                  <span className="text-2xl opacity-80">{emoji}</span>
+                  <Icon size={20} className={active ? "text-[#00C896]" : "text-slate-400"} />
                   <span className={`text-[11px] uppercase tracking-widest ${active ? "text-[#00C896]" : "text-slate-400"}`}>
                     {USER_PURPOSE_LABELS[value]}
                   </span>

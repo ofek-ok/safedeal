@@ -25,6 +25,28 @@ export interface OperativeStep {
   description: string;
 }
 
+export interface ComparableDeal {
+  dealDate: string;
+  address: string;
+  rooms: string;
+  sqm: number;
+  price: number;
+  pricePerSqm: number;
+}
+
+export interface PropertyValuation {
+  estimatedValue: number;
+  minValue: number;
+  maxValue: number;
+  askingPrice: number;
+  priceDiffPercent: number;
+  dealFairness: 'fair' | 'underpriced' | 'overpriced';
+  fairnessLabel: string;
+  confidenceLevel: 'high' | 'medium' | 'low';
+  confidenceReason: string;
+  comparableDeals: ComparableDeal[];
+}
+
 export interface SynthesizedReport {
   jobId: string;
   generatedAt: string;
@@ -38,6 +60,7 @@ export interface SynthesizedReport {
     areaSqm: string;
     rooms: string;
   };
+  valuation?: PropertyValuation;
   executiveSummary: {
     title: string;
     badgeText: string;

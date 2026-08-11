@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SourceResult, JudicialData } from '../interfaces/pipeline-data.interface';
+import {
+  SourceResult,
+  JudicialData,
+} from '../interfaces/pipeline-data.interface';
 
 /**
  * ── נבו / נט המשפט (Source 11) ──────────────────────────────────────────────
@@ -35,15 +38,24 @@ export class JudicialSource {
     buyerId?: string;
   }): Promise<SourceResult<JudicialData>> {
     const subjects = [
-      params.sellerName && { role: 'מוכר', name: params.sellerName, id: params.sellerId },
-      params.buyerName && { role: 'קונה', name: params.buyerName, id: params.buyerId },
+      params.sellerName && {
+        role: 'מוכר',
+        name: params.sellerName,
+        id: params.sellerId,
+      },
+      params.buyerName && {
+        role: 'קונה',
+        name: params.buyerName,
+        id: params.buyerId,
+      },
     ].filter(Boolean) as { role: string; name: string; id?: string }[];
 
     this.logger.log(
       `JudicialSource: Providing manual verification guidance for ${subjects.map((s) => s.name).join(', ')}`,
     );
 
-    const manualCheckUrl = 'https://www.court.gov.il/NGCS/main/CasesSearch.aspx';
+    const manualCheckUrl =
+      'https://www.court.gov.il/NGCS/main/CasesSearch.aspx';
     const nevojUrl = 'https://www.nevo.co.il';
 
     return {
@@ -64,12 +76,13 @@ export class JudicialSource {
         ].join(' | '),
         dataSource: 'בית המשפט — court.gov.il / נבו',
       },
-      warnings: subjects.length > 0
-        ? subjects.map(
-            (s) =>
-              `נא לבדוק ${s.role} (${s.name}${s.id ? ` / ת"ז: ${s.id}` : ''}) ב: ${manualCheckUrl}`,
-          )
-        : ['לא סופקו פרטי צדדים לבדיקה משפטית'],
+      warnings:
+        subjects.length > 0
+          ? subjects.map(
+              (s) =>
+                `נא לבדוק ${s.role} (${s.name}${s.id ? ` / ת"ז: ${s.id}` : ''}) ב: ${manualCheckUrl}`,
+            )
+          : ['לא סופקו פרטי צדדים לבדיקה משפטית'],
     };
   }
 }

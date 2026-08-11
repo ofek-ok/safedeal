@@ -37,10 +37,41 @@ export const DEAL_TYPE_LABELS: Record<DealType, string> = {
   developer: "קבלן / יזם",
 };
 
+export type PropertyCondition = "new-contractor" | "renovated" | "good" | "needs-renovation";
+
+export const PROPERTY_CONDITION_LABELS: Record<PropertyCondition, string> = {
+  "new-contractor": "חדש מקבלן",
+  renovated: "משופץ אדריכלית",
+  good: "שמור כחדש",
+  "needs-renovation": "דורש שיפוץ",
+};
+
 export const ROOMS_OPTIONS = [
   "1", "1.5", "2", "2.5", "3", "3.5",
   "4", "4.5", "5", "5.5", "6", "6+",
 ] as const;
+
+export interface ComparableDeal {
+  dealDate: string;
+  address: string;
+  rooms: string;
+  sqm: number;
+  price: number;
+  pricePerSqm: number;
+}
+
+export interface PropertyValuation {
+  estimatedValue: number;
+  minValue: number;
+  maxValue: number;
+  askingPrice: number;
+  priceDiffPercent: number;
+  dealFairness: "fair" | "underpriced" | "overpriced";
+  fairnessLabel: string;
+  confidenceLevel: "high" | "medium" | "low";
+  confidenceReason: string;
+  comparableDeals: ComparableDeal[];
+}
 
 export interface Step3DealDetails {
   dealType: DealType | "";
@@ -48,10 +79,14 @@ export interface Step3DealDetails {
   propertyArea: string;  // m²
   roomsCount: string;
   floorNumber: string;
+  condition: PropertyCondition | "";
   hasParking: boolean;
   hasStorage: boolean;
   hasMamad: boolean;     // ממ"ד (safe room)
   hasElevator: boolean;  // מעלית
+  hasBalcony: boolean;   // מרפסת
+  isBuildingOnPillars: boolean; // בניין על עמודים
+  hasAccessibility: boolean;    // גישה לנכים
   monthlyRent: string;   // optional
 }
 
@@ -98,10 +133,14 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     propertyArea: "",
     roomsCount: "",
     floorNumber: "",
+    condition: "",
     hasParking: false,
     hasStorage: false,
     hasMamad: false,
     hasElevator: false,
+    hasBalcony: false,
+    isBuildingOnPillars: false,
+    hasAccessibility: false,
     monthlyRent: "",
   },
   step4: {

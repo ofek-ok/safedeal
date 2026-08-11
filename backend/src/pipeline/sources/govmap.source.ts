@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SourceResult, GovMapData } from '../interfaces/pipeline-data.interface';
+import {
+  SourceResult,
+  GovMapData,
+} from '../interfaces/pipeline-data.interface';
 
 interface GovMapApiResponse {
   ResultType: number;
@@ -34,8 +37,9 @@ export class GovMapSource {
     street?: string;
     houseNumber?: string;
   }): Promise<SourceResult<GovMapData>> {
-    const fullAddress = location.address
-      || `${location.street || ''} ${location.houseNumber || ''}, ${location.city || ''}`.trim();
+    const fullAddress =
+      location.address ||
+      `${location.street || ''} ${location.houseNumber || ''}, ${location.city || ''}`.trim();
 
     try {
       const appId = this.config.get<string>('GOVMAP_APP_ID') || '';
@@ -49,8 +53,8 @@ export class GovMapSource {
       const response = await fetch(`${this.baseUrl}?${params}`, {
         signal: AbortSignal.timeout(8_000),
         headers: {
-          'Accept': 'application/json',
-          'Referer': 'https://www.govmap.gov.il/',
+          Accept: 'application/json',
+          Referer: 'https://www.govmap.gov.il/',
         },
       });
 
@@ -61,7 +65,9 @@ export class GovMapSource {
       const data = (await response.json()) as GovMapApiResponse;
 
       if (data.ResultType !== 1 || !data.X || !data.Y) {
-        throw new Error(`GovMap: Address not resolved (ResultType=${data.ResultType})`);
+        throw new Error(
+          `GovMap: Address not resolved (ResultType=${data.ResultType})`,
+        );
       }
 
       const wgs84 = itmToWgs84(data.X, data.Y);
@@ -96,7 +102,9 @@ export class GovMapSource {
           itmCoordinates: null,
           objectId: null,
         },
-        warnings: [`GovMap geocoding failed: ${msg}. Using approximate coordinates.`],
+        warnings: [
+          `GovMap geocoding failed: ${msg}. Using approximate coordinates.`,
+        ],
       };
     }
   }

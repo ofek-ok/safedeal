@@ -12,7 +12,9 @@ export class PropertiesService {
 
   constructor(private readonly pipelineService: PipelineService) {}
 
-  async initiateAnalysis(dto: CreatePropertyAnalysisDto): Promise<{ jobId: string } & JobProgress> {
+  async initiateAnalysis(
+    dto: CreatePropertyAnalysisDto,
+  ): Promise<{ jobId: string } & JobProgress> {
     const jobId = `SD-${randomUUID().slice(0, 8).toUpperCase()}`;
 
     // Resolve street from either "street" or legacy "streetName"
@@ -21,19 +23,31 @@ export class PropertiesService {
     const deal = dto.deal || dto.details || {};
 
     this.logger.log(`📥 Analysis request — Job: ${jobId}`);
-    this.logger.log(`   Property: ${street} ${dto.location.houseNumber || ''}, ${dto.location.city}`);
-    this.logger.log(`   Personal: ${dto.personal?.fullName || 'anonymous'} (${dto.personal?.email || 'no email'})`);
+    this.logger.log(
+      `   Property: ${street} ${dto.location.houseNumber || ''}, ${dto.location.city}`,
+    );
+    this.logger.log(
+      `   Personal: ${dto.personal?.fullName || 'anonymous'} (${dto.personal?.email || 'no email'})`,
+    );
 
     const jobProgress = this.pipelineService.registerJob(jobId);
 
     let tabuFileBuffer: Buffer | null = null;
     if (dto.documents?.tabuFileName) {
       try {
-        const filePath = path.join(process.cwd(), 'uploads', dto.documents.tabuFileName);
+        const filePath = path.join(
+          process.cwd(),
+          'uploads',
+          dto.documents.tabuFileName,
+        );
         tabuFileBuffer = await fs.readFile(filePath);
-        this.logger.log(`   Tabu file loaded: ${dto.documents.tabuFileName} (${tabuFileBuffer.length} bytes)`);
+        this.logger.log(
+          `   Tabu file loaded: ${dto.documents.tabuFileName} (${tabuFileBuffer.length} bytes)`,
+        );
       } catch (err) {
-        this.logger.warn(`   Failed to load tabu file ${dto.documents.tabuFileName}: ${err.message}`);
+        this.logger.warn(
+          `   Failed to load tabu file ${dto.documents.tabuFileName}: ${err.message}`,
+        );
       }
     }
 
@@ -70,7 +84,10 @@ export class PropertiesService {
 
     // Run async in background — do not await
     this.pipelineService.runPipeline(jobId, payload).catch((err) => {
-      this.logger.error(`❌ Pipeline failed — Job ${jobId}: ${err?.message}`, err?.stack);
+      this.logger.error(
+        `❌ Pipeline failed — Job ${jobId}: ${err?.message}`,
+        err?.stack,
+      );
     });
 
     return { ...jobProgress, jobId };
@@ -92,6 +109,8 @@ export class PropertiesService {
     if (!status) {
       throw new NotFoundException(`דוח עבור בקשה #${jobId} לא נמצא`);
     }
-    throw new NotFoundException(`הדוח עבור #${jobId} עדיין בעיבוד (${status.percentComplete}%)`);
+    throw new NotFoundException(
+      `הדוח עבור #${jobId} עדיין בעיבוד (${status.percentComplete}%)`,
+    );
   }
 }

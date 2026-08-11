@@ -445,7 +445,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
             </div>
             <div className="space-y-3">
               <label htmlFor="email" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">
-                דוא"ל
+                דוא&quot;ל
               </label>
               <IconInput
                 id="email"

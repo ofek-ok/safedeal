@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SourceResult, RealEstateGovData } from '../interfaces/pipeline-data.interface';
+import {
+  SourceResult,
+  RealEstateGovData,
+} from '../interfaces/pipeline-data.interface';
 
 interface NadlanStatsResponse {
   Data?: {
@@ -45,10 +48,11 @@ export class RealEstateGovSource {
   }): Promise<SourceResult<RealEstateGovData>> {
     try {
       // Fetch city-level stats from nadlan.gov.il
-      const cityStatsUrl =
-        `${this.baseUrl}/getAssetsByCity?city=${encodeURIComponent(params.city)}&subtypeId=0&assestStatusId=0&fromYear=2022&toYear=2025`;
+      const cityStatsUrl = `${this.baseUrl}/getAssetsByCity?city=${encodeURIComponent(params.city)}&subtypeId=0&assestStatusId=0&fromYear=2022&toYear=2025`;
 
-      this.logger.log(`RealEstateGov: Querying nadlan.gov.il for city="${params.city}"`);
+      this.logger.log(
+        `RealEstateGov: Querying nadlan.gov.il for city="${params.city}"`,
+      );
 
       const response = await fetch(cityStatsUrl, {
         signal: AbortSignal.timeout(12_000),
@@ -66,20 +70,28 @@ export class RealEstateGovSource {
       const json = (await response.json()) as NadlanStatsResponse;
 
       if (!json.Success || !json.Data || json.Data.length === 0) {
-        throw new Error(`nadlan.gov.il: No city data found for "${params.city}"`);
+        throw new Error(
+          `nadlan.gov.il: No city data found for "${params.city}"`,
+        );
       }
 
       const latestStats = json.Data[json.Data.length - 1];
-      const avgPricePerSqm = latestStats.AvgDealAmount && latestStats.AvgArea
-        ? Math.round(latestStats.AvgDealAmount / latestStats.AvgArea)
-        : null;
+      const avgPricePerSqm =
+        latestStats.AvgDealAmount && latestStats.AvgArea
+          ? Math.round(latestStats.AvgDealAmount / latestStats.AvgArea)
+          : null;
 
       // Calculate year-over-year change
-      const prevYearStats = json.Data.length > 4 ? json.Data[json.Data.length - 5] : null;
+      const prevYearStats =
+        json.Data.length > 4 ? json.Data[json.Data.length - 5] : null;
       let annualChange: number | null = null;
       if (prevYearStats?.AvgDealAmount && latestStats.AvgDealAmount) {
         annualChange = parseFloat(
-          (((latestStats.AvgDealAmount - prevYearStats.AvgDealAmount) / prevYearStats.AvgDealAmount) * 100).toFixed(1),
+          (
+            ((latestStats.AvgDealAmount - prevYearStats.AvgDealAmount) /
+              prevYearStats.AvgDealAmount) *
+            100
+          ).toFixed(1),
         );
       }
 
@@ -87,7 +99,9 @@ export class RealEstateGovSource {
         source: 'real_estate_gov',
         success: true,
         data: {
-          neighborhoodIndex: avgPricePerSqm ? Math.round(avgPricePerSqm / 1000) : null,
+          neighborhoodIndex: avgPricePerSqm
+            ? Math.round(avgPricePerSqm / 1000)
+            : null,
           avgPricePerSqmCity: avgPricePerSqm,
           annualPriceChangePercent: annualChange,
           totalDealsInArea: latestStats.AssetCount || null,

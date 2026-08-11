@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SourceResult, RegistrarCompaniesData } from '../interfaces/pipeline-data.interface';
+import {
+  SourceResult,
+  RegistrarCompaniesData,
+} from '../interfaces/pipeline-data.interface';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { chromium } from 'playwright-extra';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -27,7 +30,9 @@ export class RegistrarCompaniesSource {
   constructor(private readonly config: ConfigService) {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY is not set. Registrar of Companies AI parsing might fail.');
+      this.logger.warn(
+        'GEMINI_API_KEY is not set. Registrar of Companies AI parsing might fail.',
+      );
     }
     this.genAI = new GoogleGenerativeAI(apiKey || 'dummy-key');
   }
@@ -37,8 +42,9 @@ export class RegistrarCompaniesSource {
     companyId?: string;
     sellerName?: string;
   }): Promise<SourceResult<RegistrarCompaniesData>> {
-    const searchTerm = params.companyId || params.companyName || params.sellerName;
-    
+    const searchTerm =
+      params.companyId || params.companyName || params.sellerName;
+
     if (!searchTerm) {
       return {
         source: 'registrar_companies',
@@ -54,21 +60,31 @@ export class RegistrarCompaniesSource {
 
     let browser: any = null;
     try {
-      this.logger.log(`RegistrarCompanies: Launching Playwright to search for "${searchTerm}"`);
-      
+      this.logger.log(
+        `RegistrarCompanies: Launching Playwright to search for "${searchTerm}"`,
+      );
+
       browser = await chromium.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+        ],
       });
 
       const context = await browser.newContext({
         locale: 'he-IL',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       });
       const page = await context.newPage();
 
       // Navigate to the search page
-      await page.goto('https://ica.justice.gov.il/GenericSearch/SearchCompany', { waitUntil: 'networkidle', timeout: 15000 });
+      await page.goto(
+        'https://ica.justice.gov.il/GenericSearch/SearchCompany',
+        { waitUntil: 'networkidle', timeout: 15000 },
+      );
 
       // Fill in the search term. Assume #CompanyNumber for ID, else use #CompanyName (guessing selector)
       if (params.companyId) {
@@ -79,8 +95,10 @@ export class RegistrarCompaniesSource {
 
       // Click search
       await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-        page.click('#btnSearch').catch(() => {})
+        page
+          .waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 })
+          .catch(() => {}),
+        page.click('#btnSearch').catch(() => {}),
       ]);
 
       // Wait a moment for dynamic rendering if needed
@@ -88,7 +106,10 @@ export class RegistrarCompaniesSource {
 
       // Extract the raw text from the DOM
       const companyDataText = await page.evaluate(() => {
-        const container = (document.querySelector('.company-details-container') as HTMLElement) || document.body;
+        const container =
+          (document.querySelector(
+            '.company-details-container',
+          ) as HTMLElement) || document.body;
         return container.innerText;
       });
 
@@ -99,7 +120,9 @@ export class RegistrarCompaniesSource {
         throw new Error('No company data extracted from the page');
       }
 
-      this.logger.log(`RegistrarCompanies: Extracted HTML text. Sending to Gemini for parsing.`);
+      this.logger.log(
+        `RegistrarCompanies: Extracted HTML text. Sending to Gemini for parsing.`,
+      );
 
       // Send to Gemini
       const model = this.genAI.getGenerativeModel({
@@ -147,21 +170,24 @@ ${companyDataText.substring(0, 5000)}
       }
 
       // Check severe keywords
-      const isDangerous = parsed.is_violating_law || 
-                          parsed.status.includes('פירוק') || 
-                          parsed.status.includes('חיסול') || 
-                          parsed.status.includes('כינוס') ||
-                          parsed.status.includes('מפרת חוק');
+      const isDangerous =
+        parsed.is_violating_law ||
+        parsed.status.includes('פירוק') ||
+        parsed.status.includes('חיסול') ||
+        parsed.status.includes('כינוס') ||
+        parsed.status.includes('מפרת חוק');
 
-      const companies = [{
-        name: parsed.company_name || searchTerm,
-        registrationNumber: parsed.company_number || null,
-        status: parsed.status || 'לא ידוע',
-        type: parsed.company_type || 'חברה בע"מ',
-        incorporationDate: null,
-        address: null,
-        isActive: !isDangerous,
-      }];
+      const companies = [
+        {
+          name: parsed.company_name || searchTerm,
+          registrationNumber: parsed.company_number || null,
+          status: parsed.status || 'לא ידוע',
+          type: parsed.company_type || 'חברה בע"מ',
+          incorporationDate: null,
+          address: null,
+          isActive: !isDangerous,
+        },
+      ];
 
       let message = `נמצאה חברה: ${parsed.company_name} (סטטוס: ${parsed.status})`;
       if (isDangerous) {
@@ -186,19 +212,19 @@ ${companyDataText.substring(0, 5000)}
         },
         warnings: warnings.length > 0 ? warnings : undefined,
       };
-
     } catch (err: unknown) {
       if (browser) await browser.close().catch(() => {});
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.warn(`RegistrarCompaniesSource failed: ${msg}`);
-      
+
       // Fallback
       return {
         source: 'registrar_companies',
         success: true,
         data: {
           isRelevant: true,
-          message: 'לא ניתן לאמת מול רשם החברות (שגיאת רשת/חסימה) — נא לבדוק ידנית באתר התאגידים',
+          message:
+            'לא ניתן לאמת מול רשם החברות (שגיאת רשת/חסימה) — נא לבדוק ידנית באתר התאגידים',
           companies: [],
           dataSource: 'רשם החברות — משרד המשפטים (Fallback)',
         },

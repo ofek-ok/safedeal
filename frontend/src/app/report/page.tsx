@@ -4,6 +4,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 import { SafeDealLogo } from "@/components/SafeDealLogo";
 import { ReportActionBar } from "@/components/report/ReportActionBar";
 import { SafeScoreCard } from "@/components/report/SafeScoreCard";
+import { ValuationCard } from "@/components/report/ValuationCard";
 import { AiExecutiveSummary } from "@/components/report/AiExecutiveSummary";
 import { DataHubPillars } from "@/components/report/DataHubPillars";
 import { OperativeNextSteps } from "@/components/report/OperativeNextSteps";
@@ -57,6 +58,25 @@ export default function ReportPage() {
       {/* Main Report Document Sections */}
       <div className="w-full space-y-10">
         <SafeScoreCard />
+        <ValuationCard
+          valuation={{
+            estimatedValue: 3380000,
+            minValue: 3210000,
+            maxValue: 3550000,
+            askingPrice: 3450000,
+            priceDiffPercent: 2,
+            dealFairness: "fair",
+            fairnessLabel: "מחיר המוכר (3,450,000 ₪) תואם את שווי השוק המשוער בסביבה",
+            confidenceLevel: "high",
+            confidenceReason: "מבוסס על 14 עסקאות רשות המסים ברחוב דיזנגוף ב-12 חודשים אחרונים",
+            comparableDeals: [
+              { dealDate: "15/06/2026", address: "דיזנגוף 140, תל אביב", rooms: "3.5 חדרים", sqm: 82, price: 3320000, pricePerSqm: 40487 },
+              { dealDate: "02/04/2026", address: "דיזנגוף 146, תל אביב", rooms: "4 חדרים", sqm: 88, price: 3580000, pricePerSqm: 40681 },
+              { dealDate: "18/01/2026", address: "דיזנגוף 138, תל אביב", rooms: "3 חדרים", sqm: 75, price: 3050000, pricePerSqm: 40666 },
+              { dealDate: "11/11/2025", address: "דיזנגוף 150, תל אביב", rooms: "3.5 חדרים", sqm: 85, price: 3420000, pricePerSqm: 40235 },
+            ]
+          }}
+        />
         <AiExecutiveSummary />
         <DataHubPillars />
         <OperativeNextSteps />

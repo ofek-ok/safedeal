@@ -104,7 +104,7 @@ export function Step5Summary({ data, isSubmitting, onSubmit }: Props) {
               מוכן להפקה מיידית
             </span>
             <span className="text-[9px] uppercase tracking-widest text-slate-600 font-mono">
-              REF: SD-PREVIEW-{Math.floor(1000 + Math.random() * 9000)}
+              REF: SD-PREVIEW
             </span>
           </div>
         </div>

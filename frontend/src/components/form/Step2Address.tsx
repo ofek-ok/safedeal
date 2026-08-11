@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Info, AlertCircle, Wand2, Loader2 } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
 import { GovAutocomplete } from "./GovAutocomplete";
@@ -79,49 +79,61 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
   const set = <K extends keyof Step2PropertyId>(k: K, v: string) =>
     onChange({ ...data, [k]: v });
 
-  const handleAutoLookup = async () => {
-    if (!data.city || !data.street || !data.houseNumber) {
-      setLookupError("יש למלא עיר, רחוב ומספר בית לפני האיתור האוטומטי.");
-      return;
+  useEffect(() => {
+    // Load govmap script on mount
+    if (typeof window !== "undefined" && !document.getElementById("govmap-script")) {
+      const script = document.createElement("script");
+      script.id = "govmap-script";
+      script.src = "https://govmap.gov.il/govmap/api/govmap.api.js";
+      script.async = true;
+      document.body.appendChild(script);
     }
-    
-    setIsLookingUp(true);
-    setLookupError(null);
-    setLookupSuccess(false);
+  }, []);
 
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      const res = await fetch(`${apiUrl}/api/v1/properties/cadastral-lookup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          city: data.city,
-          street: data.street,
-          houseNumber: data.houseNumber,
-        }),
-      });
+  useEffect(() => {
+    const { city, street, houseNumber, block, parcel } = data;
+    // Magic UX: only trigger if full address is present and block/parcel are empty
+    if (!city || !street || !houseNumber || block || parcel) return;
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || "לא נמצאו נתוני גוש וחלקה לכתובת זו.");
-      }
+    const timer = setTimeout(() => {
+      // @ts-ignore - govmap is attached to window
+      if (typeof window === "undefined" || !window.govmap || !window.govmap.searchAndLocate) return;
 
-      const result = await res.json();
+      setIsLookingUp(true);
+      setLookupError(null);
+      setLookupSuccess(false);
+
+      const fullAddress = `${street} ${houseNumber}, ${city}`;
       
-      onChange({
-        ...data,
-        block: result.block || data.block,
-        parcel: result.parcel || data.parcel,
+      // @ts-ignore
+      window.govmap.searchAndLocate({
+        // @ts-ignore
+        type: window.govmap.locateType.addressToLotParcel,
+        address: fullAddress
+      })
+      .then((res: any) => {
+        if (res && res.length > 0 && res[0].Lot && res[0].Parcel) {
+          onChange({
+            ...data,
+            block: res[0].Lot.toString(),
+            parcel: res[0].Parcel.toString(),
+          });
+          setLookupSuccess(true);
+          setTimeout(() => setLookupSuccess(false), 5000);
+        } else {
+          setLookupError("לא נמצאו גוש וחלקה אוטומטית");
+        }
+      })
+      .catch((err: any) => {
+        setLookupError("שגיאה בחילוץ גוש וחלקה");
+      })
+      .finally(() => {
+        setIsLookingUp(false);
       });
-      
-      setLookupSuccess(true);
-      setTimeout(() => setLookupSuccess(false), 5000);
-    } catch (err: any) {
-      setLookupError(err.message);
-    } finally {
-      setIsLookingUp(false);
-    }
-  };
+    }, 1500); // 1.5s debounce
+
+    return () => clearTimeout(timer);
+  }, [data.city, data.street, data.houseNumber, data.block, data.parcel]);
 
   const errors = showErrors
     ? {
@@ -197,23 +209,19 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           <div className="flex-1 h-[1px] bg-white/[0.06]" />
         </div>
 
-        {/* Auto Lookup Button */}
-        <div className="flex flex-col items-center mb-6 space-y-3">
-          <button
-            type="button"
-            onClick={handleAutoLookup}
-            disabled={isLookingUp}
-            className="flex items-center gap-2 text-xs text-[#00C896] hover:text-[#00C896]/80 font-medium tracking-wide transition-colors bg-[#00C896]/10 px-4 py-2 rounded-full border border-[#00C896]/30 disabled:opacity-50"
-          >
-            {isLookingUp ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
-            איתור אוטומטי מכתובת
-          </button>
-          
-          {lookupError && (
+        {/* Auto Lookup Status */}
+        <div className="flex flex-col items-center mb-6 min-h-[30px] justify-center">
+          {isLookingUp && (
+            <div className="flex items-center gap-2 text-[10px] text-[#00C896] uppercase tracking-widest bg-[#00C896]/10 px-3 py-1 rounded-full">
+              <Loader2 size={12} className="animate-spin" />
+              מאתר גוש וחלקה...
+            </div>
+          )}
+          {!isLookingUp && lookupError && (
             <span className="text-red-400 text-[10px] bg-red-400/10 px-3 py-1 rounded">{lookupError}</span>
           )}
-          {lookupSuccess && (
-            <span className="text-[#00C896] text-[10px] bg-[#00C896]/10 px-3 py-1 rounded">אותר בהצלחה! אנא ודאו את הנתונים מול הטאבו.</span>
+          {!isLookingUp && lookupSuccess && (
+            <span className="text-[#00C896] text-[10px] bg-[#00C896]/10 px-3 py-1 rounded">הושלם בהצלחה! אנא ודאו את הנתונים מול הטאבו.</span>
           )}
         </div>
 

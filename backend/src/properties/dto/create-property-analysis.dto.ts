@@ -28,10 +28,10 @@ export class LocationDto {
   @IsOptional() @IsString() @MaxLength(100) city?: string;
   @IsOptional() @IsString() @MaxLength(100) street?: string;
   @IsOptional() @IsString() @MaxLength(100) streetName?: string; // legacy alias
-  @IsOptional() @IsString() @MaxLength(20)  houseNumber?: string;
-  @IsOptional() @IsString() @MaxLength(20)  block?: string;
-  @IsOptional() @IsString() @MaxLength(20)  parcel?: string;
-  @IsOptional() @IsString() @MaxLength(20)  subParcel?: string;
+  @IsOptional() @IsString() @MaxLength(20) houseNumber?: string;
+  @IsOptional() @IsString() @MaxLength(20) block?: string;
+  @IsOptional() @IsString() @MaxLength(20) parcel?: string;
+  @IsOptional() @IsString() @MaxLength(20) subParcel?: string;
 }
 
 export class DealDto {
@@ -50,7 +50,10 @@ export class DealDto {
 export class DocumentsDto {
   @IsOptional() @IsString() @MaxLength(255) tabuFileName?: string | null;
   @IsOptional() @IsString() @MaxLength(255) buildingFileName?: string | null;
-  @IsOptional() @IsArray() @IsString({ each: true }) additionalDocNames?: string[];
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  additionalDocNames?: string[];
 }
 
 export class CreatePropertyAnalysisDto {

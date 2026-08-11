@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SourceResult, MunicipalData } from '../interfaces/pipeline-data.interface';
+import {
+  SourceResult,
+  MunicipalData,
+} from '../interfaces/pipeline-data.interface';
 
 interface DataGovPermit {
   city_name?: string;
@@ -29,17 +32,18 @@ interface DataGovPermitResponse {
 const CITY_PORTALS: Record<string, string> = {
   'תל אביב-יפו': 'https://gis.tel-aviv.gov.il/iView/Map.aspx',
   'תל אביב': 'https://gis.tel-aviv.gov.il/iView/Map.aspx',
-  'ירושלים': 'https://gis.jerusalem.muni.il',
-  'חיפה': 'https://gisn.haifa.muni.il',
+  ירושלים: 'https://gis.jerusalem.muni.il',
+  חיפה: 'https://gisn.haifa.muni.il',
   'ראשון לציון': 'https://www.rishonlezion.muni.il',
   'פתח תקווה': 'https://www.petah-tikva.muni.il',
-  'נתניה': 'https://www.netanya.muni.il',
+  נתניה: 'https://www.netanya.muni.il',
 };
 
 @Injectable()
 export class MunicipalSource {
   private readonly logger = new Logger(MunicipalSource.name);
-  private readonly baseUrl = 'https://data.gov.il/api/3/action/datastore_search';
+  private readonly baseUrl =
+    'https://data.gov.il/api/3/action/datastore_search';
 
   constructor(private readonly config: ConfigService) {}
 
@@ -62,7 +66,9 @@ export class MunicipalSource {
 
       const url = `${this.baseUrl}?resource_id=${resourceId}&q=${encodeURIComponent(q)}&limit=20`;
 
-      this.logger.log(`Municipal: Querying data.gov.il building permits for "${q}"`);
+      this.logger.log(
+        `Municipal: Querying data.gov.il building permits for "${q}"`,
+      );
 
       const response = await fetch(url, {
         signal: AbortSignal.timeout(12_000),
@@ -76,7 +82,9 @@ export class MunicipalSource {
       const json = (await response.json()) as DataGovPermitResponse;
 
       if (!json.success || !json.result) {
-        throw new Error(`data.gov.il API: ${json.error?.message || 'Unknown error'}`);
+        throw new Error(
+          `data.gov.il API: ${json.error?.message || 'Unknown error'}`,
+        );
       }
 
       const records = json.result.records;
@@ -84,7 +92,9 @@ export class MunicipalSource {
 
       // Analyze permits
       const openPermits = records.filter(
-        (r) => r.permit_status?.includes('פתוח') || r.permit_status?.includes('בתהליך'),
+        (r) =>
+          r.permit_status?.includes('פתוח') ||
+          r.permit_status?.includes('בתהליך'),
       );
       const violations = records.filter(
         (r) =>

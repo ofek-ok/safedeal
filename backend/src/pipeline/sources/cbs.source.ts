@@ -18,10 +18,17 @@ const CLUSTER_DESCRIPTIONS: Record<number, string> = {
 export class CbsSource {
   private readonly logger = new Logger(CbsSource.name);
 
-  async fetch(params: { city: string; neighborhood?: string }): Promise<SourceResult<CbsData>> {
+  async fetch(params: {
+    city: string;
+    neighborhood?: string;
+  }): Promise<SourceResult<CbsData>> {
     try {
-      const cityKey = params.city.trim().replace('יפו', '').replace('-', '').trim();
-      
+      const cityKey = params.city
+        .trim()
+        .replace('יפו', '')
+        .replace('-', '')
+        .trim();
+
       this.logger.log(`CBS: Querying data.gov.il for city="${cityKey}"`);
 
       // Using the official data.gov.il CBS Socioeconomic index dataset (Localities 2019)
@@ -37,20 +44,28 @@ export class CbsSource {
       }
 
       const json = await response.json();
-      
-      if (!json.success || !json.result || !json.result.records || json.result.records.length === 0) {
+
+      if (
+        !json.success ||
+        !json.result ||
+        !json.result.records ||
+        json.result.records.length === 0
+      ) {
         // Fallback to a wider search if exact match fails
         throw new Error('City not found in CBS data');
       }
 
       // Try to find exact match or first result
       const records = json.result.records;
-      const record = records.find((r: any) => 
-        (r['HEBREW NAME OF LOCALITY'] || '').includes(cityKey) ||
-        (r['שם_רשות'] || '').includes(cityKey)
-      ) || records[0];
+      const record =
+        records.find(
+          (r: any) =>
+            (r['HEBREW NAME OF LOCALITY'] || '').includes(cityKey) ||
+            (r['שם_רשות'] || '').includes(cityKey),
+        ) || records[0];
 
-      const cluster = parseInt(record['ESHKOL 2019'] || record['אשכול_חברתי_כלכלי'], 10) || 5; // default to 5 if undefined
+      const cluster =
+        parseInt(record['ESHKOL 2019'] || record['אשכול_חברתי_כלכלי'], 10) || 5; // default to 5 if undefined
       const clusterLevel = CLUSTER_DESCRIPTIONS[cluster] || 'לא ידוע';
 
       this.logger.log(`CBS: Found cluster=${cluster} for city="${cityKey}"`);
@@ -70,7 +85,7 @@ export class CbsSource {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.warn(`CbsSource failed: ${msg}`);
-      
+
       // Graceful fallback
       return {
         source: 'cbs',

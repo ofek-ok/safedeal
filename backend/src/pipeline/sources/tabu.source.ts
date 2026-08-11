@@ -78,7 +78,9 @@ export class TabuSource {
       this.genAI = new GoogleGenerativeAI(apiKey);
       this.logger.log('TabuSource: Gemini AI initialized ✓');
     } else {
-      this.logger.warn('TabuSource: GEMINI_API_KEY not set — OCR extraction disabled');
+      this.logger.warn(
+        'TabuSource: GEMINI_API_KEY not set — OCR extraction disabled',
+      );
     }
   }
 
@@ -88,7 +90,9 @@ export class TabuSource {
       const parsed = await (pdfParse as any)(buffer);
       return parsed.text || '';
     } catch (err) {
-      throw new Error(`PDF parsing failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `PDF parsing failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -122,22 +126,29 @@ export class TabuSource {
     // Case 1: File buffer provided — run real OCR + Gemini extraction
     if (params.tabuFileBuffer) {
       try {
-        this.logger.log(`TabuSource: Processing PDF "${params.tabuFileName || 'unknown'}"`);
+        this.logger.log(
+          `TabuSource: Processing PDF "${params.tabuFileName || 'unknown'}"`,
+        );
 
         const rawText = await this.extractPdfText(params.tabuFileBuffer);
         if (!rawText || rawText.trim().length < 50) {
-          throw new Error('PDF text extraction yielded insufficient content (possibly scanned image)');
+          throw new Error(
+            'PDF text extraction yielded insufficient content (possibly scanned image)',
+          );
         }
 
-        this.logger.log(`TabuSource: PDF text extracted (${rawText.length} chars). Sending to Gemini...`);
+        this.logger.log(
+          `TabuSource: PDF text extracted (${rawText.length} chars). Sending to Gemini...`,
+        );
         const extracted = await this.extractWithGemini(rawText);
 
         const owners = (extracted.owners || []).map((o: any) => ({
           name: o.name || 'לא ידוע',
           id: o.id || null,
-          ownership: o.shareNumerator && o.shareDenominator
-            ? `${o.shareNumerator}/${o.shareDenominator}`
-            : '1/1',
+          ownership:
+            o.shareNumerator && o.shareDenominator
+              ? `${o.shareNumerator}/${o.shareDenominator}`
+              : '1/1',
         }));
 
         const mortgages = (extracted.mortgages || []).map((m: any) => ({
@@ -174,14 +185,18 @@ export class TabuSource {
           source: 'tabu',
           success: true,
           data: this.buildManualReviewResult(params),
-          warnings: [`Tabu OCR extraction failed: ${msg}. Manual review required.`],
+          warnings: [
+            `Tabu OCR extraction failed: ${msg}. Manual review required.`,
+          ],
         };
       }
     }
 
     // Case 2: Only filename — file not uploaded yet
     if (params.tabuFileName) {
-      this.logger.log(`TabuSource: Only filename provided (${params.tabuFileName}) — no buffer for extraction`);
+      this.logger.log(
+        `TabuSource: Only filename provided (${params.tabuFileName}) — no buffer for extraction`,
+      );
       return {
         source: 'tabu',
         success: true,
@@ -201,7 +216,11 @@ export class TabuSource {
     };
   }
 
-  private buildManualReviewResult(params: { block?: string; parcel?: string; tabuFileName?: string | null }): TabuData {
+  private buildManualReviewResult(params: {
+    block?: string;
+    parcel?: string;
+    tabuFileName?: string | null;
+  }): TabuData {
     return {
       owners: [],
       propertyType: 'לא ידוע',

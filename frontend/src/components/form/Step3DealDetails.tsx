@@ -1,8 +1,8 @@
 "use client";
 
-import { TrendingUp, AlertCircle } from "lucide-react";
-import type { Step3DealDetails, DealType } from "@/types/property";
-import { DEAL_TYPE_LABELS, ROOMS_OPTIONS } from "@/types/property";
+import { TrendingUp, AlertCircle, Shield, Car, Box, ArrowUp, Sun, Building2, Accessibility } from "lucide-react";
+import type { Step3DealDetails, DealType, PropertyCondition } from "@/types/property";
+import { DEAL_TYPE_LABELS, PROPERTY_CONDITION_LABELS, ROOMS_OPTIONS } from "@/types/property";
 import { formatThousands, stripFormatting, calcYield } from "@/lib/utils";
 
 interface Props {
@@ -11,11 +11,14 @@ interface Props {
   showErrors: boolean;
 }
 
-const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasParking" | "hasStorage" | "hasMamad" | "hasElevator">; label: string; icon: string }[] = [
-  { key: "hasParking",  label: "חניה צמודה",    icon: "🚗" },
-  { key: "hasStorage",  label: "מחסן צמוד",      icon: "📦" },
-  { key: "hasMamad",    label: 'ממ"ד',            icon: "🛡️" },
-  { key: "hasElevator", label: "מעלית",           icon: "🔼" },
+const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasParking" | "hasStorage" | "hasMamad" | "hasElevator" | "hasBalcony" | "isBuildingOnPillars" | "hasAccessibility">; label: string; icon: React.ElementType }[] = [
+  { key: "hasMamad",            label: 'ממ"ד',            icon: Shield },
+  { key: "hasParking",          label: "חניה צמודה",    icon: Car },
+  { key: "hasStorage",          label: "מחסן צמוד",      icon: Box },
+  { key: "hasElevator",         label: "מעלית",           icon: ArrowUp },
+  { key: "hasBalcony",          label: "מרפסת",           icon: Sun },
+  { key: "isBuildingOnPillars", label: "בניין על עמודים",  icon: Building2 },
+  { key: "hasAccessibility",    label: "גישה לנכים",      icon: Accessibility },
 ];
 
 export function Step3DealDetails({ data, onChange, showErrors }: Props) {
@@ -43,8 +46,8 @@ export function Step3DealDetails({ data, onChange, showErrors }: Props) {
       <div className="mb-8">
         <div className="w-8 h-[1px] bg-teal-500 mb-4" />
         <p className="text-[11px] tracking-[0.2em] text-teal-400 uppercase font-medium mb-2">שלב 3</p>
-        <h2 className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "var(--font-serif)" }}>פרטי העסקה</h2>
-        <p className="text-sm text-slate-400">פרטים אלה יאפשרו ניתוח שוק, תשואה והשוואת מחיר</p>
+        <h2 className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "var(--font-serif)" }}>פרטי העסקה והנכס</h2>
+        <p className="text-sm text-slate-400">פרטים אלה יאפשרו ניתוח שוק מדויק, חישוב שווי וכדאיות עסקה</p>
       </div>
 
       <div className="space-y-10">
@@ -88,10 +91,34 @@ export function Step3DealDetails({ data, onChange, showErrors }: Props) {
           )}
         </div>
 
+        {/* Property Condition */}
+        <div className="space-y-4">
+          <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">מצב הנכס</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {(["new-contractor", "renovated", "good", "needs-renovation"] as PropertyCondition[]).map((c) => {
+              const active = data.condition === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => set("condition", c)}
+                  className={`px-3 py-3 rounded-xl border text-xs font-medium transition-all duration-300 ${
+                    active
+                      ? "border-[#00C896] text-[#00C896] bg-[#00C896]/10"
+                      : "border-white/[0.08] text-slate-400 hover:border-white/[0.2] hover:text-white"
+                  }`}
+                >
+                  {PROPERTY_CONDITION_LABELS[c]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Price + Area */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <div className="space-y-3">
-            <label htmlFor="askingPrice" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">מחיר מבוקש *</label>
+            <label htmlFor="askingPrice" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">מחיר מבוקש / מוצע *</label>
             <div className="relative">
               <input
                 id="askingPrice"
@@ -193,21 +220,21 @@ export function Step3DealDetails({ data, onChange, showErrors }: Props) {
 
         {/* Amenities */}
         <div className="space-y-4">
-          <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">תוספות ואביזרים</p>
-          <div className="grid grid-cols-2 gap-4">
-            {AMENITIES.map(({ key, label, icon }) => {
+          <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">מאפיינים ותוספות בנכס</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {AMENITIES.map(({ key, label, icon: Icon }) => {
               const checked = data[key];
               return (
                 <label
                   key={key}
                   htmlFor={key}
-                  className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all duration-300 ${
+                  className={`flex items-center justify-between p-3.5 border rounded-xl cursor-pointer transition-all duration-300 ${
                     checked ? "border-[#00C896]/50 bg-[#00C896]/5" : "border-white/[0.06] bg-transparent hover:border-white/[0.15]"
                   }`}
                 >
                   <input id={key} type="checkbox" checked={checked} onChange={(e) => set(key, e.target.checked as never)} className="sr-only" />
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg opacity-80">{icon}</span>
+                  <div className="flex items-center gap-2.5">
+                    <Icon size={16} className={checked ? "text-[#00C896]" : "text-slate-400"} />
                     <span className={`text-[11px] uppercase tracking-widest ${checked ? "text-white" : "text-slate-400"}`}>{label}</span>
                   </div>
                   <div className={`w-3 h-3 border transition-all duration-300 flex items-center justify-center ${

@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SourceResult, UrbanRenewalData } from '../interfaces/pipeline-data.interface';
+import {
+  SourceResult,
+  UrbanRenewalData,
+} from '../interfaces/pipeline-data.interface';
 
 @Injectable()
 export class UrbanRenewalSource {
   private readonly logger = new Logger(UrbanRenewalSource.name);
-  private readonly gisUrl = 'https://gisserver.gov.il/arcgis/rest/services/UrbanRenewal/MapServer/0/query';
+  private readonly gisUrl =
+    'https://gisserver.gov.il/arcgis/rest/services/UrbanRenewal/MapServer/0/query';
 
   constructor(private readonly config: ConfigService) {}
 
@@ -16,10 +20,11 @@ export class UrbanRenewalSource {
     xCoord?: number;
     yCoord?: number;
   }): Promise<SourceResult<UrbanRenewalData>> {
-    
     // Check if coordinates were provided by a previous pipeline step (e.g., GovMap)
     if (!params.xCoord || !params.yCoord) {
-      this.logger.warn(`UrbanRenewal: Missing ITM coordinates for block ${params.block}. Skipping GIS intersect.`);
+      this.logger.warn(
+        `UrbanRenewal: Missing ITM coordinates for block ${params.block}. Skipping GIS intersect.`,
+      );
       return {
         source: 'urban_renewal',
         success: true,
@@ -37,8 +42,10 @@ export class UrbanRenewalSource {
     }
 
     try {
-      this.logger.log(`UrbanRenewal: Querying GIS spatial intersect at X:${params.xCoord}, Y:${params.yCoord}`);
-      
+      this.logger.log(
+        `UrbanRenewal: Querying GIS spatial intersect at X:${params.xCoord}, Y:${params.yCoord}`,
+      );
+
       const searchParams = new URLSearchParams({
         f: 'json',
         returnGeometry: 'false',
@@ -46,12 +53,16 @@ export class UrbanRenewalSource {
         geometry: JSON.stringify({ x: params.xCoord, y: params.yCoord }),
         geometryType: 'esriGeometryPoint',
         inSR: '2039',
-        outFields: 'COMPLEX_NAME,COMPLEX_STATUS,HOUSING_UNITS_ADD,DEVELOPER_NAME,DECLARATION_DATE'
+        outFields:
+          'COMPLEX_NAME,COMPLEX_STATUS,HOUSING_UNITS_ADD,DEVELOPER_NAME,DECLARATION_DATE',
       });
 
-      const response = await fetch(`${this.gisUrl}?${searchParams.toString()}`, {
-        signal: AbortSignal.timeout(10_000),
-      });
+      const response = await fetch(
+        `${this.gisUrl}?${searchParams.toString()}`,
+        {
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`GIS Server HTTP ${response.status}`);
@@ -78,7 +89,7 @@ export class UrbanRenewalSource {
       }
 
       const siteInfo = features[0].attributes || {};
-      
+
       return {
         source: 'urban_renewal',
         success: true,
@@ -92,20 +103,22 @@ export class UrbanRenewalSource {
           nearbyProjects: features.length,
           dataSource: 'הרשות הממשלתית להתחדשות עירונית — GIS',
         },
-        warnings: siteInfo.DEVELOPER_NAME ? [`היזם המבצע: ${siteInfo.DEVELOPER_NAME}`] : undefined
+        warnings: siteInfo.DEVELOPER_NAME
+          ? [`היזם המבצע: ${siteInfo.DEVELOPER_NAME}`]
+          : undefined,
       };
-
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.warn(`UrbanRenewalSource failed: ${msg}`);
-      
+
       return {
         source: 'urban_renewal',
         success: true,
         data: {
           hasActiveProject: false,
           projectName: null,
-          status: 'לא ניתן לאמת מרחבית — נא לבדוק במפות העירייה / רשות להתחדשות עירונית',
+          status:
+            'לא ניתן לאמת מרחבית — נא לבדוק במפות העירייה / רשות להתחדשות עירונית',
           approvalDate: null,
           unitsToDemo: null,
           unitsToBuild: null,

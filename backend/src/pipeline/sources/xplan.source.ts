@@ -44,7 +44,9 @@ export class XplanSource {
         `?where=${where}&outFields=PL_NAME,PL_NUMBER,PL_TYPE,STATION,GUSH_NUM,HLK_NUM` +
         `&f=json&returnGeometry=false`;
 
-      this.logger.log(`XPLAN: Querying iplan.gov.il block=${params.block} parcel=${params.parcel}`);
+      this.logger.log(
+        `XPLAN: Querying iplan.gov.il block=${params.block} parcel=${params.parcel}`,
+      );
 
       const response = await fetch(xplanUrl, {
         signal: AbortSignal.timeout(12_000),
@@ -61,7 +63,9 @@ export class XplanSource {
       const json = (await response.json()) as ArcGISResponse;
 
       if (json.error) {
-        throw new Error(`ArcGIS error ${json.error.code}: ${json.error.message}`);
+        throw new Error(
+          `ArcGIS error ${json.error.code}: ${json.error.message}`,
+        );
       }
 
       const features = json.features || [];
@@ -124,7 +128,8 @@ export class XplanSource {
           hasSignificantDevelopment: false,
           mainPlanName: null,
           mainPlanNumber: null,
-          planStatus: 'שגיאה בשליפת נתוני תכנון — נא לבדוק ב-mavat.iplan.gov.il',
+          planStatus:
+            'שגיאה בשליפת נתוני תכנון — נא לבדוק ב-mavat.iplan.gov.il',
           dataSource: 'מינהל התכנון — מערכת XPLAN / iplan.gov.il',
         },
         warnings: [`XPLAN/iplan API failed: ${msg}`],

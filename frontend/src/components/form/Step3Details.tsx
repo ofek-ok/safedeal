@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback } from "react";
-import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp } from "lucide-react";
-import type { WizardFormData, Step3DealDetails } from "@/types/property";
-import { ROOMS_OPTIONS } from "@/types/property";
+import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp, Sun, Building2, Accessibility } from "lucide-react";
+import type { WizardFormData, Step3DealDetails, PropertyCondition } from "@/types/property";
+import { ROOMS_OPTIONS, PROPERTY_CONDITION_LABELS } from "@/types/property";
 import { formatThousands, stripFormatting, calcYield, formatBytes, isValidEmail } from "@/lib/utils";
 
 interface Props {
@@ -12,11 +12,14 @@ interface Props {
   showErrors: boolean;
 }
 
-const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasParking" | "hasStorage" | "hasMamad" | "hasElevator">; label: string; Icon: React.ElementType }[] = [
-  { key: "hasParking",  label: "חניה צמודה",    Icon: Car },
-  { key: "hasStorage",  label: "מחסן צמוד",      Icon: Package },
-  { key: "hasMamad",    label: 'ממ"ד',            Icon: Shield },
-  { key: "hasElevator", label: "מעלית",           Icon: ArrowUp },
+const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasParking" | "hasStorage" | "hasMamad" | "hasElevator" | "hasBalcony" | "isBuildingOnPillars" | "hasAccessibility">; label: string; Icon: React.ElementType }[] = [
+  { key: "hasMamad",            label: 'ממ"ד',            Icon: Shield },
+  { key: "hasParking",          label: "חניה צמודה",    Icon: Car },
+  { key: "hasStorage",          label: "מחסן צמוד",      Icon: Package },
+  { key: "hasElevator",         label: "מעלית",           Icon: ArrowUp },
+  { key: "hasBalcony",          label: "מרפסת",           Icon: Sun },
+  { key: "isBuildingOnPillars", label: "בניין על עמודים",  Icon: Building2 },
+  { key: "hasAccessibility",    label: "גישה לנכים",      Icon: Accessibility },
 ];
 
 function FileCard({
@@ -209,10 +212,34 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
       <div className="space-y-10">
         {/* Deal Details */}
         <div className="space-y-10">
+          {/* Property Condition */}
+          <div className="space-y-4">
+            <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">מצב הנכס</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {(["new-contractor", "renovated", "good", "needs-renovation"] as PropertyCondition[]).map((c) => {
+                const active = data.step3.condition === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setStep3("condition", c)}
+                    className={`px-3 py-3 rounded-xl border text-xs font-medium transition-all duration-300 ${
+                      active
+                        ? "border-[#00C896] text-[#00C896] bg-[#00C896]/10"
+                        : "border-white/[0.08] text-slate-400 hover:border-white/[0.2] hover:text-white"
+                    }`}
+                  >
+                    {PROPERTY_CONDITION_LABELS[c]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Price + Area */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div className="space-y-3">
-              <label htmlFor="askingPrice" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">מחיר מבוקש *</label>
+              <label htmlFor="askingPrice" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">מחיר מבוקש / מוצע *</label>
               <div className="relative">
                 <input
                   id="askingPrice"
@@ -314,21 +341,21 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
 
           {/* Amenities */}
           <div className="space-y-4">
-            <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">תוספות ואביזרים</p>
-            <div className="grid grid-cols-2 gap-4">
+            <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">מאפיינים ותוספות בנכס</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {AMENITIES.map(({ key, label, Icon }) => {
                 const checked = data.step3[key];
                 return (
                   <label
                     key={key}
                     htmlFor={key}
-                    className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all duration-300 ${
+                    className={`flex items-center justify-between p-3.5 border rounded-xl cursor-pointer transition-all duration-300 ${
                       checked ? "border-[#00C896]/50 bg-[#00C896]/5" : "border-white/[0.06] bg-transparent hover:border-white/[0.15]"
                     }`}
                   >
                     <input id={key} type="checkbox" checked={checked as boolean} onChange={(e) => setStep3(key, e.target.checked as never)} className="sr-only" />
-                    <div className="flex items-center gap-3">
-                      <Icon size={18} className="text-[#00C896] opacity-80" />
+                    <div className="flex items-center gap-2.5">
+                      <Icon size={16} className={checked ? "text-[#00C896]" : "text-slate-400"} />
                       <span className={`text-[11px] uppercase tracking-widest ${checked ? "text-white" : "text-slate-400"}`}>{label}</span>
                     </div>
                     <div className={`w-3 h-3 border transition-all duration-300 flex items-center justify-center ${

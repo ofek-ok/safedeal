@@ -140,8 +140,8 @@ export function Step4Documents({ data, onChange }: Props) {
           <Dropzone
             id="tabu-upload"
             label="גרור לכאן את נסח הטאבו"
-            sublabel="או לחצו לבחירת קובץ · PDF בלבד · עד 20MB"
-            accept="application/pdf"
+            sublabel="או לחצו לבחירת קובץ · PDF, JPG, PNG, WEBP · עד 20MB"
+            accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
             file={data.tabuFile}
             tag="נסח טאבו"
             required

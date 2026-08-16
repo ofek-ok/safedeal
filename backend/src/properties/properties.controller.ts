@@ -63,7 +63,7 @@ export class PropertiesController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
-          new FileTypeValidator({ fileType: '.(pdf|jpg|jpeg|png|doc|docx)' }),
+          new FileTypeValidator({ fileType: '.(pdf|jpg|jpeg|png|webp|heic|heif|doc|docx)' }),
         ],
       }),
     )

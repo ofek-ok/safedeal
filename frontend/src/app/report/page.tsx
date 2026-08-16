@@ -12,6 +12,7 @@ import { ScoreBreakdownBars } from "@/components/report/ScoreBreakdownBars";
 import { ActionableContextCard } from "@/components/report/ActionableContextCard";
 import { RecommendedActionBanner } from "@/components/report/RecommendedActionBanner";
 import { ValuationCard } from "@/components/report/ValuationCard";
+import { MadlanInsightsCard } from "@/components/report/MadlanInsightsCard";
 import { DataHubPillars } from "@/components/report/DataHubPillars";
 import { OperativeNextSteps } from "@/components/report/OperativeNextSteps";
 
@@ -160,6 +161,8 @@ export default function ReportPage() {
             ]
           }}
         />
+
+        <MadlanInsightsCard />
       </div>
 
       <div className="w-full h-[1px] bg-white/10 my-8 print:page-break-before" />

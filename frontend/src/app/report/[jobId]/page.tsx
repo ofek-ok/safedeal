@@ -14,6 +14,7 @@ import { ScoreBreakdownBars } from "@/components/report/ScoreBreakdownBars";
 import { ActionableContextCard } from "@/components/report/ActionableContextCard";
 import { RecommendedActionBanner } from "@/components/report/RecommendedActionBanner";
 import { ValuationCard } from "@/components/report/ValuationCard";
+import { MadlanInsightsCard } from "@/components/report/MadlanInsightsCard";
 import { DataHubPillars } from "@/components/report/DataHubPillars";
 import { OperativeNextSteps } from "@/components/report/OperativeNextSteps";
 import type { ReportData } from "@/types/property";
@@ -246,6 +247,9 @@ export default function ReportByIdPage() {
 
         {/* Valuation & Market Comparison */}
         {r.valuation && <ValuationCard valuation={r.valuation} />}
+
+        {/* Madlan Neighborhood Insights */}
+        <MadlanInsightsCard insights={r.madlanInsights} />
       </div>
 
       {/* Page Break Divider for PDF Printing */}

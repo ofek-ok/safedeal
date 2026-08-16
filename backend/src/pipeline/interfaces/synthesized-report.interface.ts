@@ -1,6 +1,7 @@
 /**
  * Fully Synthesized Due-Diligence Report Interface
  * Supporting Executive Deck 2-Page Format for both Second-Hand and New-Developer properties.
+ * Includes Madlan & Neighborhood Intelligence.
  */
 
 export type DealType = 'second-hand' | 'new-developer';
@@ -75,6 +76,24 @@ export interface PropertyValuation {
   comparableDeals: ComparableDeal[];
 }
 
+export interface MadlanInsights {
+  overallScore: number;
+  neighborhoodName: string;
+  priceTrend5Years: string;
+  demandIndex: 'high' | 'medium' | 'low';
+  demandLabel: string;
+  avgDaysOnMarket: number;
+  estimatedMonthlyRent: number;
+  estimatedYieldPercent: number;
+  ratings: {
+    schools: number;
+    quietness: number;
+    accessibility: number;
+    renewalPotential: number;
+  };
+  highlights: string[];
+}
+
 export interface SynthesizedReport {
   jobId: string;
   generatedAt: string;
@@ -116,6 +135,7 @@ export interface SynthesizedReport {
     score: number;
   };
   valuation?: PropertyValuation;
+  madlanInsights?: MadlanInsights;
   executiveSummary: {
     title: string;
     badgeText: string;

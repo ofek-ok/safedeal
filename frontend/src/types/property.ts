@@ -100,6 +100,24 @@ export interface ActionableItem {
   description: string;
 }
 
+export interface MadlanInsights {
+  overallScore: number;
+  neighborhoodName: string;
+  priceTrend5Years: string;
+  demandIndex: "high" | "medium" | "low";
+  demandLabel: string;
+  avgDaysOnMarket: number;
+  estimatedMonthlyRent: number;
+  estimatedYieldPercent: number;
+  ratings: {
+    schools: number;
+    quietness: number;
+    accessibility: number;
+    renewalPotential: number;
+  };
+  highlights: string[];
+}
+
 export interface ReportData {
   jobId: string;
   generatedAt: string;
@@ -141,6 +159,7 @@ export interface ReportData {
     score: number;
   };
   valuation?: PropertyValuation;
+  madlanInsights?: MadlanInsights;
 }
 
 export interface Step3DealDetails {

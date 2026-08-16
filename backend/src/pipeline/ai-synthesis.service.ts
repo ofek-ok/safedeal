@@ -548,8 +548,8 @@ export class AiSynthesisService {
       riskText,
       recommendationText,
       property: {
-        projectName: dealType === 'new-developer' ? (location.city.includes('חולון') ? 'נאות האגם' : `פרויקט ${location.street}`) : undefined,
-        developerName: dealType === 'new-developer' ? 'נווה פארק יזמות בע"מ' : undefined,
+        projectName: dealType === 'new-developer' ? (payload?.details?.developerName ? `פרויקט ${payload.details.developerName}` : location.city.includes('חולון') ? 'נאות האגם' : `פרויקט ${location.street}`) : undefined,
+        developerName: payload?.details?.developerName || (dealType === 'new-developer' ? 'נווה פארק יזמות בע"מ' : undefined),
         address: fullAddress,
         cadastral: cadastralStr,
         propertyType: payload?.details?.propertyType || `דירת ${payload?.details?.roomsCount || 4} חדרים`,

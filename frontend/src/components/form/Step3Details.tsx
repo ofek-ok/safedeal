@@ -401,6 +401,96 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           </div>
         </div>
 
+        {/* Smart Optional Deep Risk Analysis Fields */}
+        <div className="p-6 rounded-2xl border border-teal-500/20 bg-teal-500/[0.02] space-y-6">
+          <div className="flex items-center justify-between border-b border-teal-500/10 pb-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2" style={{ fontFamily: "var(--font-serif)" }}>
+              <Shield className="text-teal-400" size={16} />
+              <span>נתונים אופציונליים לדיוק משפטי ופיננסי מקסימלי</span>
+            </h4>
+            <span className="text-[10px] text-teal-400 border border-teal-500/30 px-2 py-0.5 rounded font-mono">100% דיוק</span>
+          </div>
+
+          {data.step3.dealType === "new-developer" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="developerName" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                  שם היזם / החברה הקבלנית (או ח.פ.)
+                </label>
+                <input
+                  id="developerName"
+                  type="text"
+                  value={data.step3.developerName || ""}
+                  onChange={(e) => setStep3("developerName", e.target.value)}
+                  placeholder="לדוגמה: נווה פארק יזמות בע״מ"
+                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="accreditedBank" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                  שם הבנק המלווה (ערבויות חוק מכר)
+                </label>
+                <input
+                  id="accreditedBank"
+                  type="text"
+                  value={data.step3.accreditedBank || ""}
+                  onChange={(e) => setStep3("accreditedBank", e.target.value)}
+                  placeholder="לדוגמה: בנק הפועלים / לאומי"
+                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="targetDeliveryDate" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                  מועד מסירה מובטח בחוזה
+                </label>
+                <input
+                  id="targetDeliveryDate"
+                  type="text"
+                  value={data.step3.targetDeliveryDate || ""}
+                  onChange={(e) => setStep3("targetDeliveryDate", e.target.value)}
+                  placeholder="לדוגמה: 12/2027"
+                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="sellerName" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                  שם המוכר / ת.ז. (לבדיקת עיקולים וחובות)
+                </label>
+                <input
+                  id="sellerName"
+                  type="text"
+                  value={data.step3.sellerName || ""}
+                  onChange={(e) => setStep3("sellerName", e.target.value)}
+                  placeholder="לדוגמה: ישראל ישראלי"
+                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="registrationStatus" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                  סטטוס רישום הנכס
+                </label>
+                <select
+                  id="registrationStatus"
+                  value={data.step3.registrationStatus || "tabu"}
+                  onChange={(e) => setStep3("registrationStatus", e.target.value)}
+                  className="w-full bg-[#060E1C] border-b border-white/15 py-2.5 text-white text-sm focus:border-[#00C896] focus:outline-none"
+                >
+                  <option value="tabu">פנקסי מקרקעין (טאבו רשום)</option>
+                  <option value="company">חברה משכנת</option>
+                  <option value="rmi">רשות מקרקעי ישראל (רמ״י)</option>
+                  <option value="musha">מושע (בעלות משותפת)</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="w-full h-[1px] bg-white/[0.08]" />
 
         {/* Documents */}

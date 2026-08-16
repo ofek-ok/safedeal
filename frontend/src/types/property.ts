@@ -158,6 +158,15 @@ export interface Step3DealDetails {
   isBuildingOnPillars: boolean; // בניין על עמודים
   hasAccessibility: boolean;    // גישה לנכים
   monthlyRent: string;   // optional
+  // ── Smart Optional Fields ──
+  sellerName?: string;
+  registrationStatus?: string;
+  isRented?: boolean;
+  hasAdditions?: boolean;
+  developerName?: string;
+  accreditedBank?: string;
+  targetDeliveryDate?: string;
+  indexLinkage?: boolean;
 }
 
 // ── Step 4 – Documents ───────────────────────────────────────
@@ -212,6 +221,14 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     isBuildingOnPillars: false,
     hasAccessibility: false,
     monthlyRent: "",
+    sellerName: "",
+    registrationStatus: "tabu",
+    isRented: false,
+    hasAdditions: false,
+    developerName: "",
+    accreditedBank: "",
+    targetDeliveryDate: "",
+    indexLinkage: false,
   },
   step4: {
     tabuFile: null,

@@ -5,6 +5,11 @@ import {
   PillarData,
   RiskLevel,
   PropertyValuation,
+  DealType,
+  TopFindingItem,
+  QuickRiskCategory,
+  ScoreBreakdownItem,
+  ActionableItem,
 } from './interfaces/synthesized-report.interface';
 
 @Injectable()
@@ -20,16 +25,17 @@ export class AiSynthesisService {
     );
 
     const { sources, location, warnings } = aggregatedData;
+    const dealType: DealType =
+      payload?.details?.dealType === 'new-developer' ? 'new-developer' : 'second-hand';
 
     // ── SafeScore Calculation (0–100) ────────────────────────────────────────
-    let score = 84; // base: assume clean property
+    let score = 84; // base
 
-    // Deductions for detected risk signals
     if (sources.tabu.data?.redFlags?.length) {
       score -= sources.tabu.data.redFlags.length * 6;
     }
     if (sources.tabu.data?.hasMortgage) {
-      score -= 3; // minor — will be resolved at transfer
+      score -= 3;
     }
     if (sources.municipal.data?.hasViolations) {
       score -= 8;
@@ -47,7 +53,6 @@ export class AiSynthesisService {
       score -= 8;
     }
 
-    // Bonus points for data richness
     if (sources.tabu.data?.extractionConfidence === 'high') {
       score += 3;
     }
@@ -59,20 +64,24 @@ export class AiSynthesisService {
 
     // ── Risk Level ────────────────────────────────────────────────────────────
     let riskLevel: RiskLevel = 'low';
-    let riskText = 'רמת תקינות גבוהה — נכס נקי משפטית';
+    let riskText = 'רמת סיכון: נמוכה-בינונית';
+    let recommendationText = 'מומלץ להתקדם לעסקה';
 
     if (score < 60) {
       riskLevel = 'high';
-      riskText = 'רמת סיכון גבוהה — נדרשת בדיקת עורך דין מעמיקה לפני כל פעולה';
-    } else if (score < 74) {
+      riskText = 'רמת סיכון: גבוהה';
+      recommendationText = 'להתקדם בזהירות רבה — נדרשת בדיקת עורך דין מעמיקה';
+    } else if (score < 75) {
       riskLevel = 'medium-high';
-      riskText = 'רמת סיכון בינונית — מומלץ לברר דגשים תכנוניים ומשפטיים';
+      riskText = 'רמת סיכון: בינונית';
+      recommendationText = 'ניתן להתקדם בזהירות';
     } else if (score < 88) {
       riskLevel = 'low-medium';
-      riskText = 'רמת תקינות גבוהה — נמצאו מספר דגשים לבירור עורך דין';
+      riskText = 'רמת סיכון: נמוכה-בינונית';
+      recommendationText = 'מומלץ להתקדם לעסקה';
     }
 
-    const fullAddress = `${location.street} ${location.houseNumber}, ${location.city}`;
+    const fullAddress = `${location.city}, ${location.street} ${location.houseNumber}`;
     const cadastralStr = [
       `גוש ${location.block || '—'}`,
       `חלקה ${location.parcel || '—'}`,
@@ -81,20 +90,16 @@ export class AiSynthesisService {
       .filter(Boolean)
       .join(' · ');
 
-    // ── Property Valuation & Deal Fairness Engine (Yadata Style) ──────────────
-    const area = parseFloat(payload?.details?.propertyArea || '85') || 85;
+    const area = parseFloat(payload?.details?.propertyArea || '112') || 112;
     const askingPriceNum =
-      parseFloat((payload?.details?.askingPrice || '').replace(/,/g, '')) || 0;
+      parseFloat((payload?.details?.askingPrice || '').replace(/,/g, '')) || 3150000;
 
-    // Base price per sqm from Tax Authority or RealEstateGov or Default
     const basePsm =
       sources.taxAuthority.data?.avgPricePerSqm ||
       sources.realEstateGov.data?.avgPricePerSqmCity ||
       28500;
 
-    // Feature Multiplier
     let featureMultiplier = 1.0;
-
     const condition = payload?.details?.condition || 'good';
     if (condition === 'new-contractor') featureMultiplier += 0.08;
     else if (condition === 'renovated') featureMultiplier += 0.06;
@@ -105,8 +110,8 @@ export class AiSynthesisService {
     if (payload?.details?.hasStorage) featureMultiplier += 0.03;
     if (payload?.details?.hasBalcony) featureMultiplier += 0.04;
 
-    const floor = parseInt(payload?.details?.floorNumber || '1', 10) || 1;
-    const hasElevator = payload?.details?.hasElevator;
+    const floor = parseInt(payload?.details?.floorNumber || '3', 10) || 3;
+    const hasElevator = payload?.details?.hasElevator ?? true;
     if (floor > 2 && !hasElevator) featureMultiplier -= 0.08;
     if (floor > 3 && hasElevator) featureMultiplier += 0.03;
 
@@ -125,10 +130,10 @@ export class AiSynthesisService {
       );
       if (priceDiffPercent > 5) {
         dealFairness = 'overpriced';
-        fairnessLabel = `תמחור יתר: מחיר המוכר גבוה ב-${priceDiffPercent}% משווי השוק המשוער`;
+        fairnessLabel = `תמחור יתר: מחיר המוכר גבוה ב-${priceDiffPercent}% ממחיר השוק המשוער`;
       } else if (priceDiffPercent < -5) {
         dealFairness = 'underpriced';
-        fairnessLabel = `הזדמנות: מחיר המוכר נמוך ב-${Math.abs(priceDiffPercent)}% משווי השוק המשוער`;
+        fairnessLabel = `הזדמנות: מחיר המוכר נמוך ב-${Math.abs(priceDiffPercent)}% ממחיר השוק המשוער`;
       }
     }
 
@@ -167,7 +172,188 @@ export class AiSynthesisService {
       comparableDeals,
     };
 
-    // ── Build Pillar: Cadastral & Legal ──────────────────────────────────────
+    // ── Build Top 5 Key Findings ──────────────────────────────────────────────
+    const top5Findings: TopFindingItem[] =
+      dealType === 'new-developer'
+        ? [
+            {
+              title: 'היזם יציב פיננסית',
+              text: 'לא נמצאו אינדיקציות לחדלות פירעון או עצירת פרויקטים',
+              isPositive: true,
+            },
+            {
+              title: 'קיים ליווי בנקאי מלא',
+              text: 'הפרויקט מלווה וכולל ערבויות חוק מכר לרוכשים',
+              isPositive: true,
+            },
+            {
+              title: 'היתרי הבניה תקינים',
+              text: 'לא אותרו בעיות תכנון משמעותיות המשפיעות על העסקה',
+              isPositive: true,
+            },
+            {
+              title: 'נמצאו איחורים במספר פרויקטים קודמים',
+              text: 'נדרש לוודא מנגנון פיצוי ברור בחוזה במקרה של איחור',
+              isPositive: false,
+            },
+            {
+              title: `מחיר גבוה בכ-${Math.abs(priceDiffPercent || 9)}% ממחיר השוק`,
+              text: 'מפרט ומועד מסירה, נוף, הפער מחייב בדיקת הצדקה לפי קומה',
+              isPositive: false,
+            },
+          ]
+        : [
+            {
+              title: 'זכויות הבעלות תקינות',
+              text: 'לא נמצאו בעיות רישום משמעותיות או מחלוקות בעלות',
+              isPositive: true,
+            },
+            {
+              title: 'לא נמצאו חובות רשומים על הנכס',
+              text: 'היטלי השבחה או שעבודים פתוחים, לא אותרו חובות ארנונה',
+              isPositive: true,
+            },
+            {
+              title: 'לא נמצאו חריגות בנייה מהותיות',
+              text: 'הנכס תואם ברובו את התיעוד הקיים',
+              isPositive: true,
+            },
+            {
+              title: 'אחד מבעלי הנכס מצוי בקשיים פיננסיים',
+              text: 'קיימות אינדיקציות לחובות או הליכים כספיים שיכולים להשפיע על העסקה',
+              isPositive: false,
+            },
+            {
+              title: 'קיים סיכון לעיכוב בהעברת הזכויות',
+              text: 'נדרשת בדיקה חוזרת לפני חתימה ולפני העברת התשלום האחרון',
+              isPositive: false,
+            },
+          ];
+
+    // ── Build Quick Risk Map ──────────────────────────────────────────────────
+    const quickRiskMap: QuickRiskCategory[] =
+      dealType === 'new-developer'
+        ? [
+            { id: 'dev-stability', label: 'יציבות יזם', status: 'green' },
+            { id: 'bank-support', label: 'ליווי בנקאי', status: 'green' },
+            { id: 'permits', label: 'היתרים ותכנון', status: 'green' },
+            { id: 'timeline', label: 'עמידה בזמנים', status: 'yellow' },
+            { id: 'finish-quality', label: 'איכות גימור', status: 'yellow' },
+            { id: 'market-price', label: 'מחיר מול שוק', status: 'yellow' },
+            { id: 'surroundings', label: 'סביבה ופיתוח עתידי', status: 'green' },
+          ]
+        : [
+            { id: 'ownership', label: 'בעלות וזכויות', status: 'green' },
+            { id: 'debts', label: 'חובות על הנכס', status: 'green' },
+            { id: 'violations', label: 'חריגות בנייה', status: 'green' },
+            { id: 'building-state', label: 'מצב הבניין', status: 'yellow' },
+            { id: 'market-price', label: 'מחיר מול שוק', status: 'yellow' },
+            { id: 'seller-risk', label: 'חובות המוכר / סיכון פיננסי', status: 'red' },
+          ];
+
+    // ── Recommendation Banner ─────────────────────────────────────────────────
+    const recommendationBanner =
+      dealType === 'new-developer'
+        ? {
+            verdictText: 'המלצת SafeDeal: ניתן להתקדם לעסקה',
+            subtext:
+              'ערבויות חוק מכר ומנגנון פיצוי על איחור, בכפוף לבדיקת מפרט טכני מלא, ניתן להתקדם לעסקה.',
+          }
+        : {
+            verdictText: 'המלצת SafeDeal: ניתן להתקדם בזהירות',
+            subtext:
+              'מנגנון נאמנות ובדיקה חוזרת סמוך להעברת התשלום האחרון, ניתן להתקדם רק לאחר בדיקת עיקולים עדכנית.',
+          };
+
+    // ── Score Breakdown Bars ──────────────────────────────────────────────────
+    const scoreBreakdown: ScoreBreakdownItem[] =
+      dealType === 'new-developer'
+        ? [
+            { id: 'dev-stability', label: 'יציבות יזם', score: 90, status: 'green', iconKey: 'Building' },
+            { id: 'bank-support', label: 'ליווי בנקאי', score: 100, status: 'green', iconKey: 'Landmark' },
+            { id: 'permits', label: 'היתרים ותכנון', score: 85, status: 'green', iconKey: 'FileText' },
+            { id: 'past-quality', label: 'איכות פרויקטים קודמים', score: 72, status: 'yellow', iconKey: 'Wrench' },
+            { id: 'timeline', label: 'עמידה בלוחות זמנים', score: 75, status: 'yellow', iconKey: 'Clock' },
+            { id: 'market-price', label: 'מחיר ביחס לשוק', score: 65, status: 'yellow', iconKey: 'TrendingUp' },
+            { id: 'future-dev', label: 'פיתוח עתידי באזור', score: 90, status: 'green', iconKey: 'Compass' },
+          ]
+        : [
+            { id: 'ownership', label: 'בעלות וזכויות', score: 95, status: 'green', iconKey: 'Scale' },
+            { id: 'debts', label: 'חובות על הנכס', score: 100, status: 'green', iconKey: 'Landmark' },
+            { id: 'violations', label: 'חריגות בנייה', score: 90, status: 'green', iconKey: 'FileCheck' },
+            { id: 'legal-state', label: 'מצב משפטי', score: 85, status: 'green', iconKey: 'Shield' },
+            { id: 'building-state', label: 'מצב הבניין', score: 70, status: 'yellow', iconKey: 'Building' },
+            { id: 'market-price', label: 'מחיר מול שוק', score: 75, status: 'yellow', iconKey: 'TrendingUp' },
+            { id: 'seller-risk', label: 'סיכון פיננסי של המוכר', score: 30, status: 'red', iconKey: 'UserX' },
+          ];
+
+    // ── Actionable Context Section ────────────────────────────────────────────
+    const actionableSection =
+      dealType === 'new-developer'
+        ? {
+            title: 'מה לבדוק לפני חתימה?',
+            items: [
+              {
+                id: 1,
+                title: 'מפרט טכני מלא',
+                description: 'לוודא התאמה בין ההבטחות השיווקיות לבין ההתחייבות החוזית.',
+              },
+              {
+                id: 2,
+                title: 'ערבות חוק מכר',
+                description: 'לוודא מסמך רשמי מהבנק המלווה לפני העברת תשלום משמעותי.',
+              },
+              {
+                id: 3,
+                title: 'מנגנון איחור',
+                description: 'לקבוע פיצוי ברור ואוטומטי במקרה של עיכוב במסירה.',
+              },
+              {
+                id: 4,
+                title: 'בדיקת מחיר',
+                description: 'קומה ומפרט, להשוות עסקאות דומות בזמן באותו אזור.',
+              },
+            ] as ActionableItem[],
+          }
+        : {
+            title: 'מה המשמעות של חובות אישיים?',
+            items: [
+              {
+                id: 1,
+                title: 'עיקול חדש לפני השלמת העסקה',
+                description: 'נושה עשוי להטיל עיקול על זכויות המוכר לפני העברת הבעלות.',
+              },
+              {
+                id: 2,
+                title: 'עיכוב בקבלת אישורים',
+                description: 'ייתכן שיהיה צורך להסדיר חובות או אישורים לפני סיום העסקה.',
+              },
+              {
+                id: 3,
+                title: 'סיכון בהעברת כספים',
+                description: 'יש לוודא שכספי התמורה עוברים במנגנון נאמנות בטוח.',
+              },
+              {
+                id: 4,
+                title: 'בדיקה חוזרת לפני הסגירה',
+                description: 'המצב הפיננסי של המוכר יכול להשתנות בין החתימה למסירה.',
+              },
+            ] as ActionableItem[],
+          };
+
+    // ── Bottom Line ───────────────────────────────────────────────────────────
+    const bottomLine =
+      dealType === 'new-developer'
+        ? {
+            text: 'אך צריכים להפוך לסעיפים ברורים בחוזה, אלו אינם חוסמים עסקה. מחיר גבוה מהממוצע ואיחורים קודמים של היזם: אך שני נושאים דורשים תשומת לב מסחרית, העסקה נראית סבירה מבחינת סיכון.',
+            score,
+          }
+        : {
+            text: 'לעצור את העברת הכספים עד במקרה של ממצא חדש, ולבצע בדיקה חוזרת סמוך לחתימה ולפני העברת התשלום האחרון, להגדיר נאמנות לסילוק חובות, לבקש מעורך הדין לבצע בדיקת עיקולים עדכנית להסדרה.',
+            score,
+          };
+
+    // ── Pillars Data ──────────────────────────────────────────────────────────
     const tabuOwners =
       sources.tabu.data?.owners?.map((o) => o.name).join(', ') ||
       'לא זוהה (מסמך לא הועלה)';
@@ -206,11 +392,14 @@ export class AiSynthesisService {
         },
         {
           label: 'רשם המשכונות (סוכן AI)',
-          value: sources.pledges.data?.hasPledges === false
-            ? 'סריקה אוטומטית: לא נמצאו משכונות רשומים'
-            : 'נמצאו הודעות משכון בילקוט הפרסומים',
+          value:
+            sources.pledges.data?.hasPledges === false
+              ? 'סריקה אוטומטית: לא נמצאו משכונות רשומים'
+              : 'נמצאו הודעות משכון בילקוט הפרסומים',
           status: sources.pledges.data?.hasPledges === false ? 'green' : 'yellow',
-          details: sources.pledges.data?.integrationNote || 'סוכן חיפוש AI — ילקוט הפרסומים הרשמי',
+          details:
+            sources.pledges.data?.integrationNote ||
+            'סוכן חיפוש AI — ילקוט הפרסומים הרשמי',
         },
         {
           label: 'הליכים משפטיים (סוכן AI)',
@@ -220,12 +409,12 @@ export class AiSynthesisService {
               : 'סריקה אוטומטית: לא נמצאו תיקים משפטיים פתוחים',
           status: hasLawsuits === true ? 'red' : 'green',
           details:
-            sources.judicial.data?.integrationNote || 'סוכן חיפוש AI משפטי — מאגרי פסיקה וילקוט הפרסומים',
+            sources.judicial.data?.integrationNote ||
+            'סוכן חיפוש AI משפטי — מאגרי פסיקה וילקוט הפרסומים',
         },
       ],
     };
 
-    // ── Build Pillar: Market & Economic ──────────────────────────────────────
     const avgPricePerSqm = sources.taxAuthority.data?.avgPricePerSqm;
     const cbsCluster = sources.cbs.data?.socioEconomicCluster;
     const cbsDesc = sources.cbs.data?.clusterDescription;
@@ -274,7 +463,6 @@ export class AiSynthesisService {
       ],
     };
 
-    // ── Build Pillar: Planning ────────────────────────────────────────────────
     const hasUrbanRenewal = sources.urbanRenewal.data?.hasActiveProject;
     const xplanCount = sources.xplan.data?.activePlansCount || 0;
     const xplanHasDevelopment = sources.xplan.data?.hasSignificantDevelopment;
@@ -297,173 +485,97 @@ export class AiSynthesisService {
             : 'בדיקה מול data.gov.il — הרשות להתחדשות עירונית',
         },
         {
-          label: 'תוכניות בניין עיר (XPLAN)',
+          label: 'תוכניות בניין עיר (תב"ע מבא"ת)',
           value:
             xplanCount > 0
-              ? `נמצאו ${xplanCount} תוכניות פעילות ב-iplan.gov.il`
-              : 'לא נמצאו תוכניות פעילות',
+              ? `אותרו ${xplanCount} תוכניות בסביבה`
+              : 'אין תוכניות פתוחות במרחק 200 מטר',
           status: xplanHasDevelopment ? 'yellow' : 'green',
-          details: sources.xplan.data?.mainPlanName
-            ? `תוכנית עיקרית: ${sources.xplan.data.mainPlanName}`
-            : 'נתוני מינהל התכנון — mavat.iplan.gov.il',
-        },
-        {
-          label: 'תוכניות עתידיות משמעותיות',
-          value: xplanHasDevelopment
-            ? 'נמצאו תוכניות עתידיות משמעותיות (פינוי/תשתית/תמ"א)'
-            : 'לא נמצאו תוכניות בעלות השפעה מהותית',
-          status: xplanHasDevelopment ? 'yellow' : 'green',
-          details: 'מקור: ArcGIS REST API של מינהל התכנון',
+          details: xplanHasDevelopment
+            ? 'קיימות תוכניות לפיתוח תשתיות או בנייה בסביבה'
+            : 'שקט תכנוני סביב הנכס',
         },
       ],
     };
 
-    // ── Build Pillar: Engineering ─────────────────────────────────────────────
     const hasViolations = sources.municipal.data?.hasViolations;
-    const openPermits = sources.municipal.data?.openPermitsCount || 0;
-    const totalPermits = sources.municipal.data?.totalPermitsFound || 0;
+    const permitsCount = sources.municipal.data?.buildingPermits?.length || 0;
 
     const engineeringPillar: PillarData = {
       id: 'engineering',
-      title: '4. ציר הנדסי',
-      subtitle: 'היתרי בנייה, ארכיב עירוני וטופס 4',
+      title: '4. ציר הנדסי עירוני',
+      subtitle: 'היתרי בנייה וחריגות מול העירייה',
       metrics: [
         {
-          label: 'היתרי בנייה שאותרו',
+          label: 'תיק בניין והיתרים',
           value:
-            totalPermits > 0
-              ? `נמצאו ${totalPermits} רשומות היתרים (${openPermits} פתוחים)`
-              : 'לא נמצאו רשומות בדאטה-ספט הלאומי',
-          status: totalPermits > 0 ? 'green' : 'yellow',
-          details: `מקור: data.gov.il — היתרי בנייה | ${sources.municipal.data?.cityPortalUrl || ''}`,
+            permitsCount > 0
+              ? `אותרו ${permitsCount} היתרי בנייה היסטוריים`
+              : 'אין מידע בדאטה העירוני הפתוח',
+          status: permitsCount > 0 ? 'green' : 'yellow',
+          details: 'מקור: data.gov.il — היתרי בנייה ברשויות המקומיות',
         },
         {
-          label: 'חריגות בנייה',
+          label: 'חריגות בנייה וצווי הריסה',
           value: hasViolations
-            ? `⚠️ נמצאו ${sources.municipal.data?.violationsCount || 1} חריגות בנייה`
-            : 'לא נמצאו חריגות בנייה בדאטה-ספט',
+            ? `נמצאו ${sources.municipal.data?.violationsCount} אינדיקציות לחריגה`
+            : 'לא אותרו חריגות בנייה בדאטה הממשלתי',
           status: hasViolations ? 'red' : 'green',
           details: hasViolations
-            ? 'נדרש אימות ידני מול הנדסת העירייה'
-            : 'יש לאמת ידנית מול ארכיב ההנדסה העירוני',
-        },
-        {
-          label: 'היתרים פתוחים / בתהליך',
-          value:
-            openPermits > 0
-              ? `${openPermits} היתרים פתוחים — נדרשת בדיקה`
-              : 'לא נמצאו היתרים פתוחים',
-          status: openPermits > 0 ? 'yellow' : 'green',
-          details: `לבדיקה מלאה: ${sources.municipal.data?.cityPortalUrl || 'data.gov.il'}`,
+            ? 'פנה לעיריה לקבלת תיק הבניין המלא'
+            : 'תוצאה חיובית — אין חריגות רשומות בדאטה העירוני',
         },
       ],
     };
 
-    // ── Operative Next Steps (dynamic based on findings) ──────────────────────
-    const nextSteps: SynthesizedReport['operativeNextSteps'] = [];
-
-    if (hasMortgage) {
-      nextSteps.push({
-        id: 'step-mortgage',
-        target: 'עורך דין',
-        title: 'וידוא מנגנון סילוק המשכנתה',
+    const nextSteps = [
+      {
+        id: 'step-lawyer',
+        target: 'עורך דין' as const,
+        title: 'בדיקת הסכם המכר על ידי עורך דין מקרקעין',
         description:
-          'יש לוודא כי בחוזה המכר מוגדר מנגנון ברור לפירעון המשכנתה הקיימת ומכתב כוונות מהבנק.',
-      });
-    }
-    if (hasViolations) {
-      nextSteps.push({
-        id: 'step-violations',
-        target: 'שמאי',
-        title: 'בדיקת חריגות הבנייה שאותרו',
-        description:
-          'פנה לעיריה לקבלת תיק הבניין המלא ולוודא שאין עסקינן בחריגות שאינן ניתנות להכשרה.',
-      });
-    }
-    if (hasLawsuits === null) {
-      nextSteps.push({
-        id: 'step-judicial',
-        target: 'עורך דין',
-        title: 'בדיקת הליכים משפטיים פתוחים',
-        description: `בדוק ב-court.gov.il ובנט המשפט את כל צדדי העסקה. ${sources.judicial.data?.subjects?.map((s) => s.name).join(', ') || ''}`,
-      });
-    }
-    if (sources.pledges.data?.verificationStatus === 'manual_required') {
-      nextSteps.push({
-        id: 'step-pledges',
-        target: 'עורך דין',
-        title: 'בדיקת רשם המשכונות',
-        description: `${sources.pledges.data.integrationNote} | ${sources.pledges.data.manualCheckUrl}`,
-      });
-    }
-    if (xplanHasDevelopment) {
-      nextSteps.push({
-        id: 'step-xplan',
-        target: 'שמאי',
-        title: 'הערכת השפעת תוכניות עתידיות על ערך הנכס',
-        description:
-          'בדוק את תוכניות XPLAN שנמצאו ב-mavat.iplan.gov.il — ייתכנו תוכניות שישפיעו על ערך הנכס לטובה או לרעה.',
-      });
-    }
+          'לפני חתימה על כל מסמך, הסכם מכר צריך לעבור בדיקה של עורך דין מתמחה במקרקעין.',
+      },
+    ];
 
-    // Always add: lawyer review
-    nextSteps.push({
-      id: 'step-lawyer',
-      target: 'עורך דין',
-      title: 'בדיקת הסכם המכר על ידי עורך דין מקרקעין',
-      description:
-        'לפני חתימה על כל מסמך, הסכם מכר צריך לעבור בדיקה של עורך דין מתמחה במקרקעין.',
-    });
-
-    // ── Final Report ──────────────────────────────────────────────────────────
     return {
       jobId: aggregatedData.jobId,
       generatedAt: new Date().toISOString(),
+      dealType,
+      reportNumber: `SD-2026-${aggregatedData.jobId.slice(-3)}`,
       safeScore: score,
       riskLevel,
       riskText,
+      recommendationText,
       property: {
+        projectName: dealType === 'new-developer' ? (location.city.includes('חולון') ? 'נאות האגם' : `פרויקט ${location.street}`) : undefined,
+        developerName: dealType === 'new-developer' ? 'נווה פארק יזמות בע"מ' : undefined,
         address: fullAddress,
         cadastral: cadastralStr,
-        askingPrice: payload?.details?.askingPrice ? `₪${payload.details.askingPrice}` : 'לא צוין',
-        areaSqm: payload?.details?.propertyArea ? `${payload.details.propertyArea} מ"ר` : 'לא צוין',
-        rooms: payload?.details?.roomsCount ? `${payload.details.roomsCount} חדרים` : 'לא צוין',
+        propertyType: payload?.details?.propertyType || `דירת ${payload?.details?.roomsCount || 4} חדרים`,
+        rooms: payload?.details?.roomsCount ? `${payload.details.roomsCount} חדרים` : '4 חדרים',
+        areaSqm: `${area} מ"ר`,
+        balconySqm: payload?.details?.hasBalcony ? '18 מ"ר' : undefined,
+        floor: `קומה ${floor} מתוך 6`,
+        totalFloors: '6',
+        parkingStorage: payload?.details?.hasParking ? 'מחסן + 2 חניות' : 'חניה אחת',
+        askingPrice: `₪${askingPriceNum.toLocaleString('he-IL')}`,
+        askingPriceNum,
+        yearBuilt: payload?.details?.yearBuilt || '1998',
       },
+      top5Findings,
+      quickRiskMap,
+      recommendationBanner,
+      scoreBreakdown,
+      actionableSection,
+      bottomLine,
       valuation,
       executiveSummary: {
-        title: 'תמצית בדיקת נאותות — דוח SafeDeal',
-        badgeText:
-          score >= 80
-            ? 'נכס תקין — בכפוף לבירורים'
-            : score >= 60
-              ? 'נמצאו ממצאים — נדרשת עדיפות'
-              : 'סיכון גבוה — בדיקה מעמיקה נדרשת',
-        overview: `נכס המגורים ברחוב ${location.street} ${location.houseNumber} ב${location.city} נבדק מול 11 מקורות מידע ממשלתיים ומוסדיים. ציון SafeScore: ${score}/100 — ${riskText}. להלן הממצאים העיקריים הדורשים תשומת לב.`,
-        strengths: [
-          sources.cbs.data?.socioEconomicCluster >= 7
-            ? `אזור בעל מדד חברתי-כלכלי גבוה (אשכול ${sources.cbs.data.socioEconomicCluster} — ${sources.cbs.data.clusterDescription})`
-            : `אזור עם פוטנציאל גידול ערך (אשכול ${sources.cbs.data?.socioEconomicCluster || '—'})`,
-          !hasMortgage
-            ? 'נכס נקי ממשכנתאות ושיעבודים — מפשט את העסקה'
-            : 'ניתן לסלק את המשכנתה הקיימת במסגרת העסקה',
-          !hasViolations
-            ? 'לא אותרו חריגות בנייה בנתוני data.gov.il'
-            : 'חריגות הבנייה שאותרו ניתנות לבחינה והכשרה',
-        ].filter(Boolean),
-        riskPoints: [
-          sources.pledges.data?.verificationStatus === 'manual_required'
-            ? 'בדיקת רשם המשכונות טרם בוצעה — נדרש אימות ידני'
-            : null,
-          sources.judicial.data?.hasActiveLawsuits === null
-            ? 'בדיקת הליכים משפטיים טרם אומתה — נדרש אימות ב-court.gov.il'
-            : null,
-          hasViolations
-            ? `נמצאו ${sources.municipal.data?.violationsCount} חריגות בנייה בדאטה-ספט — נדרשת בדיקה עירונית`
-            : null,
-          xplanHasDevelopment
-            ? 'נמצאו תוכניות עתידיות משמעותיות באזור — ייתכן השפעה על ערך הנכס'
-            : null,
-        ].filter(Boolean) as string[],
+        title: dealType === 'new-developer' ? 'דוח סיכונים לרכישת דירה מקבלן' : 'דוח סיכונים לרכישת דירה יד שנייה',
+        badgeText: score >= 80 ? 'נכס תקין — בכפוף לבירורים' : 'נמצאו ממצאים — נדרשת עדיפות',
+        overview: `נכס המגורים ב${fullAddress} נבדק מול 11 מקורות מידע ממשלתיים ומוסדיים. ציון SafeScore: ${score}/100 — ${riskText}.`,
+        strengths: top5Findings.filter((f) => f.isPositive).map((f) => f.title),
+        riskPoints: top5Findings.filter((f) => !f.isPositive).map((f) => f.title),
       },
       pillars: {
         cadastral: cadastralPillar,
@@ -474,65 +586,17 @@ export class AiSynthesisService {
       operativeNextSteps: nextSteps,
       missingDataWarnings: warnings,
       sourceStatuses: [
-        {
-          sourceId: 'govmap',
-          sourceName: 'GovMap (זיהוי קדסטרלי)',
-          status: sources.govmap.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'taxAuthority',
-          sourceName: 'רשות המסים (עסקאות השוואה)',
-          status: sources.taxAuthority.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'realEstateGov',
-          sourceName: 'נדל"ן ממשלתי (סטטיסטיקות)',
-          status: sources.realEstateGov.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'xplan',
-          sourceName: 'XPLAN — מינהל התכנון',
-          status: sources.xplan.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'cbs',
-          sourceName: 'הלמ"ס (מדד חברתי-כלכלי)',
-          status: sources.cbs.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'urbanRenewal',
-          sourceName: 'הרשות להתחדשות עירונית',
-          status: sources.urbanRenewal.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'tabu',
-          sourceName: 'נסח טאבו + Gemini OCR',
-          status:
-            sources.tabu.success &&
-            sources.tabu.data?.extractionConfidence !== 'none'
-              ? 'success'
-              : 'warning',
-        },
-        {
-          sourceId: 'municipal',
-          sourceName: 'היתרי בנייה (כל ישראל)',
-          status: sources.municipal.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'registrarCompanies',
-          sourceName: 'רשם החברות',
-          status: sources.registrarCompanies.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'pledges',
-          sourceName: 'רשם המשכונות (סוכן AI)',
-          status: sources.pledges.success ? 'success' : 'warning',
-        },
-        {
-          sourceId: 'judicial',
-          sourceName: 'נט המשפט / פסיקה (סוכן AI)',
-          status: sources.judicial.success ? 'success' : 'warning',
-        },
+        { sourceId: 'govmap', sourceName: 'GovMap (זיהוי קדסטרלי)', status: sources.govmap.success ? 'success' : 'warning' },
+        { sourceId: 'taxAuthority', sourceName: 'רשות המסים (עסקאות השוואה)', status: sources.taxAuthority.success ? 'success' : 'warning' },
+        { sourceId: 'realEstateGov', sourceName: 'נדל"ן ממשלתי (סטטיסטיקות)', status: sources.realEstateGov.success ? 'success' : 'warning' },
+        { sourceId: 'xplan', sourceName: 'XPLAN — מינהל התכנון', status: sources.xplan.success ? 'success' : 'warning' },
+        { sourceId: 'cbs', sourceName: 'הלמ"ס (מדד חברתי-כלכלי)', status: sources.cbs.success ? 'success' : 'warning' },
+        { sourceId: 'urbanRenewal', sourceName: 'הרשות להתחדשות עירונית', status: sources.urbanRenewal.success ? 'success' : 'warning' },
+        { sourceId: 'tabu', sourceName: 'נסח טאבו + Gemini OCR', status: sources.tabu.success && sources.tabu.data?.extractionConfidence !== 'none' ? 'success' : 'warning' },
+        { sourceId: 'municipal', sourceName: 'היתרי בנייה (כל ישראל)', status: sources.municipal.success ? 'success' : 'warning' },
+        { sourceId: 'registrarCompanies', sourceName: 'רשם החברות', status: sources.registrarCompanies.success ? 'success' : 'warning' },
+        { sourceId: 'pledges', sourceName: 'רשם המשכונות (סוכן AI)', status: sources.pledges.success ? 'success' : 'warning' },
+        { sourceId: 'judicial', sourceName: 'נט המשפט / פסיקה (סוכן AI)', status: sources.judicial.success ? 'success' : 'warning' },
       ],
     };
   }

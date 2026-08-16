@@ -1,8 +1,36 @@
 /**
  * Fully Synthesized Due-Diligence Report Interface
+ * Supporting Executive Deck 2-Page Format for both Second-Hand and New-Developer properties.
  */
 
+export type DealType = 'second-hand' | 'new-developer';
 export type RiskLevel = 'low' | 'low-medium' | 'medium-high' | 'high';
+
+export interface TopFindingItem {
+  title: string;
+  text?: string;
+  isPositive: boolean;
+}
+
+export interface QuickRiskCategory {
+  id: string;
+  label: string;
+  status: 'green' | 'yellow' | 'red';
+}
+
+export interface ScoreBreakdownItem {
+  id: string;
+  label: string;
+  score: number;
+  status: 'green' | 'yellow' | 'red';
+  iconKey?: string;
+}
+
+export interface ActionableItem {
+  id: number;
+  title: string;
+  description: string;
+}
 
 export interface PillarMetricItem {
   label: string;
@@ -50,15 +78,42 @@ export interface PropertyValuation {
 export interface SynthesizedReport {
   jobId: string;
   generatedAt: string;
+  dealType: DealType;
+  reportNumber: string;
   safeScore: number;
   riskLevel: RiskLevel;
   riskText: string;
+  recommendationText: string;
   property: {
+    projectName?: string;
+    developerName?: string;
     address: string;
     cadastral: string;
-    askingPrice: string;
-    areaSqm: string;
+    propertyType: string;
     rooms: string;
+    areaSqm: string;
+    balconySqm?: string;
+    floor: string;
+    totalFloors?: string;
+    parkingStorage?: string;
+    askingPrice: string;
+    askingPriceNum?: number;
+    yearBuilt?: string;
+  };
+  top5Findings: TopFindingItem[];
+  quickRiskMap: QuickRiskCategory[];
+  recommendationBanner: {
+    verdictText: string;
+    subtext: string;
+  };
+  scoreBreakdown: ScoreBreakdownItem[];
+  actionableSection: {
+    title: string;
+    items: ActionableItem[];
+  };
+  bottomLine: {
+    text: string;
+    score: number;
   };
   valuation?: PropertyValuation;
   executiveSummary: {

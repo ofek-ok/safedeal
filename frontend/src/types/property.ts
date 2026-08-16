@@ -30,11 +30,12 @@ export interface Step2PropertyId {
 }
 
 // ── Step 3 – Deal Details ────────────────────────────────────
-export type DealType = "second-hand" | "developer";
+export type DealType = "second-hand" | "developer" | "new-developer";
 
 export const DEAL_TYPE_LABELS: Record<DealType, string> = {
   "second-hand": "יד שנייה",
   developer: "קבלן / יזם",
+  "new-developer": "דירה מקבלן",
 };
 
 export type PropertyCondition = "new-contractor" | "renovated" | "good" | "needs-renovation";
@@ -71,6 +72,75 @@ export interface PropertyValuation {
   confidenceLevel: "high" | "medium" | "low";
   confidenceReason: string;
   comparableDeals: ComparableDeal[];
+}
+
+export interface TopFindingItem {
+  title: string;
+  text?: string;
+  isPositive: boolean;
+}
+
+export interface QuickRiskCategory {
+  id: string;
+  label: string;
+  status: "green" | "yellow" | "red";
+}
+
+export interface ScoreBreakdownItem {
+  id: string;
+  label: string;
+  score: number;
+  status: "green" | "yellow" | "red";
+  iconKey?: string;
+}
+
+export interface ActionableItem {
+  id: number;
+  title: string;
+  description: string;
+}
+
+export interface ReportData {
+  jobId: string;
+  generatedAt: string;
+  dealType: DealType;
+  reportNumber: string;
+  safeScore: number;
+  riskLevel: "low" | "low-medium" | "medium-high" | "high";
+  riskText: string;
+  recommendationText: string;
+  property: {
+    projectName?: string;
+    developerName?: string;
+    address: string;
+    cadastral: string;
+    propertyType: string;
+    rooms: string;
+    areaSqm: string;
+    balconySqm?: string;
+    floor: string;
+    totalFloors?: string;
+    parkingStorage?: string;
+    askingPrice: string;
+    askingPriceNum?: number;
+    yearBuilt?: string;
+  };
+  top5Findings: TopFindingItem[];
+  quickRiskMap: QuickRiskCategory[];
+  recommendationBanner: {
+    verdictText: string;
+    subtext: string;
+  };
+  scoreBreakdown: ScoreBreakdownItem[];
+  actionableSection: {
+    title: string;
+    items: ActionableItem[];
+  };
+  bottomLine: {
+    text: string;
+    score: number;
+  };
+  valuation?: PropertyValuation;
 }
 
 export interface Step3DealDetails {

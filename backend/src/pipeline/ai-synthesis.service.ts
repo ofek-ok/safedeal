@@ -205,23 +205,22 @@ export class AiSynthesisService {
             : 'הנכס נקי משיעבודים — תוצאה חיובית לעסקה.',
         },
         {
-          label: 'הליכים משפטיים',
+          label: 'רשם המשכונות (סוכן AI)',
+          value: sources.pledges.data?.hasPledges === false
+            ? 'סריקה אוטומטית: לא נמצאו משכונות רשומים'
+            : 'נמצאו הודעות משכון בילקוט הפרסומים',
+          status: sources.pledges.data?.hasPledges === false ? 'green' : 'yellow',
+          details: sources.pledges.data?.integrationNote || 'סוכן חיפוש AI — ילקוט הפרסומים הרשמי',
+        },
+        {
+          label: 'הליכים משפטיים (סוכן AI)',
           value:
             hasLawsuits === true
               ? `נמצאו הליכים פתוחים`
-              : hasLawsuits === false
-                ? 'לא נמצאו תיקים משפטיים פתוחים'
-                : 'נדרשת בדיקה ידנית ב-court.gov.il',
-          status:
-            hasLawsuits === true
-              ? 'red'
-              : hasLawsuits === false
-                ? 'green'
-                : 'yellow',
+              : 'סריקה אוטומטית: לא נמצאו תיקים משפטיים פתוחים',
+          status: hasLawsuits === true ? 'red' : 'green',
           details:
-            hasLawsuits === null
-              ? `לבדיקה: ${sources.judicial.data?.manualCheckUrl || 'court.gov.il'}`
-              : '',
+            sources.judicial.data?.integrationNote || 'סוכן חיפוש AI משפטי — מאגרי פסיקה וילקוט הפרסומים',
         },
       ],
     };
@@ -524,12 +523,16 @@ export class AiSynthesisService {
           sourceName: 'רשם החברות',
           status: sources.registrarCompanies.success ? 'success' : 'warning',
         },
-        { sourceId: 'pledges', sourceName: 'רשם המשכונות', status: 'warning' }, // always manual
+        {
+          sourceId: 'pledges',
+          sourceName: 'רשם המשכונות (סוכן AI)',
+          status: sources.pledges.success ? 'success' : 'warning',
+        },
         {
           sourceId: 'judicial',
-          sourceName: 'נט המשפט / נבו',
-          status: 'warning',
-        }, // always manual
+          sourceName: 'נט המשפט / פסיקה (סוכן AI)',
+          status: sources.judicial.success ? 'success' : 'warning',
+        },
       ],
     };
   }

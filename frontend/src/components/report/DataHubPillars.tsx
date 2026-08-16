@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   XCircle,
   LucideIcon,
+  ShieldCheck,
+  Info,
 } from "lucide-react";
 import { SourceVerificationTooltip } from "@/components/report/SourceVerificationTooltip";
 
@@ -32,8 +34,8 @@ interface Pillar {
 const PILLARS: Pillar[] = [
   {
     id: "cadastral",
-    title: "1. ציר קדסטרלי ומשפטי",
-    subtitle: "פנקסי מקרקעין, זכויות ושיעבודים",
+    title: "1. זכויות משפטיות וטאבו",
+    subtitle: "פנקסי מקרקעין, בעלות, משכנתאות ועיקולים",
     icon: Scale,
     metrics: [
       {
@@ -58,8 +60,8 @@ const PILLARS: Pillar[] = [
   },
   {
     id: "economic",
-    title: "2. ציר שוק וכלכלי",
-    subtitle: "נתוני רשות המסים והשוואת שווי",
+    title: "2. שווי נכס ומחירי עסקאות",
+    subtitle: "עסקאות השוואה ברשות המסים ומגמות שוק",
     icon: TrendingUp,
     metrics: [
       {
@@ -78,14 +80,14 @@ const PILLARS: Pillar[] = [
         label: "תשואה שכירות צפויה",
         value: "3.4% שנתית (שכ״ד ממוצע ₪7,200/חודש)",
         status: "green",
-        details: "ביקוש גבוה מאוד לשכירות באזור זה בתל אביב.",
+        details: "ביקוש גבוה מאוד לשכירות באזור זה.",
       },
     ],
   },
   {
     id: "planning",
-    title: "3. ציר תכנוני",
-    subtitle: "ועדות תכנון, תב״ע והתחדשות",
+    title: "3. תכנון עירוני והתחדשות",
+    subtitle: "תוכניות תב״ע, התחדשות עירונית ותשתיות",
     icon: Building,
     metrics: [
       {
@@ -110,8 +112,8 @@ const PILLARS: Pillar[] = [
   },
   {
     id: "engineering",
-    title: "4. ציר הנדסי",
-    subtitle: "ארכיב הנדסה, היתרים וטופס 4",
+    title: "4. היתרי בנייה ומצב הנדסי",
+    subtitle: "תיק בניין עירוני, היתרים וחריגות בנייה",
     icon: Wrench,
     metrics: [
       {
@@ -149,7 +151,7 @@ function StatusBadge({ status }: { status: StatusType }) {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider px-2.5 py-1 uppercase text-amber-300 border border-amber-500/40 rounded-full bg-amber-500/10 shrink-0">
         <AlertTriangle size={13} className="text-amber-400" />
-        לבירור
+        לתשומת לב
       </span>
     );
   }
@@ -175,32 +177,37 @@ interface DataHubPillarsProps {
 export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings }: DataHubPillarsProps = {}) {
   const activePillars: Pillar[] = realPillars
     ? [
-        realPillars.cadastral  && { ...PILLARS[0], ...realPillars.cadastral  },
-        realPillars.economic   && { ...PILLARS[1], ...realPillars.economic   },
-        realPillars.planning   && { ...PILLARS[2], ...realPillars.planning   },
+        realPillars.cadastral && { ...PILLARS[0], ...realPillars.cadastral },
+        realPillars.economic && { ...PILLARS[1], ...realPillars.economic },
+        realPillars.planning && { ...PILLARS[2], ...realPillars.planning },
         realPillars.engineering && { ...PILLARS[3], ...realPillars.engineering },
       ].filter(Boolean) as Pillar[]
     : PILLARS;
 
   return (
     <div className="space-y-8 py-8 mb-12">
+      {/* Section Header */}
       <div className="flex flex-col space-y-2">
         <div className="w-8 h-[1px] bg-teal-500"></div>
         <span className="text-xs uppercase tracking-[0.2em] text-teal-400 font-bold">
-          ריכוז ממצאים לפי צירי ניתוח
+          סיכום ממצאים לפי תחומי בדיקה
         </span>
         <h2 className="text-2xl sm:text-3xl text-white font-bold" style={{ fontFamily: "var(--font-serif)" }}>
-          מקורות מידע ונתוני בדיקה
+          תוצאות בדיקת הנאותות (Due Diligence)
         </h2>
+        <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+          סריקה רציפה ומצליבה מול 11 מאגרי מידע ממשלתיים, עירוניים ומשפטיים לקבלת תמונה מלאה ונהירה של הנכס.
+        </p>
       </div>
 
+      {/* 4 Pillars Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {activePillars.map((pillar) => {
           const Icon = pillar.icon;
           return (
             <div
               key={pillar.id}
-              className="bg-navy-900 p-7 sm:p-8 rounded-2xl border border-white/10 flex flex-col justify-between shadow-lg"
+              className="bg-[#0B1528] p-6 sm:p-7 rounded-2xl border border-white/10 flex flex-col justify-between shadow-xl space-y-6"
             >
               <div>
                 {/* Pillar Header */}
@@ -219,11 +226,11 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
                 </div>
 
                 {/* Metrics list */}
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {pillar.metrics.map((metric, idx) => (
                     <div
                       key={idx}
-                      className="pb-4 border-b border-white/10 last:border-0 last:pb-0 space-y-2"
+                      className="pb-4 border-b border-white/5 last:border-0 last:pb-0 space-y-2.5"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-xs font-bold tracking-wider text-slate-200 flex items-center">
@@ -233,16 +240,14 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
                         <StatusBadge status={metric.status} />
                       </div>
 
-                      <p className="text-sm font-semibold text-white">
+                      <p className="text-sm font-semibold text-white leading-snug">
                         {metric.value}
                       </p>
 
                       {metric.details && (
-                        <div className="flex items-start gap-2 mt-2 bg-indigo-950/30 p-2.5 rounded-lg border border-indigo-500/20">
-                          <span className="shrink-0 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded">
-                            מקור נתונים
-                          </span>
-                          <p className="text-[11px] text-indigo-200/80 leading-relaxed font-normal">
+                        <div className="flex items-start gap-2 bg-indigo-950/40 p-3 rounded-xl border border-indigo-500/20">
+                          <Info size={14} className="text-indigo-400 shrink-0 mt-0.5" />
+                          <p className="text-[11px] text-indigo-200/90 leading-relaxed font-normal">
                             {metric.details}
                           </p>
                         </div>
@@ -257,7 +262,7 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
       </div>
 
       {warnings && warnings.length > 0 && (
-        <div className="p-4 border border-amber-500/20 bg-amber-500/5 rounded-lg text-right">
+        <div className="p-4 border border-amber-500/20 bg-amber-500/5 rounded-xl text-right">
           <p className="text-xs text-amber-400 font-bold uppercase tracking-widest mb-2">נתונים שלא אומתו אוטומטית</p>
           <ul className="space-y-1">
             {warnings.slice(0, 5).map((w, i) => (
@@ -269,12 +274,17 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
 
       {sourceStatuses && sourceStatuses.length > 0 && (
         <div className="pt-4 border-t border-white/[0.06]">
-          <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3">סטטוס מקורות מידע</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
+              <ShieldCheck size={13} className="text-teal-400" />
+              אימות מול 11 מאגרי מידע רשמיים
+            </span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {sourceStatuses.map((s) => (
               <span
                 key={s.sourceId}
-                className={`text-[10px] px-2 py-1 rounded border ${
+                className={`text-[10px] px-2.5 py-1 rounded-lg border font-medium ${
                   s.status === 'success'
                     ? 'border-teal-500/30 text-teal-400 bg-teal-500/5'
                     : 'border-amber-500/30 text-amber-400 bg-amber-500/5'

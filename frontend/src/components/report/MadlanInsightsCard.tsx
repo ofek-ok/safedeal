@@ -55,10 +55,10 @@ export function MadlanInsightsCard({ insights = DEFAULT_INSIGHTS }: MadlanInsigh
               className="text-lg font-bold text-white flex items-center gap-2"
               style={{ fontFamily: "var(--font-serif)" }}
             >
-              <span>מדד מדלן ותובנות השכונה</span>
+              <span>מדד סביבתי ותובנות השכונה</span>
             </h3>
             <p className="text-xs text-slate-400 font-mono">
-              {neighborhoodName} · ניתוח מדלן (Madlan) + נדל"ן ממשלתי
+              {neighborhoodName} · ניתוח סביבתי ונתוני שוק ממשלתיים
             </p>
           </div>
         </div>

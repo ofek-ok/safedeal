@@ -363,22 +363,22 @@ export class AiSynthesisService {
 
     const cadastralPillar: PillarData = {
       id: 'cadastral',
-      title: '1. ציר קדסטרלי ומשפטי',
-      subtitle: 'פנקסי מקרקעין, זכויות ושיעבודים',
+      title: '1. זכויות משפטיות וטאבו',
+      subtitle: 'פנקסי מקרקעין, בעלות, משכנתאות ועיקולים',
       metrics: [
         {
           label: 'רישום בעלות',
           value:
             tabuOwners !== 'לא זוהה (מסמך לא הועלה)'
               ? `בעלות רשומה: ${tabuOwners}`
-              : 'זכויות רשומות כהלכה בפנקסי המקרקעין (נבדק קדסטרלית)',
+              : 'זכויות רשומות כהלכה בפנקסי המקרקעין',
           status: (tabuConfidence && tabuConfidence !== 'none'
             ? 'green'
             : 'green') as 'green' | 'yellow' | 'red',
           details:
             tabuConfidence === 'high'
               ? `ניתוח Gemini בדיוק גבוה — ${tabuOwners}`
-              : 'אימות קדסטרלי תקין מול מרשם המקרקעין',
+              : 'אימות מול מרשם המקרקעין (טאבו)',
         },
         {
           label: 'משכנתאות ועיקולים',
@@ -391,7 +391,7 @@ export class AiSynthesisService {
             : 'הנכס נקי משעבודים — תוצאה חיובית לעסקה.',
         },
         {
-          label: 'רשם המשכונות (סוכן AI)',
+          label: 'רשם המשכונות',
           value:
             sources.pledges.data?.hasPledges === false
               ? '✓ תקין: סריקה אוטומטית נקייה — אין משכונות רשומים'
@@ -402,7 +402,7 @@ export class AiSynthesisService {
             'סוכן חיפוש AI — ילקוט הפרסומים הרשמי',
         },
         {
-          label: 'הליכים משפטיים (סוכן AI)',
+          label: 'הליכים משפטיים',
           value:
             hasLawsuits === true
               ? `נמצאו הליכים פתוחים`
@@ -441,8 +441,8 @@ export class AiSynthesisService {
 
     const economicPillar: PillarData = {
       id: 'economic',
-      title: '2. ציר שוק וכלכלי',
-      subtitle: 'נתוני רשות המסים והשוואת שווי',
+      title: '2. שווי נכס ומחירי עסקאות',
+      subtitle: 'עסקאות השוואה ברשות המסים ומגמות שוק',
       metrics: [
         {
           label: 'מחיר ממוצע למ"ר (עסקאות דומות)',
@@ -471,8 +471,8 @@ export class AiSynthesisService {
 
     const planningPillar: PillarData = {
       id: 'planning',
-      title: '3. ציר תכנוני',
-      subtitle: 'ועדות תכנון, תב"ע והתחדשות עירונית',
+      title: '3. תכנון עירוני והתחדשות',
+      subtitle: 'תוכניות תב"ע, התחדשות עירונית ותשתיות',
       metrics: [
         {
           label: 'פינוי-בינוי / תמ"א 38',
@@ -485,7 +485,7 @@ export class AiSynthesisService {
             : 'בדיקה מול data.gov.il — הרשות להתחדשות עירונית',
         },
         {
-          label: 'תוכניות בניין עיר (תב"ע מבא"ת)',
+          label: 'תוכניות בניין עיר (תב"ע)',
           value:
             xplanCount > 0
               ? `אותרו ${xplanCount} תוכניות תכנון בסביבה`
@@ -503,15 +503,15 @@ export class AiSynthesisService {
 
     const engineeringPillar: PillarData = {
       id: 'engineering',
-      title: '4. ציר הנדסי עירוני',
-      subtitle: 'היתרי בנייה וחריגות מול העירייה',
+      title: '4. היתרי בנייה ומצב הנדסי',
+      subtitle: 'תיק בניין עירוני, היתרים וחריגות בנייה',
       metrics: [
         {
           label: 'תיק בניין והיתרים',
           value:
             permitsCount > 0
               ? `אותרו ${permitsCount} היתרי בנייה היסטוריים`
-              : '✓ תקין: תיק בניין מאושר ברשות המקומית',
+              : '✓ תקין: תיק בניין מאושר ברשות המקומיות',
           status: 'green',
           details: 'מקור: data.gov.il — היתרי בנייה ברשויות המקומיות',
         },
@@ -522,7 +522,7 @@ export class AiSynthesisService {
             : '✓ תקין: לא אותרו חריגות בנייה או צווי הריסה',
           status: hasViolations ? 'red' : 'green',
           details: hasViolations
-            ? 'פנה לעיריה לקבלת תיק הבניין המלא'
+            ? 'פנה לעירייה לקבלת תיק הבניין המלא'
             : 'תוצאה חיובית — אין חריגות רשומות בדאטה העירוני',
         },
       ],

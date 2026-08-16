@@ -2,6 +2,7 @@
 
 import { TrendingUp, Award, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 import type { PropertyValuation } from "@/types/property";
+import { SourceVerificationTooltip } from "@/components/report/SourceVerificationTooltip";
 
 // Fallback interface if types are separate
 export interface ValuationCardProps {
@@ -90,10 +91,11 @@ export function ValuationCard({ valuation }: ValuationCardProps) {
             </span>
           </div>
           <h3
-            className="text-2xl font-bold text-white tracking-wide"
+            className="text-2xl font-bold text-white tracking-wide flex items-center"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            הערכת שווי שוק משוערת
+            <span>הערכת שווי שוק משוערת</span>
+            <SourceVerificationTooltip sourceName="רשות המסים — nadlan.gov.il" sourceUrl="https://www.nadlan.gov.il/" details="מבוסס על עסקאות השוואה חתומות בנדל''ן ממשלתי" />
           </h3>
         </div>
 

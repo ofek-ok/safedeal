@@ -10,6 +10,7 @@ import {
   XCircle,
   LucideIcon,
 } from "lucide-react";
+import { SourceVerificationTooltip } from "@/components/report/SourceVerificationTooltip";
 
 type StatusType = "green" | "yellow" | "red";
 
@@ -225,8 +226,9 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
                       className="pb-4 border-b border-white/10 last:border-0 last:pb-0 space-y-2"
                     >
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs font-bold tracking-wider text-slate-200">
+                        <span className="text-xs font-bold tracking-wider text-slate-200 flex items-center">
                           {metric.label}
+                          <SourceVerificationTooltip sourceName={metric.details || metric.label} />
                         </span>
                         <StatusBadge status={metric.status} />
                       </div>

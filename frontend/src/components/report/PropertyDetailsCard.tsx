@@ -1,5 +1,7 @@
 "use client";
 
+import { SourceVerificationTooltip } from "@/components/report/SourceVerificationTooltip";
+
 interface PropertyDetailsProps {
   details: {
     projectName?: string;
@@ -22,24 +24,26 @@ export function PropertyDetailsCard({ details }: PropertyDetailsProps) {
   const rows = [
     ...(isDeveloper
       ? [
-          { label: "פרויקט", value: details.projectName || "נאות האגם" },
-          { label: "יזם", value: details.developerName || "נווה פארק יזמות בע״מ" },
+          { label: "פרויקט", value: details.projectName || "נאות האגם", source: "רשם החברות / היתרי בנייה", url: "https://ica.justice.gov.il/" },
+          { label: "יזם", value: details.developerName || "נווה פארק יזמות בע״מ", source: "רשם החברות", url: "https://ica.justice.gov.il/" },
         ]
       : []),
-    { label: "כתובת", value: details.address },
-    { label: "סוג נכס", value: details.propertyType },
-    { label: "קומה", value: details.floor },
+    { label: "כתובת", value: details.address, source: "GovMap המרכז למיפוי ישראל", url: "https://govmap.gov.il/" },
+    { label: "סוג נכס", value: details.propertyType, source: "פנקסי מקרקעין (טאבו)", url: "https://www.gov.il/he/departments/land_registration_and_settlement_rights/" },
+    { label: "קומה", value: details.floor, source: "פנקסי מקרקעין (טאבו)", url: "https://www.gov.il/he/departments/land_registration_and_settlement_rights/" },
     {
       label: "שטח",
       value: details.balconySqm
         ? `${details.areaSqm} + מרפסת ${details.balconySqm}`
         : details.areaSqm,
+      source: "מרשם מקרקעין (טאבו / היתרי בנייה)",
+      url: "https://data.gov.il/dataset/building-permits",
     },
     ...(!isDeveloper && details.yearBuilt
-      ? [{ label: "שנת בנייה", value: details.yearBuilt }]
+      ? [{ label: "שנת בנייה", value: details.yearBuilt, source: "תיק בניין עירוני / למ\"ס", url: "https://www.cbs.gov.il/" }]
       : []),
-    { label: "חניה / מחסן", value: details.parkingStorage || "חניה אחת / מחסן" },
-    { label: "מחיר מבוקש", value: details.askingPrice, highlight: true },
+    { label: "חניה / מחסן", value: details.parkingStorage || "חניה אחת / מחסן", source: "תקנון בית משותף (טאבו)", url: "https://www.gov.il/he/departments/land_registration_and_settlement_rights/" },
+    { label: "מחיר מבוקש", value: details.askingPrice, highlight: true, source: "הצהרת המוכר / לוח נדל\"ן", url: "https://www.nadlan.gov.il/" },
   ];
 
   return (
@@ -49,7 +53,7 @@ export function PropertyDetailsCard({ details }: PropertyDetailsProps) {
         style={{ fontFamily: "var(--font-serif)" }}
       >
         <span>פרטי הנכס</span>
-        <span className="text-xs font-normal text-slate-400 font-mono">נתוני אמת</span>
+        <span className="text-xs font-normal text-slate-400 font-mono">מאומת מול רשויות</span>
       </h3>
 
       <div className="divide-y divide-white/5">
@@ -58,7 +62,10 @@ export function PropertyDetailsCard({ details }: PropertyDetailsProps) {
             key={i}
             className="flex items-center justify-between py-2.5 text-xs sm:text-sm"
           >
-            <span className="text-slate-400 font-medium">{row.label}</span>
+            <span className="text-slate-400 font-medium flex items-center">
+              {row.label}
+              <SourceVerificationTooltip sourceName={row.source} sourceUrl={row.url} details={`נתון נשלף מתוך ${row.source}`} />
+            </span>
             <span
               className={`font-semibold ${
                 row.highlight ? "text-teal-400 font-serif text-base" : "text-slate-100"

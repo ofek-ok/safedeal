@@ -90,9 +90,12 @@ export class AiSynthesisService {
       .filter(Boolean)
       .join(' · ');
 
-    const area = parseFloat(payload?.details?.propertyArea || '112') || 112;
-    const askingPriceNum =
-      parseFloat((payload?.details?.askingPrice || '').replace(/,/g, '')) || 3150000;
+    const rawArea = payload?.details?.propertyArea;
+    const area = rawArea ? (parseFloat(rawArea) || 0) : 0;
+    const rawAskingPrice = payload?.details?.askingPrice;
+    const askingPriceNum = rawAskingPrice
+      ? (parseFloat(rawAskingPrice.replace(/,/g, '')) || 0)
+      : 0;
 
     const basePsm =
       sources.taxAuthority.data?.avgPricePerSqm ||
@@ -100,7 +103,7 @@ export class AiSynthesisService {
       28500;
 
     let featureMultiplier = 1.0;
-    const condition = payload?.details?.condition || 'good';
+    const condition = payload?.details?.condition || '';
     if (condition === 'new-contractor') featureMultiplier += 0.08;
     else if (condition === 'renovated') featureMultiplier += 0.06;
     else if (condition === 'needs-renovation') featureMultiplier -= 0.1;
@@ -110,8 +113,9 @@ export class AiSynthesisService {
     if (payload?.details?.hasStorage) featureMultiplier += 0.03;
     if (payload?.details?.hasBalcony) featureMultiplier += 0.04;
 
-    const floor = parseInt(payload?.details?.floorNumber || '3', 10) || 3;
-    const hasElevator = payload?.details?.hasElevator ?? true;
+    const rawFloor = payload?.details?.floorNumber;
+    const floor = rawFloor ? (parseInt(rawFloor, 10) || 0) : 0;
+    const hasElevator = payload?.details?.hasElevator ?? false;
     if (floor > 2 && !hasElevator) featureMultiplier -= 0.08;
     if (floor > 3 && hasElevator) featureMultiplier += 0.03;
 
@@ -159,18 +163,21 @@ export class AiSynthesisService {
         pricePerSqm: d.pricePerSqm || Math.round(d.price / (d.area || area)),
       }));
 
-    const valuation: PropertyValuation = {
-      estimatedValue,
-      minValue,
-      maxValue,
-      askingPrice: askingPriceNum,
-      priceDiffPercent,
-      dealFairness,
-      fairnessLabel,
-      confidenceLevel,
-      confidenceReason,
-      comparableDeals,
-    };
+    const hasValuationData = area > 0 || askingPriceNum > 0 || comparableDeals.length > 0;
+    const valuation: PropertyValuation | undefined = hasValuationData
+      ? {
+          estimatedValue,
+          minValue,
+          maxValue,
+          askingPrice: askingPriceNum,
+          priceDiffPercent,
+          dealFairness,
+          fairnessLabel,
+          confidenceLevel,
+          confidenceReason,
+          comparableDeals,
+        }
+      : undefined;
 
     // ── Build Top 5 Key Findings ──────────────────────────────────────────────
     const top5Findings: TopFindingItem[] =
@@ -545,7 +552,7 @@ export class AiSynthesisService {
       demandIndex: 'high' as const,
       demandLabel: 'ביקוש גבוה מאוד (34 ימים ממוצע על המדף)',
       avgDaysOnMarket: 34,
-      estimatedMonthlyRent: Math.round((estimatedValue * 0.028) / 12 / 100) * 100 || 7200,
+      estimatedMonthlyRent: estimatedValue > 0 ? Math.round((estimatedValue * 0.028) / 12 / 100) * 100 : 0,
       estimatedYieldPercent: 3.1,
       ratings: {
         schools: 8.8,
@@ -575,16 +582,16 @@ export class AiSynthesisService {
         developerName: payload?.details?.developerName || (dealType === 'new-developer' ? 'נווה פארק יזמות בע"מ' : undefined),
         address: fullAddress,
         cadastral: cadastralStr,
-        propertyType: payload?.details?.propertyType || `דירת ${payload?.details?.roomsCount || 4} חדרים`,
-        rooms: payload?.details?.roomsCount ? `${payload.details.roomsCount} חדרים` : '4 חדרים',
-        areaSqm: `${area} מ"ר`,
+        propertyType: payload?.details?.propertyType || (payload?.details?.roomsCount ? `דירת ${payload.details.roomsCount} חדרים` : 'לא צוין'),
+        rooms: payload?.details?.roomsCount ? `${payload.details.roomsCount} חדרים` : 'לא צוין',
+        areaSqm: area > 0 ? `${area} מ"ר` : 'לא צוין',
         balconySqm: payload?.details?.hasBalcony ? '18 מ"ר' : undefined,
-        floor: `קומה ${floor} מתוך 6`,
+        floor: floor > 0 ? `קומה ${floor}` : 'לא צוין',
         totalFloors: '6',
         parkingStorage: payload?.details?.hasParking ? 'מחסן + 2 חניות' : 'חניה אחת',
-        askingPrice: `₪${askingPriceNum.toLocaleString('he-IL')}`,
+        askingPrice: askingPriceNum > 0 ? `₪${askingPriceNum.toLocaleString('he-IL')}` : 'לא צוין',
         askingPriceNum,
-        yearBuilt: payload?.details?.yearBuilt || '1998',
+        yearBuilt: payload?.details?.yearBuilt || undefined,
       },
       top5Findings,
       quickRiskMap,

@@ -18,10 +18,18 @@ export function MultiStepForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted]       = useState(false);
   const [jobId, setJobId]               = useState<string | null>(null);
+  const [showErrors, setShowErrors]     = useState(false);
 
   const TOTAL = 4;
 
-  const next = () => { if (step < TOTAL) setStep((s) => s + 1); };
+  const next = () => {
+    if (step === 2 && !formData.step2.city.trim()) {
+      setShowErrors(true);
+      return;
+    }
+    setShowErrors(false);
+    if (step < TOTAL) setStep((s) => s + 1);
+  };
   const back = () => { if (step > 1)    setStep((s) => s - 1); };
 
   const handleSubmit = async () => {
@@ -182,7 +190,7 @@ export function MultiStepForm() {
           <Step2Address
             data={formData.step2}
             onChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
-            showErrors={false}
+            showErrors={showErrors}
           />
         )}
         {step === 3 && (

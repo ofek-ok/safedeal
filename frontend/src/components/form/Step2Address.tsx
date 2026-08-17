@@ -161,15 +161,18 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
 
       <div className="space-y-8">
         {/* City */}
-        <Field id="city" label="עיר / יישוב *" error={errors.city}>
+        <Field id="city" label="עיר / יישוב *">
           <GovAutocomplete
             id="city"
             type="city"
             value={data.city}
             onChange={(val) => set("city", val)}
             placeholder="לדוגמה: תל אביב-יפו"
-            hasError={!!errors.city}
+            hasError={showErrors && !data.city.trim()}
           />
+          {showErrors && !data.city.trim() && (
+            <p className="text-red-400 text-xs mt-1">יש להזין עיר כדי להמשיך</p>
+          )}
         </Field>
 
         {/* Street + House number */}

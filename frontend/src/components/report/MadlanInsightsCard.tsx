@@ -45,9 +45,9 @@ export function MadlanInsightsCard({ insights = DEFAULT_INSIGHTS }: MadlanInsigh
   return (
     <div className="w-full bg-[#0B1528] border border-white/10 rounded-2xl p-6 shadow-xl space-y-6">
       {/* Card Header */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+          <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 shrink-0">
             <MapPin size={18} />
           </div>
           <div>
@@ -64,7 +64,7 @@ export function MadlanInsightsCard({ insights = DEFAULT_INSIGHTS }: MadlanInsigh
         </div>
 
         {/* Overall Score Badge */}
-        <div className="flex items-center gap-2 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/30 px-3.5 py-1.5 rounded-xl">
+        <div className="flex items-center gap-2 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/30 px-3.5 py-1.5 rounded-xl self-start sm:self-auto shrink-0">
           <span className="text-xs text-slate-300 font-medium">ציון שכונה:</span>
           <span className="text-lg font-bold text-teal-400 font-serif">{overallScore}</span>
           <span className="text-xs text-slate-400 font-mono">/10</span>
@@ -72,7 +72,7 @@ export function MadlanInsightsCard({ insights = DEFAULT_INSIGHTS }: MadlanInsigh
       </div>
 
       {/* Sub-Ratings Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: "חינוך ובתי ספר", score: ratings.schools, Icon: GraduationCap },
           { label: "שקט ואיכות חיים", score: ratings.quietness, Icon: Volume2 },
@@ -81,13 +81,13 @@ export function MadlanInsightsCard({ insights = DEFAULT_INSIGHTS }: MadlanInsigh
         ].map(({ label, score: subScore, Icon }) => (
           <div
             key={label}
-            className="p-3.5 rounded-xl border border-white/5 bg-white/[0.02] flex flex-col justify-between space-y-2"
+            className="p-3 sm:p-3.5 rounded-xl border border-white/5 bg-white/[0.02] flex flex-col justify-between space-y-2"
           >
             <div className="flex items-center justify-between text-slate-400">
               <Icon size={16} className="text-teal-400" />
               <span className="text-xs font-bold text-white font-serif">{subScore}/10</span>
             </div>
-            <span className="text-xs font-medium text-slate-300">{label}</span>
+            <span className="text-xs font-medium text-slate-300 leading-tight">{label}</span>
           </div>
         ))}
       </div>

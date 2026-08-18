@@ -56,7 +56,7 @@ export function SafeScoreCard({
         </div>
 
         {/* Speedometer SVG Gauge */}
-        <div className="relative w-56 h-36 mx-auto flex flex-col items-center justify-end">
+        <div className="relative w-48 sm:w-56 h-32 sm:h-36 mx-auto flex flex-col items-center justify-end max-w-full overflow-hidden">
           <svg className="w-full h-full overflow-visible" viewBox="0 0 200 120">
             <defs>
               <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -120,12 +120,12 @@ export function SafeScoreCard({
           </div>
 
           <div
-            className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border font-bold text-xs sm:text-sm shadow-md transition-all duration-300 ${pillBgClass}`}
+            className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl border font-bold text-xs sm:text-sm shadow-md transition-all duration-300 text-center flex-wrap ${pillBgClass}`}
           >
             {isHigh ? (
-              <ShieldCheck size={18} />
+              <ShieldCheck size={18} className="shrink-0" />
             ) : (
-              <AlertCircle size={18} />
+              <AlertCircle size={18} className="shrink-0" />
             )}
             <span>המלצת SafeDeal: {recommendationText}</span>
           </div>

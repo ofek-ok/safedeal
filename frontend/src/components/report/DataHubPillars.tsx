@@ -211,7 +211,7 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
             >
               <div>
                 {/* Pillar Header */}
-                <div className="flex items-center gap-4 mb-6 pb-4 border-b border-white/10">
+                <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 mb-6 pb-4 border-b border-white/10">
                   <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0">
                     <Icon size={20} />
                   </div>
@@ -232,7 +232,7 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
                       key={idx}
                       className="pb-4 border-b border-white/5 last:border-0 last:pb-0 space-y-2.5"
                     >
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-2">
                         <span className="text-xs font-bold tracking-wider text-slate-200 flex items-center">
                           {metric.label}
                           <SourceVerificationTooltip sourceName={metric.details || metric.label} />

@@ -229,7 +229,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         </div>
 
         {/* Block / Parcel / Sub-parcel */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-6">
           {(
             [
               { key: "block",     label: "גוש",      placeholder: "מס׳ גוש" },

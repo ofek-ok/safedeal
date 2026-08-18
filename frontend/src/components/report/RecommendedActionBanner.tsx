@@ -13,16 +13,16 @@ export function RecommendedActionBanner({
 }: RecommendedActionProps) {
   return (
     <div className="w-full bg-[#060E1C] border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden text-right space-y-4">
-      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
         <h3
-          className="text-lg font-bold text-white flex items-center gap-2"
+          className="text-base sm:text-lg font-bold text-white flex items-center gap-2"
           style={{ fontFamily: "var(--font-serif)" }}
         >
-          <ShieldAlert size={20} className="text-amber-400" />
+          <ShieldAlert size={20} className="text-amber-400 shrink-0" />
           <span>תוכנית פעולה מומלצת / שורה תחתונה ללקוח</span>
         </h3>
 
-        <div className="flex items-center gap-2 bg-teal-500/10 border border-teal-500/30 px-3 py-1.5 rounded-xl">
+        <div className="flex items-center gap-2 bg-teal-500/10 border border-teal-500/30 px-3 py-1.5 rounded-xl shrink-0">
           <span className="text-xs font-mono font-bold text-teal-400">
             SAFE SCORE {score}/100
           </span>

@@ -342,23 +342,23 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           {/* Amenities */}
           <div className="space-y-4">
             <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">מאפיינים ותוספות בנכס</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
               {AMENITIES.map(({ key, label, Icon }) => {
                 const checked = data.step3[key];
                 return (
                   <label
                     key={key}
                     htmlFor={key}
-                    className={`flex items-center justify-between p-3.5 border rounded-xl cursor-pointer transition-all duration-300 ${
+                    className={`flex items-center justify-between p-3 sm:p-3.5 border rounded-xl cursor-pointer transition-all duration-300 ${
                       checked ? "border-[#00C896]/50 bg-[#00C896]/5" : "border-white/[0.06] bg-transparent hover:border-white/[0.15]"
                     }`}
                   >
                     <input id={key} type="checkbox" checked={checked as boolean} onChange={(e) => setStep3(key, e.target.checked as never)} className="sr-only" />
-                    <div className="flex items-center gap-2.5">
-                      <Icon size={16} className={checked ? "text-[#00C896]" : "text-slate-400"} />
-                      <span className={`text-[11px] uppercase tracking-widest ${checked ? "text-white" : "text-slate-400"}`}>{label}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Icon size={16} className={`shrink-0 ${checked ? "text-[#00C896]" : "text-slate-400"}`} />
+                      <span className={`text-[10px] sm:text-[11px] uppercase tracking-wider truncate ${checked ? "text-white" : "text-slate-400"}`}>{label}</span>
                     </div>
-                    <div className={`w-3 h-3 border transition-all duration-300 flex items-center justify-center ${
+                    <div className={`w-3 h-3 border shrink-0 transition-all duration-300 flex items-center justify-center ${
                       checked ? "border-[#00C896] bg-[#00C896]" : "border-slate-600 bg-transparent"
                     }`}>
                       {checked && (

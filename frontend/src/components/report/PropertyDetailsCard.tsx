@@ -60,14 +60,14 @@ export function PropertyDetailsCard({ details }: PropertyDetailsProps) {
         {rows.map((row, i) => (
           <div
             key={i}
-            className="flex items-center justify-between py-2.5 text-xs sm:text-sm"
+            className="flex flex-col sm:flex-row sm:items-center justify-between py-2.5 gap-1 sm:gap-2 text-xs sm:text-sm"
           >
-            <span className="text-slate-400 font-medium flex items-center">
+            <span className="text-slate-400 font-medium flex items-center shrink-0">
               {row.label}
               <SourceVerificationTooltip sourceName={row.source} sourceUrl={row.url} details={`נתון נשלף מתוך ${row.source}`} />
             </span>
             <span
-              className={`font-semibold ${
+              className={`font-semibold text-right sm:text-left break-words ${
                 row.highlight ? "text-teal-400 font-serif text-base" : "text-slate-100"
               }`}
             >

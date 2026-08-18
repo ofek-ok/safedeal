@@ -19,7 +19,7 @@ export function QuickRiskMap({ categories = DEFAULT_CATEGORIES }: QuickRiskMapPr
   return (
     <div className="w-full bg-[#0B1528] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
       <h3
-        className="text-lg font-bold text-white mb-2 border-b border-white/10 pb-3 flex items-center justify-between"
+        className="text-lg font-bold text-white mb-2 border-b border-white/10 pb-3 flex flex-wrap items-center justify-between gap-2"
         style={{ fontFamily: "var(--font-serif)" }}
       >
         <span>מפת סיכונים מהירה</span>
@@ -30,12 +30,12 @@ export function QuickRiskMap({ categories = DEFAULT_CATEGORIES }: QuickRiskMapPr
         {categories.map((cat) => (
           <div
             key={cat.id}
-            className="flex items-center justify-between p-3.5 rounded-xl border border-white/5 bg-white/[0.02]"
+            className="flex items-center justify-between p-3.5 rounded-xl border border-white/5 bg-white/[0.02] gap-2"
           >
             <span className="text-xs sm:text-sm font-medium text-slate-200">
               {cat.label}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <div
                 className={`w-3.5 h-3.5 rounded-full shadow-lg ${
                   cat.status === "green"
@@ -66,17 +66,17 @@ export function QuickRiskMap({ categories = DEFAULT_CATEGORIES }: QuickRiskMapPr
       </div>
 
       {/* Legend */}
-      <div className="pt-3 border-t border-white/5 flex items-center justify-center gap-6 text-[11px] text-slate-400">
+      <div className="pt-3 border-t border-white/5 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-[11px] text-slate-400">
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-          <span>ירוק = ללא סיכון מהותי</span>
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+          <span>ירוק = ללא סיכון</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-          <span>צהוב = מומלץ לבדיקה</span>
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
+          <span>צהוב = לבירור</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
           <span>אדום = מחייב טיפול</span>
         </div>
       </div>

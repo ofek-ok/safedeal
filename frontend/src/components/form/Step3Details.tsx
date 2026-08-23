@@ -428,6 +428,22 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               </div>
 
               <div>
+                <label htmlFor="developerRegNumber" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                  ח.פ / עוסק מורשה של היזם
+                  <span className="mr-2 text-teal-400/70 text-[9px] border border-teal-500/30 px-1.5 py-0.5 rounded">→ רשם החברות</span>
+                </label>
+                <input
+                  id="developerRegNumber"
+                  type="text"
+                  inputMode="numeric"
+                  value={data.step3.developerRegNumber || ""}
+                  onChange={(e) => setStep3("developerRegNumber", e.target.value)}
+                  placeholder="לדוגמה: 514123456"
+                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                />
+              </div>
+
+              <div>
                 <label htmlFor="accreditedBank" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
                   שם הבנק המלווה (ערבויות חוק מכר)
                 </label>

@@ -183,6 +183,7 @@ export interface Step3DealDetails {
   isRented?: boolean;
   hasAdditions?: boolean;
   developerName?: string;
+  developerRegNumber?: string;    // ח.פ / עוסק מורשה — לרשם החברות
   accreditedBank?: string;
   targetDeliveryDate?: string;
   indexLinkage?: boolean;
@@ -245,6 +246,7 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     isRented: false,
     hasAdditions: false,
     developerName: "",
+    developerRegNumber: "",
     accreditedBank: "",
     targetDeliveryDate: "",
     indexLinkage: false,

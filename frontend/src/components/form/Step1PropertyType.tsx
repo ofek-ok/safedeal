@@ -31,11 +31,11 @@ export function Step1PropertyType({ data, onChange, onAutoAdvance }: Props) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <button
           type="button"
           onClick={() => handleSelect("second-hand")}
-          className={`flex flex-col items-center justify-center gap-6 p-8 rounded-xl border transition-all duration-300 text-center ${
+          className={`flex flex-col items-center justify-center gap-4 sm:gap-6 p-6 sm:p-8 rounded-xl border transition-all duration-300 text-center ${
             data.dealType === "second-hand"
               ? "border-[#00C896]/50 bg-[#00C896]/10"
               : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.2]"
@@ -51,7 +51,7 @@ export function Step1PropertyType({ data, onChange, onAutoAdvance }: Props) {
         <button
           type="button"
           onClick={() => handleSelect("developer")}
-          className={`flex flex-col items-center justify-center gap-6 p-8 rounded-xl border transition-all duration-300 text-center ${
+          className={`flex flex-col items-center justify-center gap-4 sm:gap-6 p-6 sm:p-8 rounded-xl border transition-all duration-300 text-center ${
             data.dealType === "developer"
               ? "border-[#00C896]/50 bg-[#00C896]/10"
               : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.2]"

@@ -530,4 +530,21 @@
   .animate-fade-in-up {
     animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
+  /* ── Mobile Touch Targets & iOS Zoom Prevention ── */
+  @media (max-width: 640px) {
+    .sd-input, .sd-select {
+      font-size: 16px; /* prevents iOS Safari auto-zoom on focus */
+      padding: 12px 14px;
+    }
+    .sd-dropzone {
+      padding: 24px 14px;
+    }
+    .sd-btn-primary {
+      min-height: 52px;
+    }
+    .sd-btn-ghost {
+      min-height: 52px;
+    }
+  }
 }

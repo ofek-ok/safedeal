@@ -99,16 +99,16 @@ export default function HomePage() {
       <header className="fixed top-4 left-4 right-4 sm:left-8 sm:right-8 z-50 max-w-6xl mx-auto">
         <nav className="flex items-center justify-between px-5 sm:px-8 py-3.5 rounded-2xl bg-[#060E1C]/80 backdrop-blur-2xl border border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
           <SafeDealLogo size="sm" />
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link
               href="/analyze"
-              className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors duration-200"
+              className="hidden sm:inline text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors duration-200"
             >
               ראו דוח לדוגמה
             </Link>
             <Link
               href="/analyze"
-              className="sd-btn-primary text-xs py-2.5 px-5 font-bold shadow-[0_4px_20px_rgba(0,200,150,0.3)] hover:shadow-[0_6px_28px_rgba(0,200,150,0.5)]"
+              className="sd-btn-primary text-xs py-2.5 px-4 sm:px-5 font-bold shadow-[0_4px_20px_rgba(0,200,150,0.3)] hover:shadow-[0_6px_28px_rgba(0,200,150,0.5)]"
             >
               בדקו את הדירה עכשיו
             </Link>
@@ -185,17 +185,17 @@ export default function HomePage() {
 
         {/* Action Buttons */}
         <Reveal delay={0.45}>
-          <div className="flex flex-col sm:flex-row items-center gap-5">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 w-full sm:w-auto">
             <Link
               href="/analyze"
-              className="sd-btn-primary text-base px-9 py-4.5 font-extrabold shadow-[0_8px_30px_rgba(0,200,150,0.4)]"
+              className="sd-btn-primary text-base px-8 sm:px-9 py-4 font-extrabold shadow-[0_8px_30px_rgba(0,200,150,0.4)] w-full sm:w-auto"
             >
               <Search size={18} />
               בדקו את הדירה עכשיו
             </Link>
             <Link
               href="/analyze"
-              className="sd-btn-ghost text-sm font-bold px-7 py-4"
+              className="sd-btn-ghost text-sm font-bold px-7 py-4 w-full sm:w-auto"
             >
               ראו דוח לדוגמה
             </Link>
@@ -546,10 +546,10 @@ export default function HomePage() {
         </Reveal>
 
         <Reveal delay={0.3}>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 w-full sm:w-auto max-w-xs sm:max-w-none mx-auto">
             <Link
               href="/analyze"
-              className="sd-btn-primary text-base px-10 py-5 font-extrabold shadow-[0_10px_35px_rgba(0,200,150,0.45)]"
+              className="sd-btn-primary text-base px-8 sm:px-10 py-4 sm:py-5 font-extrabold shadow-[0_10px_35px_rgba(0,200,150,0.45)] w-full sm:w-auto"
             >
               <Search size={18} />
               בדקו את הדירה עכשיו
@@ -557,7 +557,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/analyze"
-              className="sd-btn-ghost text-sm font-bold px-8 py-4.5"
+              className="sd-btn-ghost text-sm font-bold px-8 py-4 w-full sm:w-auto"
             >
               ראו דוח לדוגמה
             </Link>

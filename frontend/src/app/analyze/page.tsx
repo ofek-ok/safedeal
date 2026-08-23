@@ -48,7 +48,7 @@ export default function AnalyzePage() {
       </div>
 
       {/* Form card — high-end glass container */}
-      <div className="w-full max-w-2xl rounded-2xl border border-white/14 bg-[#0A1628]/85 backdrop-blur-2xl p-6 md:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
+      <div className="w-full max-w-2xl rounded-2xl border border-white/14 bg-[#0A1628]/85 backdrop-blur-2xl p-4 sm:p-6 md:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
         <MultiStepForm />
       </div>
 

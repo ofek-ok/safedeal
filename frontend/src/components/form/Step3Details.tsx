@@ -290,7 +290,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               מספר חדרים * 
               <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">כולל חצאי חדרים</span>
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {ROOMS_OPTIONS.map((r) => {
                 const active = data.step3.roomsCount === r;
                 return (
@@ -299,7 +299,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                     type="button"
                     id={`rooms-${r}`}
                     onClick={() => setStep3("roomsCount", r)}
-                    className={`px-4 py-2 text-sm transition-all duration-300 border-b-2 ${
+                    className={`px-3 sm:px-4 py-2.5 sm:py-2 text-sm transition-all duration-300 border-b-2 min-h-[44px] ${
                       active 
                         ? "border-[#00C896] text-[#00C896] bg-[#00C896]/5" 
                         : "border-white/[0.08] text-slate-500 hover:border-white/[0.2] hover:text-slate-300"
@@ -527,23 +527,6 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               required
               onSelect={(f) => setStep4("tabuFile", f)}
               onRemove={() => setStep4("tabuFile", null)}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-slate-400 font-medium">
-              תיק בניין
-              <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">אופציונלי</span>
-            </p>
-            <Dropzone
-              id="building-upload"
-              label="גרור לכאן את תיק הבניין"
-              sublabel="PDF, JPG, PNG · עד 50MB"
-              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-              file={data.step4.buildingFile}
-              tag="תיק בניין"
-              onSelect={(f) => setStep4("buildingFile", f)}
-              onRemove={() => setStep4("buildingFile", null)}
             />
           </div>
         </div>

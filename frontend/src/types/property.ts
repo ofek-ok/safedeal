@@ -179,7 +179,7 @@ export interface Step3DealDetails {
   monthlyRent: string;   // optional
   // ── Smart Optional Fields ──
   sellerName?: string;
-  registrationStatus?: string;
+  sellerIdNumber?: string;
   isRented?: boolean;
   hasAdditions?: boolean;
   developerName?: string;
@@ -241,7 +241,7 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     hasAccessibility: false,
     monthlyRent: "",
     sellerName: "",
-    registrationStatus: "tabu",
+    sellerIdNumber: "",
     isRented: false,
     hasAdditions: false,
     developerName: "",

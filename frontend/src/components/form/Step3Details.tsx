@@ -459,7 +459,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="sellerName" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
-                  שם המוכר / ת.ז. (לבדיקת עיקולים וחובות)
+                  שם מלא של המוכר
                 </label>
                 <input
                   id="sellerName"
@@ -472,20 +472,18 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               </div>
 
               <div>
-                <label htmlFor="registrationStatus" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
-                  סטטוס רישום הנכס
+                <label htmlFor="sellerIdNumber" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                  תעודת זהות של המוכר
                 </label>
-                <select
-                  id="registrationStatus"
-                  value={data.step3.registrationStatus || "tabu"}
-                  onChange={(e) => setStep3("registrationStatus", e.target.value)}
-                  className="w-full bg-[#060E1C] border-b border-white/15 py-2.5 text-white text-sm focus:border-[#00C896] focus:outline-none"
-                >
-                  <option value="tabu">פנקסי מקרקעין (טאבו רשום)</option>
-                  <option value="company">חברה משכנת</option>
-                  <option value="rmi">רשות מקרקעי ישראל (רמ״י)</option>
-                  <option value="musha">מושע (בעלות משותפת)</option>
-                </select>
+                <input
+                  id="sellerIdNumber"
+                  type="text"
+                  inputMode="numeric"
+                  value={data.step3.sellerIdNumber || ""}
+                  onChange={(e) => setStep3("sellerIdNumber", e.target.value)}
+                  placeholder="לדוגמה: 012345678"
+                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                />
               </div>
             </div>
           )}

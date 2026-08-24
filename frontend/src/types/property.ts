@@ -198,7 +198,6 @@ export interface UploadedFile {
 
 export interface Step4Documents {
   tabuFile: File | null;
-  buildingFile: File | null;
 }
 
 // ── Full form state ───────────────────────────────────────────
@@ -253,6 +252,5 @@ export const INITIAL_FORM_DATA: WizardFormData = {
   },
   step4: {
     tabuFile: null,
-    buildingFile: null,
   },
 };

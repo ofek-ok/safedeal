@@ -75,8 +75,7 @@ export function MultiStepForm() {
           location:  formData.step2,
           deal:      formData.step3,
           documents: {
-            tabuFileName:     savedTabuName,
-            buildingFileName: formData.step4.buildingFile?.name ?? null,
+            tabuFileName: savedTabuName,
           },
         }),
       });

@@ -189,17 +189,6 @@ export function Step5Summary({ data, isSubmitting, onSubmit }: Props) {
                   {step4.tabuFile ? "מאומת" : "בדיקה לפי כתובת בלבד"}
                 </span>
               </div>
-              {step4.buildingFile && (
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-widest text-slate-500">תיק בניין</span>
-                    <span className="text-sm tracking-wider text-slate-200">{step4.buildingFile.name}</span>
-                  </div>
-                  <span className="text-[9px] uppercase tracking-widest px-2 py-1 rounded border border-[#00C896]/30 text-[#00C896]">
-                    צורף
-                  </span>
-                </div>
-              )}
             </div>
           </ReportSection>
         </div>

@@ -150,24 +150,6 @@ export function Step4Documents({ data, onChange }: Props) {
           />
         </div>
 
-        {/* Building file */}
-        <div className="space-y-4">
-          <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-slate-400 font-medium">
-            תיק בניין
-            <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">אופציונלי</span>
-          </p>
-          <Dropzone
-            id="building-upload"
-            label="גרור לכאן את תיק הבניין"
-            sublabel="PDF, JPG, PNG · עד 50MB"
-            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-            file={data.buildingFile}
-            tag="תיק בניין"
-            onSelect={(f) => onChange({ ...data, buildingFile: f })}
-            onRemove={() => onChange({ ...data, buildingFile: null })}
-          />
-        </div>
-
         {/* Hint */}
         <div className="p-5 border-l-2 border-[#00C896] bg-[#00C896]/5 flex items-start gap-4">
           <AlertCircle size={16} className="shrink-0 mt-0.5 text-[#00C896]" />

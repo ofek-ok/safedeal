@@ -28,27 +28,8 @@ export default function AnalyzePage() {
         <SafeDealLogo size="sm" />
       </nav>
 
-      {/* Editorial page header */}
-      <div className="text-center mb-4 sm:mb-10 max-w-xl">
-        <div className="w-8 sm:w-10 h-[2px] bg-[#00C896] mx-auto mb-2.5 sm:mb-5" />
-        <p
-          className="text-[10px] sm:text-xs font-bold tracking-[0.2em] text-[#2DD4BF] uppercase mb-1 sm:mb-3"
-        >
-          בדיקת נאותות
-        </p>
-        <h1
-          className="text-xl sm:text-3xl md:text-4xl font-serif font-extrabold text-white mb-1.5 sm:mb-3 leading-tight"
-          style={{ fontFamily: "var(--font-serif)" }}
-        >
-          כמה פרטים על הנכס - ואנחנו מתחילים לבדוק
-        </h1>
-        <p className="text-slate-300 text-xs sm:text-base leading-relaxed">
-          ללא שדות חובה — מלאו את מה שנוח לכם וקבלו דוח תוך דקות.
-        </p>
-      </div>
-
-      {/* Form card — high-end glass container */}
-      <div className="w-full max-w-2xl rounded-2xl border border-white/14 bg-[#0A1628]/85 backdrop-blur-2xl p-4 sm:p-6 md:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
+      {/* Multi-step form with step indicator above header */}
+      <div className="w-full max-w-2xl">
         <MultiStepForm />
       </div>
 

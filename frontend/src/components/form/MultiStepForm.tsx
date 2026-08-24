@@ -168,74 +168,87 @@ export function MultiStepForm() {
 
   return (
     <div className="w-full">
+      {/* Step Indicator above header */}
       <StepIndicator current={step} />
 
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-6 py-2.5 sm:py-4 mb-4 sm:mb-8 border-b border-white/[0.06] text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-400">
-        <span className="flex items-center gap-1.5"><Clock size={12} className="sm:w-3.5 sm:h-3.5" /> דוח תוך דקות</span>
-        <span className="text-white/10 hidden sm:inline">|</span>
-        <span className="flex items-center gap-1.5"><Lock size={12} className="sm:w-3.5 sm:h-3.5" /> תשלום מאובטח</span>
-        <span className="text-white/10 hidden sm:inline">|</span>
-        <span className="flex items-center gap-1.5"><BarChart3 size={12} className="sm:w-3.5 sm:h-3.5" /> מידע ממקורות רשמיים</span>
+      {/* Editorial page header */}
+      <div className="text-center mb-4 sm:mb-8 max-w-xl mx-auto">
+        <div className="w-8 sm:w-10 h-[2px] bg-[#00C896] mx-auto mb-2 sm:mb-4" />
+        <p className="text-[10px] sm:text-xs font-bold tracking-[0.2em] text-[#2DD4BF] uppercase mb-1 sm:mb-2">
+          בדיקת נאותות
+        </p>
+        <h1
+          className="text-xl sm:text-3xl md:text-4xl font-serif font-extrabold text-white mb-1.5 sm:mb-2 leading-tight"
+          style={{ fontFamily: "var(--font-serif)" }}
+        >
+          כמה פרטים על הנכס - ואנחנו מתחילים לבדוק
+        </h1>
+        <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+          ללא שדות חובה — מלאו את מה שנוח לכם וקבלו דוח תוך דקות.
+        </p>
       </div>
 
-      <div className="min-h-[300px] sm:min-h-[400px]">
-        {step === 1 && (
-          <Step1PropertyType
-            data={{ dealType: formData.step3.dealType }}
-            onChange={(dealType) => setFormData((f) => ({ ...f, step3: { ...f.step3, dealType } }))}
-            onAutoAdvance={next}
-          />
-        )}
-        {step === 2 && (
-          <Step2Address
-            data={formData.step2}
-            onChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
-            showErrors={showErrors}
-          />
-        )}
-        {step === 3 && (
-          <Step3Details
-            data={formData}
-            onChange={setFormData}
-            showErrors={false}
-          />
-        )}
-        {step === 4 && (
-          <Step4Checkout
-            data={formData}
-            isSubmitting={isSubmitting}
-            onSubmit={handleSubmit}
-            onChange={setFormData}
-          />
-        )}
-      </div>
-
-      {step < TOTAL && (
-        <div className="flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-12 border-t border-white/[0.08]">
-          <button
-            type="button"
-            onClick={back}
-            disabled={step === 1}
-            className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
-          >
-            <ArrowRight size={14} />
-            חזרה
-          </button>
-
-          <span className="text-[10px] uppercase tracking-widest text-slate-600 font-mono">
-            0{step} / 0{TOTAL}
-          </span>
-
-          <button 
-            type="button" 
-            onClick={next} 
-            className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#00C896] hover:text-[#00C896]/80 transition-colors border border-[#00C896]/30 px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-sm bg-[#00C896]/5 hover:bg-[#00C896]/10"
-          >
-            המשך
-            <ArrowLeft size={14} />
-          </button>
+      {/* Form card — high-end glass container */}
+      <div className="w-full rounded-2xl border border-white/14 bg-[#0A1628]/85 backdrop-blur-2xl p-4 sm:p-6 md:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
+        <div className="min-h-[260px] sm:min-h-[360px]">
+          {step === 1 && (
+            <Step1PropertyType
+              data={{ dealType: formData.step3.dealType }}
+              onChange={(dealType) => setFormData((f) => ({ ...f, step3: { ...f.step3, dealType } }))}
+              onAutoAdvance={next}
+            />
+          )}
+          {step === 2 && (
+            <Step2Address
+              data={formData.step2}
+              onChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
+              showErrors={showErrors}
+            />
+          )}
+          {step === 3 && (
+            <Step3Details
+              data={formData}
+              onChange={setFormData}
+              showErrors={false}
+            />
+          )}
+          {step === 4 && (
+            <Step4Checkout
+              data={formData}
+              isSubmitting={isSubmitting}
+              onSubmit={handleSubmit}
+              onChange={setFormData}
+            />
+          )}
         </div>
-      )}
+
+        {step < TOTAL && (
+          <div className="flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-10 border-t border-white/[0.08]">
+            <button
+              type="button"
+              onClick={back}
+              disabled={step === 1}
+              className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+            >
+              <ArrowRight size={14} />
+              חזרה
+            </button>
+
+            <span className="text-[10px] uppercase tracking-widest text-slate-600 font-mono">
+              0{step} / 0{TOTAL}
+            </span>
+
+            <button 
+              type="button" 
+              onClick={next} 
+              className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#00C896] hover:text-[#00C896]/80 transition-colors border border-[#00C896]/30 px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-sm bg-[#00C896]/5 hover:bg-[#00C896]/10"
+            >
+              המשך
+              <ArrowLeft size={14} />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

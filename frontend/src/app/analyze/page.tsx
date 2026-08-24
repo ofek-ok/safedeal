@@ -40,7 +40,7 @@ export default function AnalyzePage() {
           className="text-3xl sm:text-4xl font-serif font-extrabold text-white mb-3 leading-tight"
           style={{ fontFamily: "var(--font-serif)" }}
         >
-          הזינו את פרטי הנכס
+          כמה פרטים על הנכס - ואנחנו מתחילים לבדוק
         </h1>
         <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
           ללא שדות חובה — מלאו את מה שנוח לכם וקבלו דוח תוך דקות.

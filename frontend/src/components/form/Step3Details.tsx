@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
-import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp, Sun, Building2, Accessibility } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp, Sun, Building2, Accessibility, ChevronDown, Check } from "lucide-react";
 import type { WizardFormData, Step3DealDetails, PropertyCondition } from "@/types/property";
 import { ROOMS_OPTIONS, PROPERTY_CONDITION_LABELS } from "@/types/property";
 import { formatThousands, stripFormatting, calcYield, formatBytes, isValidEmail } from "@/lib/utils";
@@ -168,6 +168,19 @@ function IconInput({
 }
 
 export function Step3Details({ data, onChange, showErrors }: Props) {
+  const [isRoomsOpen, setIsRoomsOpen] = useState(false);
+  const roomsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (roomsRef.current && !roomsRef.current.contains(event.target as Node)) {
+        setIsRoomsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const setStep3 = <K extends keyof WizardFormData["step3"]>(k: K, v: WizardFormData["step3"][K]) =>
     onChange({ ...data, step3: { ...data.step3, [k]: v } });
 
@@ -284,33 +297,62 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
             </div>
           </div>
 
-          {/* Rooms selector */}
-          <div className="space-y-4">
-            <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+          {/* Rooms selector (Dropdown) */}
+          <div className="space-y-3" ref={roomsRef}>
+            <p className="flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">
               מספר חדרים * 
               <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">כולל חצאי חדרים</span>
             </p>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              {ROOMS_OPTIONS.map((r) => {
-                const active = data.step3.roomsCount === r;
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    id={`rooms-${r}`}
-                    onClick={() => setStep3("roomsCount", r)}
-                    className={`px-3 sm:px-4 py-2.5 sm:py-2 text-sm transition-all duration-300 border-b-2 min-h-[44px] ${
-                      active 
-                        ? "border-[#00C896] text-[#00C896] bg-[#00C896]/5" 
-                        : "border-white/[0.08] text-slate-500 hover:border-white/[0.2] hover:text-slate-300"
-                    }`}
-                    style={{ fontFamily: "var(--font-serif)" }}
-                  >
-                    {r}
-                  </button>
-                );
-              })}
+
+            <div className="relative">
+              <button
+                type="button"
+                id="rooms-dropdown-btn"
+                onClick={() => setIsRoomsOpen(!isRoomsOpen)}
+                className={`w-full flex items-center justify-between bg-transparent border-b py-3 px-1 text-right transition-colors duration-300 ${
+                  errors.roomsCount
+                    ? "border-red-400/60 text-red-300"
+                    : isRoomsOpen
+                    ? "border-[#00C896] text-white"
+                    : "border-white/[0.15] text-white hover:border-white/[0.3]"
+                }`}
+              >
+                <span className={`text-sm ${data.step3.roomsCount ? "text-white font-medium" : "text-slate-500"}`}>
+                  {data.step3.roomsCount ? `${data.step3.roomsCount} חדרים` : "בחרו מספר חדרים מהרשימה..."}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`text-slate-400 transition-transform duration-300 ${isRoomsOpen ? "rotate-180 text-[#00C896]" : ""}`}
+                />
+              </button>
+
+              {isRoomsOpen && (
+                <div className="absolute z-30 top-full mt-1.5 w-full bg-[#0A1628] border border-white/15 rounded-xl shadow-[0_15px_35px_rgba(0,0,0,0.6)] backdrop-blur-xl overflow-hidden py-1.5 max-h-60 overflow-y-auto animate-fade-in-up">
+                  {ROOMS_OPTIONS.map((r) => {
+                    const isSelected = data.step3.roomsCount === r;
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => {
+                          setStep3("roomsCount", r);
+                          setIsRoomsOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-2.5 text-right text-xs sm:text-sm transition-colors ${
+                          isSelected
+                            ? "bg-[#00C896]/15 text-[#00C896] font-bold"
+                            : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                        }`}
+                      >
+                        <span style={{ fontFamily: "var(--font-serif)" }}>{r} חדרים</span>
+                        {isSelected && <Check size={14} className="text-[#00C896]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+
             {errors.roomsCount && (
               <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400">
                 <AlertCircle size={12} /> {errors.roomsCount}

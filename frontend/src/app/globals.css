@@ -547,4 +547,56 @@
       min-height: 52px;
     }
   }
+
+  /* ── High-Efficiency PDF Print Optimization (2-Page Deck) ── */
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm;
+    }
+
+    body {
+      background-color: #060E1C !important;
+      color: #ffffff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    main {
+      padding: 0 !important;
+      margin: 0 auto !important;
+      max-width: 100% !important;
+      gap: 1.5rem !important;
+    }
+
+    .print\:hidden {
+      display: none !important;
+    }
+
+    .print\:page-break-before {
+      page-break-before: always !important;
+      break-before: page !important;
+    }
+
+    /* Keep individual report cards unbroken across pages */
+    .sd-report-card, 
+    .sd-glass, 
+    .sd-report-container,
+    .grid > div {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    /* Tighter print spacing to ensure compact page budget */
+    .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1rem !important;
+    }
+    .space-y-12 > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1.25rem !important;
+    }
+    .py-12, .pb-28 {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+  }
 }

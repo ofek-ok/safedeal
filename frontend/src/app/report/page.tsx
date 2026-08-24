@@ -121,7 +121,7 @@ export default function ReportPage() {
       <ReportActionBar />
 
       {/* ── PAGE 1: EXECUTIVE DECISION PAGE ─────────────────────────────────── */}
-      <div className="w-full space-y-8 animate-fade-in-up">
+      <div className="w-full space-y-8 print:space-y-4 animate-fade-in-up">
         <ExecutiveHeader
           dealType="second-hand"
           reportNumber="SD-2026-002"
@@ -129,7 +129,7 @@ export default function ReportPage() {
           address="רחוב הרימון 8, הוד השרון"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
           <PropertyDetailsCard details={propertyDetails} />
           <SafeScoreCard
             score={71}
@@ -138,7 +138,7 @@ export default function ReportPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
           <Top5KeyFindings findings={top5Findings} />
           <QuickRiskMap categories={quickRiskMap} />
         </div>
@@ -168,8 +168,8 @@ export default function ReportPage() {
       <div className="w-full h-[1px] bg-white/10 my-8 print:page-break-before" />
 
       {/* ── PAGE 2: DETAILED BREAKDOWN & ACTION PLAN ────────────────────────── */}
-      <div className="w-full space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+      <div className="w-full space-y-8 print:space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
           <ScoreBreakdownBars items={scoreBreakdown} />
           <ActionableContextCard
             title="מה המשמעות של חובות אישיים?"

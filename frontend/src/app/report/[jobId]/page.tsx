@@ -219,7 +219,7 @@ export default function ReportByIdPage() {
       <ReportActionBar />
 
       {/* ── PAGE 1: EXECUTIVE DECISION PAGE (עמוד החלטה) ────────────────────── */}
-      <div className="w-full space-y-8 animate-fade-in-up">
+      <div className="w-full space-y-8 print:space-y-4 animate-fade-in-up">
         <ExecutiveHeader
           dealType={r.dealType}
           reportNumber={r.reportNumber || `SD-2026-${jobId.slice(-3)}`}
@@ -229,7 +229,7 @@ export default function ReportByIdPage() {
         />
 
         {/* Grid: Property Details + SafeScore Gauge */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
           <PropertyDetailsCard details={r.property} />
           <SafeScoreCard
             score={r.safeScore}
@@ -240,7 +240,7 @@ export default function ReportByIdPage() {
         </div>
 
         {/* Grid: Top 5 Findings + Quick Risk Map */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
           <Top5KeyFindings findings={r.top5Findings} />
           <QuickRiskMap categories={r.quickRiskMap} />
         </div>
@@ -253,11 +253,11 @@ export default function ReportByIdPage() {
       </div>
 
       {/* Page Break Divider for PDF Printing */}
-      <div className="w-full h-[1px] bg-white/10 my-8 print:page-break-before" />
+      <div className="w-full h-[1px] bg-white/10 my-8 print:my-0 print:border-none print:page-break-before" />
 
       {/* ── PAGE 2: DETAILED BREAKDOWN & ACTION PLAN (עמוד פירוט ופעולות) ────── */}
-      <div className="w-full space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+      <div className="w-full space-y-8 print:space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
           <ScoreBreakdownBars items={r.scoreBreakdown} />
           <ActionableContextCard
             title={r.actionableSection?.title}

@@ -170,15 +170,15 @@ export function MultiStepForm() {
     <div className="w-full">
       <StepIndicator current={step} />
 
-      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 py-4 mb-8 border-b border-white/[0.06] text-[10px] uppercase tracking-widest text-slate-400">
-        <span className="flex items-center gap-1.5"><Clock size={14} /> דוח תוך דקות</span>
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-6 py-2.5 sm:py-4 mb-4 sm:mb-8 border-b border-white/[0.06] text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-400">
+        <span className="flex items-center gap-1.5"><Clock size={12} className="sm:w-3.5 sm:h-3.5" /> דוח תוך דקות</span>
         <span className="text-white/10 hidden sm:inline">|</span>
-        <span className="flex items-center gap-1.5"><Lock size={14} /> תשלום מאובטח</span>
+        <span className="flex items-center gap-1.5"><Lock size={12} className="sm:w-3.5 sm:h-3.5" /> תשלום מאובטח</span>
         <span className="text-white/10 hidden sm:inline">|</span>
-        <span className="flex items-center gap-1.5"><BarChart3 size={14} /> מידע ממקורות רשמיים</span>
+        <span className="flex items-center gap-1.5"><BarChart3 size={12} className="sm:w-3.5 sm:h-3.5" /> מידע ממקורות רשמיים</span>
       </div>
 
-      <div className="min-h-[400px]">
+      <div className="min-h-[300px] sm:min-h-[400px]">
         {step === 1 && (
           <Step1PropertyType
             data={{ dealType: formData.step3.dealType }}
@@ -211,7 +211,7 @@ export function MultiStepForm() {
       </div>
 
       {step < TOTAL && (
-        <div className="flex items-center justify-between pt-8 mt-12 border-t border-white/[0.08]">
+        <div className="flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-12 border-t border-white/[0.08]">
           <button
             type="button"
             onClick={back}
@@ -229,7 +229,7 @@ export function MultiStepForm() {
           <button 
             type="button" 
             onClick={next} 
-            className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#00C896] hover:text-[#00C896]/80 transition-colors border border-[#00C896]/30 px-5 sm:px-6 py-3 sm:py-2.5 rounded-sm bg-[#00C896]/5 hover:bg-[#00C896]/10"
+            className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#00C896] hover:text-[#00C896]/80 transition-colors border border-[#00C896]/30 px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-sm bg-[#00C896]/5 hover:bg-[#00C896]/10"
           >
             המשך
             <ArrowLeft size={14} />

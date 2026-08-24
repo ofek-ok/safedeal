@@ -11,9 +11,9 @@ export function StepIndicator({ current }: { current: number }) {
   const pct = ((current - 1) / (STEPS.length - 1)) * 100;
 
   return (
-    <div className="w-full mb-12">
+    <div className="w-full mb-4 sm:mb-12">
       {/* Progress Track */}
-      <div className="relative h-[1px] mb-8 bg-white/[0.08]">
+      <div className="relative h-[1px] mb-4 sm:mb-8 bg-white/[0.08]">
         <div
           className="absolute top-0 right-0 h-full transition-all duration-500"
           style={{
@@ -25,12 +25,12 @@ export function StepIndicator({ current }: { current: number }) {
       </div>
 
       {/* Step Nodes */}
-      <div className="flex items-start justify-between relative px-2 -mt-[34px]">
+      <div className="flex items-start justify-between relative px-2 -mt-[26px] sm:-mt-[34px]">
         {STEPS.map(({ id, label }) => {
           const done   = id < current;
           const active = id === current;
           return (
-            <div key={id} className="flex flex-col items-center gap-5 min-w-0">
+            <div key={id} className="flex flex-col items-center gap-2 sm:gap-5 min-w-0">
               <div
                 className={`w-2 h-2 rotate-45 transition-all duration-500 ${
                   done
@@ -62,7 +62,7 @@ export function StepIndicator({ current }: { current: number }) {
       </div>
 
       {/* Mobile Current Step Banner */}
-      <div className="sm:hidden flex items-center justify-between mt-6 pt-4 border-t border-white/[0.06]">
+      <div className="sm:hidden flex items-center justify-between mt-3 pt-2.5 border-t border-white/[0.06]">
         <span className="text-[10px] uppercase tracking-widest text-slate-500">
           שלב {current} מתוך {STEPS.length}
         </span>

@@ -144,22 +144,22 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
     : {};
 
   return (
-    <div className="space-y-10 animate-fade-in-up">
+    <div className="space-y-4 sm:space-y-10 animate-fade-in-up">
       {/* Heading */}
-      <div className="mb-10 text-right">
-        <div className="w-8 h-[1px] bg-[#00C896] mb-4"></div>
-        <span className="text-[#00C896] text-[10px] font-bold uppercase tracking-widest mb-3 block">
+      <div className="mb-4 sm:mb-10 text-right">
+        <div className="w-8 h-[1px] bg-[#00C896] mb-2 sm:mb-4"></div>
+        <span className="text-[#00C896] text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1 sm:mb-3 block">
           שלב 02
         </span>
-        <h2 className="text-2xl font-normal text-white mb-3" style={{ fontFamily: "var(--font-serif)" }}>
+        <h2 className="text-xl sm:text-2xl font-normal text-white mb-1 sm:mb-3" style={{ fontFamily: "var(--font-serif)" }}>
           כתובת הנכס
         </h2>
-        <p className="text-slate-400 text-sm tracking-wider">
+        <p className="text-slate-400 text-xs sm:text-sm tracking-wider">
           הכניסו את כתובת הנכס לאיתור במאגרי הרישום
         </p>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-8">
         {/* City */}
         <Field id="city" label="עיר / יישוב *">
           <GovAutocomplete
@@ -176,7 +176,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         </Field>
 
         {/* Street + House number */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-3 sm:gap-6">
           <div className="col-span-2">
             <Field id="street" label="רחוב *" error={errors.street}>
               <GovAutocomplete
@@ -203,17 +203,17 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         </div>
 
         {/* Cadastral divider */}
-        <div className="flex items-center gap-4 py-4 mt-6">
+        <div className="flex items-center gap-3 sm:gap-4 py-2 sm:py-4 mt-2 sm:mt-6">
           <div className="flex-1 h-[1px] bg-white/[0.06]" />
-          <span className="text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-2">
-            <Info size={12} />
+          <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-1.5 sm:gap-2">
+            <Info size={11} />
             זיהוי קדסטרלי
           </span>
           <div className="flex-1 h-[1px] bg-white/[0.06]" />
         </div>
 
         {/* Auto Lookup Status */}
-        <div className="flex flex-col items-center mb-6 min-h-[30px] justify-center">
+        <div className="flex flex-col items-center min-h-[24px] sm:min-h-[30px] justify-center">
           {isLookingUp && (
             <div className="flex items-center gap-2 text-[10px] text-[#00C896] uppercase tracking-widest bg-[#00C896]/10 px-3 py-1 rounded-full">
               <Loader2 size={12} className="animate-spin" />
@@ -250,9 +250,9 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         </div>
 
         {/* Hint */}
-        <div className="p-5 rounded-xl border border-white/[0.06] bg-white/[0.01] flex items-start gap-4">
-          <Info size={14} className="shrink-0 mt-0.5 text-[#00C896]" />
-          <p className="text-xs text-slate-400 tracking-wider leading-relaxed">
+        <div className="p-3.5 sm:p-5 rounded-xl border border-white/[0.06] bg-white/[0.01] flex items-start gap-3 sm:gap-4">
+          <Info size={13} className="shrink-0 mt-0.5 text-[#00C896]" />
+          <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
             נתוני הגוש והחלקה יאותרו אוטומטית לפי הכתובת. תוכלו להזינם ידנית לדיוק מקסימלי בנסח הטאבו.
           </p>
         </div>

@@ -194,28 +194,28 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
     : {};
 
   return (
-    <div className="space-y-12 animate-fade-in-up">
+    <div className="space-y-6 sm:space-y-12 animate-fade-in-up">
       {/* Editorial Header */}
-      <div className="mb-10 text-right">
-        <div className="w-8 h-[1px] bg-[#00C896] mb-4"></div>
-        <span className="text-[#00C896] text-[10px] font-bold uppercase tracking-widest mb-3 block">
+      <div className="mb-4 sm:mb-10 text-right">
+        <div className="w-8 h-[1px] bg-[#00C896] mb-2 sm:mb-4"></div>
+        <span className="text-[#00C896] text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1 sm:mb-3 block">
           שלב 03
         </span>
-        <h2 className="text-2xl font-normal text-white mb-3" style={{ fontFamily: "var(--font-serif)" }}>
+        <h2 className="text-xl sm:text-2xl font-normal text-white mb-1 sm:mb-3" style={{ fontFamily: "var(--font-serif)" }}>
           פרטי הנכס ויצירת קשר
         </h2>
-        <p className="text-slate-400 text-sm tracking-wider">
+        <p className="text-slate-400 text-xs sm:text-sm tracking-wider">
           מלאו את הפרטים והעלו מסמכים אם יש
         </p>
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-6 sm:space-y-10">
         {/* Deal Details */}
-        <div className="space-y-10">
+        <div className="space-y-5 sm:space-y-10">
           {/* Property Condition */}
-          <div className="space-y-4">
-            <p className="text-[11px] uppercase tracking-widest text-slate-400 font-medium">מצב הנכס</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="space-y-2.5 sm:space-y-4">
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">מצב הנכס</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {(["new-contractor", "renovated", "good", "needs-renovation"] as PropertyCondition[]).map((c) => {
                 const active = data.step3.condition === c;
                 return (
@@ -223,7 +223,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                     key={c}
                     type="button"
                     onClick={() => setStep3("condition", c)}
-                    className={`px-3 py-3 rounded-xl border text-xs font-medium transition-all duration-300 ${
+                    className={`px-2.5 py-2.5 sm:px-3 sm:py-3 rounded-xl border text-xs font-medium transition-all duration-300 ${
                       active
                         ? "border-[#00C896] text-[#00C896] bg-[#00C896]/10"
                         : "border-white/[0.08] text-slate-400 hover:border-white/[0.2] hover:text-white"
@@ -237,9 +237,9 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           </div>
 
           {/* Price + Area */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <label htmlFor="askingPrice" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">מחיר מבוקש / מוצע *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
+            <div className="space-y-2 sm:space-y-3">
+              <label htmlFor="askingPrice" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">מחיר מבוקש / מוצע *</label>
               <div className="relative">
                 <input
                   id="askingPrice"
@@ -402,19 +402,19 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
         </div>
 
         {/* Smart Optional Deep Risk Analysis Fields */}
-        <div className="p-6 rounded-2xl border border-teal-500/20 bg-teal-500/[0.02] space-y-6">
-          <div className="flex items-center justify-between border-b border-teal-500/10 pb-3">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2" style={{ fontFamily: "var(--font-serif)" }}>
-              <Shield className="text-teal-400" size={16} />
-              <span>נתונים אופציונליים לדיוק משפטי ופיננסי מקסימלי</span>
+        <div className="p-4 sm:p-6 rounded-2xl border border-teal-500/20 bg-teal-500/[0.02] space-y-4 sm:space-y-6">
+          <div className="flex items-center justify-between border-b border-teal-500/10 pb-2.5 sm:pb-3">
+            <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 sm:gap-2" style={{ fontFamily: "var(--font-serif)" }}>
+              <Shield className="text-teal-400" size={15} />
+              <span>נתונים אופציונליים לדיוק מקסימלי</span>
             </h4>
-            <span className="text-[10px] text-teal-400 border border-teal-500/30 px-2 py-0.5 rounded font-mono">100% דיוק</span>
+            <span className="text-[9px] sm:text-[10px] text-teal-400 border border-teal-500/30 px-1.5 sm:px-2 py-0.5 rounded font-mono">100% דיוק</span>
           </div>
 
           {data.step3.dealType === "new-developer" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
               <div>
-                <label htmlFor="developerName" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                <label htmlFor="developerName" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
                   שם היזם / החברה הקבלנית (או ח.פ.)
                 </label>
                 <input
@@ -423,14 +423,14 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                   value={data.step3.developerName || ""}
                   onChange={(e) => setStep3("developerName", e.target.value)}
                   placeholder="לדוגמה: נווה פארק יזמות בע״מ"
-                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label htmlFor="developerRegNumber" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                <label htmlFor="developerRegNumber" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
                   ח.פ / עוסק מורשה של היזם
-                  <span className="mr-2 text-teal-400/70 text-[9px] border border-teal-500/30 px-1.5 py-0.5 rounded">→ רשם החברות</span>
+                  <span className="mr-2 text-teal-400/70 text-[9px] border border-teal-500/30 px-1 py-0.5 rounded">→ רשם החברות</span>
                 </label>
                 <input
                   id="developerRegNumber"
@@ -439,12 +439,12 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                   value={data.step3.developerRegNumber || ""}
                   onChange={(e) => setStep3("developerRegNumber", e.target.value)}
                   placeholder="לדוגמה: 514123456"
-                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label htmlFor="accreditedBank" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                <label htmlFor="accreditedBank" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
                   שם הבנק המלווה (ערבויות חוק מכר)
                 </label>
                 <input
@@ -453,12 +453,12 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                   value={data.step3.accreditedBank || ""}
                   onChange={(e) => setStep3("accreditedBank", e.target.value)}
                   placeholder="לדוגמה: בנק הפועלים / לאומי"
-                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label htmlFor="targetDeliveryDate" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                <label htmlFor="targetDeliveryDate" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
                   מועד מסירה מובטח בחוזה
                 </label>
                 <input
@@ -467,14 +467,14 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                   value={data.step3.targetDeliveryDate || ""}
                   onChange={(e) => setStep3("targetDeliveryDate", e.target.value)}
                   placeholder="לדוגמה: 12/2027"
-                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
                 />
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
               <div>
-                <label htmlFor="sellerName" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                <label htmlFor="sellerName" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
                   שם מלא של המוכר
                 </label>
                 <input
@@ -483,12 +483,12 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                   value={data.step3.sellerName || ""}
                   onChange={(e) => setStep3("sellerName", e.target.value)}
                   placeholder="לדוגמה: ישראל ישראלי"
-                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label htmlFor="sellerIdNumber" className="block text-[11px] uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                <label htmlFor="sellerIdNumber" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
                   תעודת זהות של המוכר
                 </label>
                 <input
@@ -498,7 +498,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                   value={data.step3.sellerIdNumber || ""}
                   onChange={(e) => setStep3("sellerIdNumber", e.target.value)}
                   placeholder="לדוגמה: 012345678"
-                  className="w-full bg-transparent border-b border-white/15 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
+                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
                 />
               </div>
             </div>
@@ -508,12 +508,12 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
         <div className="w-full h-[1px] bg-white/[0.08]" />
 
         {/* Documents */}
-        <div className="space-y-8">
-          <h3 className="text-xl font-normal text-white" style={{ fontFamily: "var(--font-serif)" }}>
+        <div className="space-y-4 sm:space-y-8">
+          <h3 className="text-lg sm:text-xl font-normal text-white" style={{ fontFamily: "var(--font-serif)" }}>
             מסמכים מצורפים
           </h3>
-          <div className="space-y-4">
-            <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+          <div className="space-y-2 sm:space-y-4">
+            <p className="flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">
               נסח טאבו
               <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">מומלץ לדוח מלא</span>
             </p>
@@ -534,13 +534,13 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
         <div className="w-full h-[1px] bg-white/[0.08]" />
 
         {/* Contact Info */}
-        <div className="space-y-8">
-          <h3 className="text-xl font-normal text-white" style={{ fontFamily: "var(--font-serif)" }}>
+        <div className="space-y-4 sm:space-y-8">
+          <h3 className="text-lg sm:text-xl font-normal text-white" style={{ fontFamily: "var(--font-serif)" }}>
             למי נשלח את הדוח?
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <label htmlFor="fullName" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
+            <div className="space-y-2 sm:space-y-3">
+              <label htmlFor="fullName" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">
                 שם מלא
               </label>
               <IconInput
@@ -552,13 +552,13 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                 hasError={!!errors.fullName}
               />
               {errors.fullName && (
-                <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400 mt-2">
+                <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400 mt-1 sm:mt-2">
                   <AlertCircle size={12} /> {errors.fullName}
                 </p>
               )}
             </div>
-            <div className="space-y-3">
-              <label htmlFor="email" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+            <div className="space-y-2 sm:space-y-3">
+              <label htmlFor="email" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">
                 דוא&quot;ל
               </label>
               <IconInput
@@ -571,15 +571,15 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                 hasError={!!errors.email}
               />
               {errors.email && (
-                <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400 mt-2">
+                <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400 mt-1 sm:mt-2">
                   <AlertCircle size={12} /> {errors.email}
                 </p>
               )}
             </div>
           </div>
           
-          <div className="space-y-3">
-            <label htmlFor="phone" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+          <div className="space-y-2 sm:space-y-3">
+            <label htmlFor="phone" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">
               טלפון
             </label>
             <IconInput

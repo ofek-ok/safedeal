@@ -50,20 +50,20 @@ const SOURCES = [
 const PAIN_POINTS = [
   {
     num: "א",
-    title: "האם אתם משלמים מחיר הוגן?",
-    desc: "ניתוח עסקאות דומות באזור מול המחיר המבוקש, כדי שתדעו אם מדובר בעסקה סבירה.",
+    title: "אילו סיכונים נסתרים עלולים להפיל את העסקה?",
+    desc: "בדיקת שעבודים, חובות אישיים של המוכר, צווי בית משפט וחריגות בנייה שעלולים לעלות מאות אלפי שקלים.",
     featured: true,
   },
   {
     num: "ב",
-    title: "האם קיימים סיכונים משפטיים או תכנוניים?",
-    desc: "בדיקת שעבודים, הערות אזהרה, חריגות בנייה ומגבלות תכנוניות שעלולות להשפיע על הנכס.",
+    title: "האם הרישום בטאבו והזכויות נקיים לחלוטין?",
+    desc: "אימות בעלות מדויק, הערות אזהרה, בדיקת זכויות צד ג' ומגבלות תכנוניות שעלולות לעכב או לחסום העברת בעלות.",
     featured: false,
   },
   {
     num: "ג",
-    title: "האם יש מידע שעלול להשפיע על ערך הנכס?",
-    desc: "תוכניות תשתיות עתידיות, היטלי השבחה צפויים, ומצב רישום הזכויות — כל מה שחייבים לדעת.",
+    title: "מה מצב ההיתרים, התשתיות והמחיר מול השוק?",
+    desc: "הצלבת היתרי בנייה עירוניים, בדיקת תוכניות עתידיות באזור (תב״ע) והשוואת מחירי עסקאות אמת בסביבה.",
     featured: false,
   },
 ];
@@ -139,7 +139,7 @@ export default function HomePage() {
           <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[#00C896]/35 bg-[#00C896]/10 backdrop-blur-md mb-8 shadow-[0_0_25px_rgba(0,200,150,0.15)]">
             <Sparkles size={14} className="text-[#00C896]" />
             <span className="text-xs sm:text-sm font-bold tracking-wider text-[#2DD4BF] uppercase">
-              בדיקת נאותות חכמה לנדל״ן בישראל
+              דוח סיכונים ובדיקת נאותות לנדל״ן בישראל
             </span>
           </div>
         </Reveal>
@@ -164,21 +164,21 @@ export default function HomePage() {
         {/* Subtitle & Value Proposition */}
         <Reveal delay={0.3}>
           <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed mb-10 font-normal">
-            SafeDeal בודקת עבורכם את הנכס, המוכר, התכנון, הרישומים, העסקאות באזור ועוד — ומרכזת את כל המידע הקריטי לדוח אחד ברור, לפני שאתם מתחייבים לעסקה.
+            SafeDeal סורקת ומצליבה נתונים מ-11 מאגרים רשמיים לאיתור סיכונים משפטיים, תכנוניים, הנדסיים ופיננסיים — דוח סיכונים מקיף עם ציון SafeScore ברור, לפני שאתם מתחייבים לעסקה.
           </p>
           
           {/* Key Checkmark Highlights */}
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mb-12 text-xs sm:text-sm font-semibold text-[#5EEAD4] bg-[#0A1628]/60 backdrop-blur-xl px-6 py-3.5 rounded-2xl border border-white/10 shadow-lg">
             <span className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-[#00C896]" /> תוך דקות
+              <CheckCircle2 size={16} className="text-[#00C896]" /> סריקה מלאה תוך דקות
             </span>
             <span className="text-white/20 hidden sm:inline">•</span>
             <span className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-[#00C896]" /> מידע ממקורות רשמיים
+              <CheckCircle2 size={16} className="text-[#00C896]" /> מידע מ-11 מקורות רשמיים
             </span>
             <span className="text-white/20 hidden sm:inline">•</span>
             <span className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-[#00C896]" /> ציון סיכון ברור — SafeScore
+              <CheckCircle2 size={16} className="text-[#00C896]" /> מדד סיכון משוקלל — SafeScore
             </span>
           </div>
         </Reveal>
@@ -533,15 +533,15 @@ export default function HomePage() {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold leading-[1.12] max-w-3xl mx-auto mb-8 text-white"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            אל תשאלו רק 'כמה עולה הדירה.'{" "}
+            אל תגלו את הסיכונים{" "}
             <br className="hidden sm:block" />
-            <span className="text-[#00C896] block mt-2">תשאלו גם 'כמה היא באמת שווה.'</span>
+            <span className="text-[#00C896] block mt-2">אחרי שחתמתם על החוזה.</span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.2}>
           <p className="text-base sm:text-lg text-slate-300 max-w-lg mx-auto mb-12 leading-relaxed font-normal">
-            המטרה של SafeDeal היא לעזור לכם לגלות את הדברים האלה — לפני שאתם מתחייבים למליונים.
+            SafeDeal סורקת ומאתרת את כל הסיכונים המשפטיים, ההנדסיים והתכנוניים — בדוח אחד ברור לפני שאתם מתחייבים למיליונים.
           </p>
         </Reveal>
 

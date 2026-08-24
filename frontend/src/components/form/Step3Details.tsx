@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp, Sun, Building2, Accessibility, ChevronDown, Check } from "lucide-react";
+import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp, Sun, Building2, Accessibility, ChevronDown, Check, Dumbbell, Users, Sparkles, Warehouse } from "lucide-react";
 import type { WizardFormData, Step3DealDetails, PropertyCondition } from "@/types/property";
 import { ROOMS_OPTIONS, PROPERTY_CONDITION_LABELS } from "@/types/property";
 import { formatThousands, stripFormatting, calcYield, formatBytes, isValidEmail } from "@/lib/utils";
@@ -12,14 +12,18 @@ interface Props {
   showErrors: boolean;
 }
 
-const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasParking" | "hasStorage" | "hasMamad" | "hasElevator" | "hasBalcony" | "isBuildingOnPillars" | "hasAccessibility">; label: string; Icon: React.ElementType }[] = [
-  { key: "hasMamad",            label: 'ממ"ד',            Icon: Shield },
-  { key: "hasParking",          label: "חניה צמודה",    Icon: Car },
-  { key: "hasStorage",          label: "מחסן צמוד",      Icon: Package },
-  { key: "hasElevator",         label: "מעלית",           Icon: ArrowUp },
-  { key: "hasBalcony",          label: "מרפסת",           Icon: Sun },
-  { key: "isBuildingOnPillars", label: "בניין על עמודים",  Icon: Building2 },
-  { key: "hasAccessibility",    label: "גישה לנכים",      Icon: Accessibility },
+const AMENITIES: { key: keyof Pick<Step3DealDetails, "hasUndergroundParking" | "hasAbovegroundParking" | "hasStorage" | "hasMamad" | "hasElevator" | "hasBalcony" | "hasGym" | "hasResidentsLounge" | "hasRooftop" | "isBuildingOnPillars" | "hasAccessibility">; label: string; Icon: React.ElementType }[] = [
+  { key: "hasUndergroundParking", label: "חניון תת קרקעי", Icon: Warehouse },
+  { key: "hasAbovegroundParking", label: "חניון עליון",     Icon: Car },
+  { key: "hasMamad",              label: 'ממ"ד',           Icon: Shield },
+  { key: "hasStorage",            label: "מחסן צמוד",     Icon: Package },
+  { key: "hasElevator",           label: "מעלית",          Icon: ArrowUp },
+  { key: "hasBalcony",            label: "מרפסת",          Icon: Sun },
+  { key: "hasGym",                label: "חדר כושר",       Icon: Dumbbell },
+  { key: "hasResidentsLounge",    label: "חדר דיירים",     Icon: Users },
+  { key: "hasRooftop",            label: "גג דיירים",      Icon: Sparkles },
+  { key: "isBuildingOnPillars",   label: "בניין על עמודים", Icon: Building2 },
+  { key: "hasAccessibility",      label: "גישה לנכים",     Icon: Accessibility },
 ];
 
 function FileCard({
@@ -225,29 +229,31 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
       <div className="space-y-6 sm:space-y-10">
         {/* Deal Details */}
         <div className="space-y-5 sm:space-y-10">
-          {/* Property Condition */}
-          <div className="space-y-2.5 sm:space-y-4">
-            <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">מצב הנכס</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              {(["new-contractor", "renovated", "good", "needs-renovation"] as PropertyCondition[]).map((c) => {
-                const active = data.step3.condition === c;
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setStep3("condition", c)}
-                    className={`px-2.5 py-2.5 sm:px-3 sm:py-3 rounded-xl border text-xs font-medium transition-all duration-300 ${
-                      active
-                        ? "border-[#00C896] text-[#00C896] bg-[#00C896]/10"
-                        : "border-white/[0.08] text-slate-400 hover:border-white/[0.2] hover:text-white"
-                    }`}
-                  >
-                    {PROPERTY_CONDITION_LABELS[c]}
-                  </button>
-                );
-              })}
+          {/* Property Condition - Hidden for new developer deals */}
+          {data.step3.dealType !== "new-developer" && data.step3.dealType !== "developer" && (
+            <div className="space-y-2.5 sm:space-y-4">
+              <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">מצב הנכס</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                {(["new-contractor", "preserved-like-new", "preserved", "needs-renovation"] as PropertyCondition[]).map((c) => {
+                  const active = data.step3.condition === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setStep3("condition", c)}
+                      className={`px-2.5 py-2.5 sm:px-3 sm:py-3 rounded-xl border text-xs font-medium transition-all duration-300 ${
+                        active
+                          ? "border-[#00C896] text-[#00C896] bg-[#00C896]/10"
+                          : "border-white/[0.08] text-slate-400 hover:border-white/[0.2] hover:text-white"
+                      }`}
+                    >
+                      {PROPERTY_CONDITION_LABELS[c]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Price + Area */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">

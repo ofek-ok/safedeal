@@ -38,13 +38,13 @@ export const DEAL_TYPE_LABELS: Record<DealType, string> = {
   "new-developer": "דירה מקבלן",
 };
 
-export type PropertyCondition = "new-contractor" | "renovated" | "good" | "needs-renovation";
+export type PropertyCondition = "new-contractor" | "preserved-like-new" | "preserved" | "needs-renovation";
 
 export const PROPERTY_CONDITION_LABELS: Record<PropertyCondition, string> = {
   "new-contractor": "חדש מקבלן",
-  renovated: "משופץ אדריכלית",
-  good: "שמור כחדש",
-  "needs-renovation": "דורש שיפוץ",
+  "preserved-like-new": "שמור כחדש",
+  preserved: "שמור",
+  "needs-renovation": "דרוש שיפוץ",
 };
 
 export const ROOMS_OPTIONS = [
@@ -169,14 +169,19 @@ export interface Step3DealDetails {
   roomsCount: string;
   floorNumber: string;
   condition: PropertyCondition | "";
-  hasParking: boolean;
+  hasParking?: boolean;
+  hasUndergroundParking: boolean;  // חניון תת קרקעי
+  hasAbovegroundParking: boolean;  // חניון עליון
   hasStorage: boolean;
-  hasMamad: boolean;     // ממ"ד (safe room)
-  hasElevator: boolean;  // מעלית
-  hasBalcony: boolean;   // מרפסת
-  isBuildingOnPillars: boolean; // בניין על עמודים
-  hasAccessibility: boolean;    // גישה לנכים
-  monthlyRent: string;   // optional
+  hasMamad: boolean;               // ממ"ד (safe room)
+  hasElevator: boolean;            // מעלית
+  hasBalcony: boolean;             // מרפסת
+  hasGym: boolean;                 // חדר כושר
+  hasResidentsLounge: boolean;     // חדר דיירים
+  hasRooftop: boolean;             // גג דיירים
+  isBuildingOnPillars: boolean;   // בניין על עמודים
+  hasAccessibility: boolean;      // גישה לנכים
+  monthlyRent: string;             // optional
   // ── Smart Optional Fields ──
   sellerName?: string;
   sellerIdNumber?: string;
@@ -233,10 +238,15 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     floorNumber: "",
     condition: "",
     hasParking: false,
+    hasUndergroundParking: false,
+    hasAbovegroundParking: false,
     hasStorage: false,
     hasMamad: false,
     hasElevator: false,
     hasBalcony: false,
+    hasGym: false,
+    hasResidentsLounge: false,
+    hasRooftop: false,
     isBuildingOnPillars: false,
     hasAccessibility: false,
     monthlyRent: "",

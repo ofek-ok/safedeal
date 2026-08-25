@@ -449,14 +449,14 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           </div>
         </div>
 
-        {/* Smart Optional Deep Risk Analysis Fields */}
+        {/* Legal & Debt Risk Verification Section */}
         <div className="p-4 sm:p-6 rounded-2xl border border-teal-500/20 bg-teal-500/[0.02] space-y-4 sm:space-y-6">
           <div className="flex items-center justify-between border-b border-teal-500/10 pb-2.5 sm:pb-3">
             <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 sm:gap-2" style={{ fontFamily: "var(--font-serif)" }}>
               <Shield className="text-teal-400" size={15} />
-              <span>נתונים אופציונליים לדיוק מקסימלי</span>
+              <span>בדיקת רקע משפטית וחובות</span>
             </h4>
-            <span className="text-[9px] sm:text-[10px] text-teal-400 border border-teal-500/30 px-1.5 sm:px-2 py-0.5 rounded font-mono">100% דיוק</span>
+            <span className="text-[9px] sm:text-[10px] text-teal-400 border border-teal-500/30 px-1.5 sm:px-2 py-0.5 rounded font-mono">אימות רשמי</span>
           </div>
 
           {data.step3.dealType === "new-developer" ? (

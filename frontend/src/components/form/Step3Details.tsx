@@ -233,8 +233,8 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           {data.step3.dealType !== "new-developer" && data.step3.dealType !== "developer" && (
             <div className="space-y-2.5 sm:space-y-4">
               <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">מצב הנכס</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                {(["new-contractor", "preserved-like-new", "preserved", "needs-renovation"] as PropertyCondition[]).map((c) => {
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {(["preserved-like-new", "preserved", "needs-renovation"] as PropertyCondition[]).map((c) => {
                   const active = data.step3.condition === c;
                   return (
                     <button

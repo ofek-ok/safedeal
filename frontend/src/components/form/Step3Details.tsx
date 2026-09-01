@@ -459,11 +459,11 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
             <span className="text-[9px] sm:text-[10px] text-teal-400 border border-teal-500/30 px-1.5 sm:px-2 py-0.5 rounded font-mono">אימות רשמי</span>
           </div>
 
-          {data.step3.dealType === "new-developer" ? (
+          {data.step3.dealType === "developer" || data.step3.dealType === "new-developer" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
               <div>
                 <label htmlFor="developerName" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  שם היזם / החברה הקבלנית (או ח.פ.)
+                  שם היזם / קבלן
                 </label>
                 <input
                   id="developerName"
@@ -477,7 +477,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
 
               <div>
                 <label htmlFor="developerRegNumber" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  ח.פ / עוסק מורשה של היזם
+                  מספר חברה / ח.פ
                   <span className="mr-2 text-teal-400/70 text-[9px] border border-teal-500/30 px-1 py-0.5 rounded">→ רשם החברות</span>
                 </label>
                 <input
@@ -537,7 +537,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
 
               <div>
                 <label htmlFor="sellerIdNumber" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  תעודת זהות של המוכר
+                  תעודת זהות
                 </label>
                 <input
                   id="sellerIdNumber"

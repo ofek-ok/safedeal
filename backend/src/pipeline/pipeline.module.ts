@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PipelineService } from './pipeline.service';
 import { AiSynthesisService } from './ai-synthesis.service';
+import { ScoringEngineService } from './scoring-engine.service';
 import { GovMapSource } from './sources/govmap.source';
 import { TaxAuthoritySource } from './sources/tax-authority.source';
 import { RealEstateGovSource } from './sources/real-estate-gov.source';
@@ -17,6 +18,7 @@ import { JudicialSource } from './sources/judicial.source';
   providers: [
     PipelineService,
     AiSynthesisService,
+    ScoringEngineService,
     GovMapSource,
     TaxAuthoritySource,
     RealEstateGovSource,
@@ -29,6 +31,6 @@ import { JudicialSource } from './sources/judicial.source';
     PledgesSource,
     JudicialSource,
   ],
-  exports: [PipelineService, AiSynthesisService],
+  exports: [PipelineService, AiSynthesisService, ScoringEngineService],
 })
 export class PipelineModule {}

@@ -7,12 +7,14 @@ interface SafeScoreCardProps {
   riskText?: string;
   recommendationText?: string;
   dealType?: "second-hand" | "developer" | "new-developer";
+  coveragePercent?: number;
 }
 
 export function SafeScoreCard({
   score = 71,
   riskText = "רמת סיכון: בינונית",
   recommendationText = "ניתן להתקדם בזהירות",
+  coveragePercent,
 }: SafeScoreCardProps) {
   const isHigh = score >= 80;
   const isMedium = score >= 65 && score < 80;
@@ -47,12 +49,19 @@ export function SafeScoreCard({
       />
 
       <div className="relative z-10 w-full space-y-3">
-        {/* Title Badge */}
-        <div className="flex items-center justify-center gap-2">
-          <ShieldCheck size={18} className="text-teal-400" />
-          <span className="text-xs uppercase font-mono tracking-widest text-slate-300">
-            SAFE SCORE GAUGE
-          </span>
+        {/* Title Badge & Coverage */}
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={18} className="text-teal-400" />
+            <span className="text-xs uppercase font-mono tracking-widest text-slate-300">
+              SAFE SCORE GAUGE
+            </span>
+          </div>
+          {coveragePercent !== undefined && coveragePercent > 0 && (
+            <span className="text-[10px] font-mono text-teal-400 bg-teal-500/10 border border-teal-500/30 px-2 py-0.5 rounded-full">
+              כיסוי: {coveragePercent}%
+            </span>
+          )}
         </div>
 
         {/* Speedometer SVG Gauge */}

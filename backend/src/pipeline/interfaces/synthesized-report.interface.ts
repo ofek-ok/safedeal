@@ -150,7 +150,8 @@ export interface SynthesizedReport {
     engineering: PillarData;
   };
   operativeNextSteps: OperativeStep[];
-  missingDataWarnings: string[];
+  coveragePercent?: number;
+  missingDataWarnings?: string[];
   sourceStatuses: Array<{
     sourceId: string;
     sourceName: string;

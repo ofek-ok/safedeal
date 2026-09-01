@@ -16,12 +16,14 @@ export function stripFormatting(value: string): string {
   return value.replace(/[^0-9.]/g, "");
 }
 
-/** Gross yield % */
+/** Gross rental yield % (שכ״ד חודשי * 12 / מחיר הנכס * 100) */
 export function calcYield(price: string, rent: string): string {
   const p = parseFloat(stripFormatting(price));
   const r = parseFloat(stripFormatting(rent));
-  if (!p || !r) return "";
-  return ((r * 12) / p * 100).toFixed(2);
+  if (!p || !r || isNaN(p) || isNaN(r) || p <= 0 || r <= 0) return "";
+  const yieldValue = ((r * 12) / p) * 100;
+  if (!isFinite(yieldValue) || yieldValue <= 0 || yieldValue > 100) return "";
+  return yieldValue.toFixed(2);
 }
 
 /** Format bytes → human-readable */

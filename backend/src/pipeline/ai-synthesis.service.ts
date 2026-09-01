@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AggregatedPipelineData } from './interfaces/pipeline-data.interface';
+import { ScoringEngineService } from './scoring-engine.service';
 import {
   SynthesizedReport,
   PillarData,
@@ -16,70 +17,22 @@ import {
 export class AiSynthesisService {
   private readonly logger = new Logger(AiSynthesisService.name);
 
+  constructor(private readonly scoringEngine: ScoringEngineService) {}
+
   synthesizeReport(
     aggregatedData: AggregatedPipelineData,
     payload?: any,
   ): SynthesizedReport {
     this.logger.log(
-      `🤖 Synthesizing 11-source report — Job: ${aggregatedData.jobId}`,
+      `🤖 Synthesizing 11-source report with Scoring Engine — Job: ${aggregatedData.jobId}`,
     );
 
     const { sources, location, warnings } = aggregatedData;
     const dealType: DealType =
-      payload?.details?.dealType === 'new-developer' ? 'new-developer' : 'second-hand';
-
-    // ── SafeScore Calculation (0–100) ────────────────────────────────────────
-    let score = 84; // base
-
-    if (sources.tabu.data?.redFlags?.length) {
-      score -= sources.tabu.data.redFlags.length * 6;
-    }
-    if (sources.tabu.data?.hasMortgage) {
-      score -= 3;
-    }
-    if (sources.municipal.data?.hasViolations) {
-      score -= 8;
-    }
-    if (sources.municipal.data?.violationsCount > 1) {
-      score -= 4;
-    }
-    if (sources.judicial.data?.hasActiveLawsuits === true) {
-      score -= 25;
-    }
-    if (sources.xplan.data?.hasSignificantDevelopment) {
-      score -= 4;
-    }
-    if (sources.registrarCompanies.data?.companies?.some((c) => !c.isActive)) {
-      score -= 8;
-    }
-
-    if (sources.tabu.data?.extractionConfidence === 'high') {
-      score += 3;
-    }
-    if (sources.cbs.data?.socioEconomicCluster >= 7) {
-      score += 2;
-    }
-
-    score = Math.max(0, Math.min(100, score));
-
-    // ── Risk Level ────────────────────────────────────────────────────────────
-    let riskLevel: RiskLevel = 'low';
-    let riskText = 'רמת סיכון: נמוכה-בינונית';
-    let recommendationText = 'מומלץ להתקדם לעסקה';
-
-    if (score < 60) {
-      riskLevel = 'high';
-      riskText = 'רמת סיכון: גבוהה';
-      recommendationText = 'להתקדם בזהירות רבה — נדרשת בדיקת עורך דין מעמיקה';
-    } else if (score < 75) {
-      riskLevel = 'medium-high';
-      riskText = 'רמת סיכון: בינונית';
-      recommendationText = 'ניתן להתקדם בזהירות';
-    } else if (score < 88) {
-      riskLevel = 'low-medium';
-      riskText = 'רמת סיכון: נמוכה-בינונית';
-      recommendationText = 'מומלץ להתקדם לעסקה';
-    }
+      payload?.details?.dealType === 'new-developer' ||
+      payload?.details?.dealType === 'developer'
+        ? 'new-developer'
+        : 'second-hand';
 
     const fullAddress = `${location.city}, ${location.street} ${location.houseNumber}`;
     const cadastralStr = [
@@ -179,120 +132,43 @@ export class AiSynthesisService {
         }
       : undefined;
 
-    // ── Build Top 5 Key Findings ──────────────────────────────────────────────
-    const top5Findings: TopFindingItem[] =
-      dealType === 'new-developer'
-        ? [
-            {
-              title: 'היזם יציב פיננסית',
-              text: 'לא נמצאו אינדיקציות לחדלות פירעון או עצירת פרויקטים',
-              isPositive: true,
-            },
-            {
-              title: 'קיים ליווי בנקאי מלא',
-              text: 'הפרויקט מלווה וכולל ערבויות חוק מכר לרוכשים',
-              isPositive: true,
-            },
-            {
-              title: 'היתרי הבניה תקינים',
-              text: 'לא אותרו בעיות תכנון משמעותיות המשפיעות על העסקה',
-              isPositive: true,
-            },
-            {
-              title: 'נמצאו איחורים במספר פרויקטים קודמים',
-              text: 'נדרש לוודא מנגנון פיצוי ברור בחוזה במקרה של איחור',
-              isPositive: false,
-            },
-            {
-              title: `מחיר גבוה בכ-${Math.abs(priceDiffPercent || 9)}% ממחיר השוק`,
-              text: 'מפרט ומועד מסירה, נוף, הפער מחייב בדיקת הצדקה לפי קומה',
-              isPositive: false,
-            },
-          ]
-        : [
-            {
-              title: 'זכויות הבעלות תקינות',
-              text: 'לא נמצאו בעיות רישום משמעותיות או מחלוקות בעלות',
-              isPositive: true,
-            },
-            {
-              title: 'לא נמצאו חובות רשומים על הנכס',
-              text: 'היטלי השבחה או שעבודים פתוחים, לא אותרו חובות ארנונה',
-              isPositive: true,
-            },
-            {
-              title: 'לא נמצאו חריגות בנייה מהותיות',
-              text: 'הנכס תואם ברובו את התיעוד הקיים',
-              isPositive: true,
-            },
-            {
-              title: 'אחד מבעלי הנכס מצוי בקשיים פיננסיים',
-              text: 'קיימות אינדיקציות לחובות או הליכים כספיים שיכולים להשפיע על העסקה',
-              isPositive: false,
-            },
-            {
-              title: 'קיים סיכון לעיכוב בהעברת הזכויות',
-              text: 'נדרשת בדיקה חוזרת לפני חתימה ולפני העברת התשלום האחרון',
-              isPositive: false,
-            },
-          ];
+    // ── Execute Mathematical Scoring Engine Evaluation ────────────────────────
+    const scoringResult = this.scoringEngine.evaluate(
+      dealType,
+      aggregatedData,
+      askingPriceNum,
+      estimatedValue,
+    );
 
-    // ── Build Quick Risk Map ──────────────────────────────────────────────────
-    const quickRiskMap: QuickRiskCategory[] =
-      dealType === 'new-developer'
-        ? [
-            { id: 'dev-stability', label: 'יציבות יזם', status: 'green' },
-            { id: 'bank-support', label: 'ליווי בנקאי', status: 'green' },
-            { id: 'permits', label: 'היתרים ותכנון', status: 'green' },
-            { id: 'timeline', label: 'עמידה בזמנים', status: 'yellow' },
-            { id: 'finish-quality', label: 'איכות גימור', status: 'yellow' },
-            { id: 'market-price', label: 'מחיר מול שוק', status: 'yellow' },
-            { id: 'surroundings', label: 'סביבה ופיתוח עתידי', status: 'green' },
-          ]
-        : [
-            { id: 'ownership', label: 'בעלות וזכויות', status: 'green' },
-            { id: 'debts', label: 'חובות על הנכס', status: 'green' },
-            { id: 'violations', label: 'חריגות בנייה', status: 'green' },
-            { id: 'building-state', label: 'מצב הבניין', status: 'yellow' },
-            { id: 'market-price', label: 'מחיר מול שוק', status: 'yellow' },
-            { id: 'seller-risk', label: 'חובות המוכר / סיכון פיננסי', status: 'red' },
-          ];
+    const score = scoringResult.safeScore;
+    const riskLevel = scoringResult.riskLevel;
+    const riskText = scoringResult.riskText;
+    const recommendationText = scoringResult.recommendationText;
+    const top5Findings: TopFindingItem[] = scoringResult.top5Findings;
+    const quickRiskMap: QuickRiskCategory[] = scoringResult.quickRiskMap as any;
+
+    // ── Build Score Breakdown Bars from Domain Scores ──────────────────────────
+    const scoreBreakdown: ScoreBreakdownItem[] = scoringResult.domainScores.map(
+      (ds) => ({
+        id: ds.domainId,
+        label: ds.domainLabel,
+        score: ds.score,
+        status: ds.status,
+        iconKey: ds.iconKey,
+      }),
+    );
 
     // ── Recommendation Banner ─────────────────────────────────────────────────
-    const recommendationBanner =
-      dealType === 'new-developer'
-        ? {
-            verdictText: 'המלצת SafeDeal: ניתן להתקדם לעסקה',
-            subtext:
-              'ערבויות חוק מכר ומנגנון פיצוי על איחור, בכפוף לבדיקת מפרט טכני מלא, ניתן להתקדם לעסקה.',
-          }
-        : {
-            verdictText: 'המלצת SafeDeal: ניתן להתקדם בזהירות',
-            subtext:
-              'מנגנון נאמנות ובדיקה חוזרת סמוך להעברת התשלום האחרון, ניתן להתקדם רק לאחר בדיקת עיקולים עדכנית.',
-          };
-
-    // ── Score Breakdown Bars ──────────────────────────────────────────────────
-    const scoreBreakdown: ScoreBreakdownItem[] =
-      dealType === 'new-developer'
-        ? [
-            { id: 'dev-stability', label: 'יציבות יזם', score: 90, status: 'green', iconKey: 'Building' },
-            { id: 'bank-support', label: 'ליווי בנקאי', score: 100, status: 'green', iconKey: 'Landmark' },
-            { id: 'permits', label: 'היתרים ותכנון', score: 85, status: 'green', iconKey: 'FileText' },
-            { id: 'past-quality', label: 'איכות פרויקטים קודמים', score: 72, status: 'yellow', iconKey: 'Wrench' },
-            { id: 'timeline', label: 'עמידה בלוחות זמנים', score: 75, status: 'yellow', iconKey: 'Clock' },
-            { id: 'market-price', label: 'מחיר ביחס לשוק', score: 65, status: 'yellow', iconKey: 'TrendingUp' },
-            { id: 'future-dev', label: 'פיתוח עתידי באזור', score: 90, status: 'green', iconKey: 'Compass' },
-          ]
-        : [
-            { id: 'ownership', label: 'בעלות וזכויות', score: 95, status: 'green', iconKey: 'Scale' },
-            { id: 'debts', label: 'חובות על הנכס', score: 100, status: 'green', iconKey: 'Landmark' },
-            { id: 'violations', label: 'חריגות בנייה', score: 90, status: 'green', iconKey: 'FileCheck' },
-            { id: 'legal-state', label: 'מצב משפטי', score: 85, status: 'green', iconKey: 'Shield' },
-            { id: 'building-state', label: 'מצב הבניין', score: 70, status: 'yellow', iconKey: 'Building' },
-            { id: 'market-price', label: 'מחיר מול שוק', score: 75, status: 'yellow', iconKey: 'TrendingUp' },
-            { id: 'seller-risk', label: 'סיכון פיננסי של המוכר', score: 30, status: 'red', iconKey: 'UserX' },
-          ];
+    const recommendationBanner = {
+      verdictText: `המלצת SafeDeal: ${recommendationText}`,
+      subtext:
+        scoringResult.overrideReason ||
+        (scoringResult.hasStopFlag
+          ? 'זוהו דגלים אדומים קריטיים — חובה לבצע בדיקה משפטית לפני כל התחייבות כספית.'
+          : scoringResult.hasHoldFlag
+          ? 'קיימים נושאים הדורשים בדיקה אנושית והסדרה בהסכם המכר.'
+          : 'נתוני העסקה תקינים בהתאם לבדיקות מול המאגרים הרשמיים.'),
+    };
 
     // ── Actionable Context Section ────────────────────────────────────────────
     const actionableSection =
@@ -552,8 +428,8 @@ export class AiSynthesisService {
       demandIndex: 'high' as const,
       demandLabel: 'ביקוש גבוה מאוד (34 ימים ממוצע על המדף)',
       avgDaysOnMarket: 34,
-      estimatedMonthlyRent: estimatedValue > 0 ? Math.round((estimatedValue * 0.028) / 12 / 100) * 100 : 0,
-      estimatedYieldPercent: 3.1,
+      estimatedMonthlyRent: estimatedValue > 0 ? Math.round((estimatedValue * 0.031) / 12 / 100) * 100 : 0,
+      estimatedYieldPercent: estimatedValue > 0 ? parseFloat((((Math.round((estimatedValue * 0.031) / 12 / 100) * 100) * 12 / estimatedValue) * 100).toFixed(1)) : 3.1,
       ratings: {
         schools: 8.8,
         quietness: 8.4,
@@ -615,7 +491,11 @@ export class AiSynthesisService {
         engineering: engineeringPillar,
       },
       operativeNextSteps: nextSteps,
-      missingDataWarnings: warnings,
+      coveragePercent: scoringResult.coveragePercent,
+      missingDataWarnings: [
+        ...(warnings || []),
+        ...scoringResult.missingDataWarnings,
+      ],
       sourceStatuses: [
         { sourceId: 'govmap', sourceName: 'GovMap (זיהוי קדסטרלי)', status: sources.govmap.success ? 'success' : 'warning' },
         { sourceId: 'taxAuthority', sourceName: 'רשות המסים (עסקאות השוואה)', status: sources.taxAuthority.success ? 'success' : 'warning' },

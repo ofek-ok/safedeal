@@ -236,6 +236,7 @@ export default function ReportByIdPage() {
             riskText={r.riskText}
             recommendationText={r.recommendationText}
             dealType={r.dealType}
+            coveragePercent={r.coveragePercent}
           />
         </div>
 

@@ -160,6 +160,8 @@ export interface ReportData {
   };
   valuation?: PropertyValuation;
   madlanInsights?: MadlanInsights;
+  coveragePercent?: number;
+  missingDataWarnings?: string[];
 }
 
 export interface Step3DealDetails {

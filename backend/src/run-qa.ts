@@ -131,7 +131,7 @@ async function runFullQA() {
     },
     {
       id: 'B',
-      name: 'דירת יד שנייה עם תמחור יתר וסיכון מוכר (חריגת שוק והפעלת Override)',
+      name: 'דירת יד שנייה עם תמחור יתר (חריגת שוק והפעלת תקרת STOP 39)',
       expectedMinCoverage: 80,
       payload: {
         location: {
@@ -164,8 +164,8 @@ async function runFullQA() {
     },
     {
       id: 'C',
-      name: 'דירה חדשה מקבלן (תל אביב - יזם, רשם החברות, ליווי בנקאי וערבויות חוק מכר)',
-      expectedMinCoverage: 85,
+      name: 'דירה חדשה מקבלן (תל אביב - יזם, רשם החברות, היתרים ותכנון XPLAN)',
+      expectedMinCoverage: 55,
       payload: {
         location: {
           city: 'תל אביב-יפו',

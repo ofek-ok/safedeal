@@ -276,24 +276,38 @@ export class AiSynthesisService {
         {
           label: 'רשם המשכונות',
           value:
-            sources.pledges.data?.hasPledges === false
-              ? '✓ תקין: סריקה אוטומטית נקייה — אין משכונות רשומים'
-              : 'נמצאו הודעות משכון בילקוט הפרסומים',
-          status: sources.pledges.data?.hasPledges === false ? 'green' : 'yellow',
+            sources.pledges.success && sources.pledges.data?.hasPledges === false
+              ? '✓ תקין: לא נמצאו משכונות רשומים'
+              : sources.pledges.data?.hasPledges === true
+              ? '⚠️ נמצאו משכונות רשומים'
+              : 'בדיקה פרטנית נדרשת (ממתין לחיבור מאגר רשמי)',
+          status:
+            sources.pledges.success && sources.pledges.data?.hasPledges === false
+              ? 'green'
+              : sources.pledges.data?.hasPledges === true
+              ? 'red'
+              : 'yellow',
           details:
             sources.pledges.data?.integrationNote ||
-            'סוכן חיפוש AI — ילקוט הפרסומים הרשמי',
+            'מומלץ להוציא דו״ח עיון מקוון ברשם המשכונות (אגרה ₪11).',
         },
         {
           label: 'הליכים משפטיים',
           value:
-            hasLawsuits === true
-              ? `נמצאו הליכים פתוחים`
-              : '✓ תקין: סריקה אוטומטית נקייה — אין תיקים משפטיים פתוחים',
-          status: hasLawsuits === true ? 'red' : 'green',
+            sources.judicial.success && hasLawsuits === false
+              ? '✓ תקין: לא אותרו תיקים משפטיים פתוחים'
+              : hasLawsuits === true
+              ? '⚠️ נמצאו הליכים משפטיים פתוחים'
+              : 'בדיקה משפטית ע״י עו״ד נדרשת (ממתין לחיבור מאגר רשמי)',
+          status:
+            sources.judicial.success && hasLawsuits === false
+              ? 'green'
+              : hasLawsuits === true
+              ? 'red'
+              : 'yellow',
           details:
             sources.judicial.data?.integrationNote ||
-            'סוכן חיפוש AI משפטי — מאגרי פסיקה וילקוט הפרסומים',
+            'מומלץ לבצע בדיקת עומק במאגרי נבו/תקדין לפני חתימה.',
         },
       ],
     };
@@ -506,8 +520,8 @@ export class AiSynthesisService {
         { sourceId: 'tabu', sourceName: 'נסח טאבו + Gemini OCR', status: sources.tabu.success && sources.tabu.data?.extractionConfidence !== 'none' ? 'success' : 'warning' },
         { sourceId: 'municipal', sourceName: 'היתרי בנייה (כל ישראל)', status: sources.municipal.success ? 'success' : 'warning' },
         { sourceId: 'registrarCompanies', sourceName: 'רשם החברות', status: sources.registrarCompanies.success ? 'success' : 'warning' },
-        { sourceId: 'pledges', sourceName: 'רשם המשכונות (סוכן AI)', status: sources.pledges.success ? 'success' : 'warning' },
-        { sourceId: 'judicial', sourceName: 'נט המשפט / פסיקה (סוכן AI)', status: sources.judicial.success ? 'success' : 'warning' },
+        { sourceId: 'pledges', sourceName: 'רשם המשכונות (ממתין לחיבור מאגר רשמי)', status: sources.pledges.success ? 'success' : 'warning' },
+        { sourceId: 'judicial', sourceName: 'נט המשפט / פסיקה (ממתין לחיבור מאגר רשמי)', status: sources.judicial.success ? 'success' : 'warning' },
       ],
     };
   }

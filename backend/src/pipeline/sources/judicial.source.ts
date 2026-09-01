@@ -40,28 +40,27 @@ export class JudicialSource {
 
     const subjectNames = subjects.map((s) => s.name).join(', ') || 'מוכר הנכס';
     this.logger.log(
-      `JudicialSource (AI Agent): Executing legal search agent scan for ${subjectNames}`,
+      `JudicialSource: Integration not yet connected for ${subjectNames} (awaiting live legal DB credentials)`,
     );
-
-    // AI Legal Search Agent automatic scan simulation
-    const hasActiveLawsuits = false;
-    const lawsuitsCount = 0;
 
     return {
       source: 'judicial',
-      success: true,
+      success: false,
       data: {
-        hasActiveLawsuits,
-        lawsuitsCount,
+        hasActiveLawsuits: null,
+        lawsuitsCount: null,
         lawsuits: [],
         subjects,
-        verificationStatus: 'verified',
+        verificationStatus: 'manual_required',
         manualCheckUrl: 'https://www.court.gov.il/NGCS/main/CasesSearch.aspx',
         premiumApiOption: 'https://www.nevo.co.il',
-        integrationNote: 'בוצעה סריקה משפטית אוטומטית מלאה במאגרי פסיקה ופרסומים גלויים — לא נמצאו תביעות אזרחיות פתוחות או סכסוכים רשומים.',
-        dataSource: 'סוכן חיפוש AI משפטי — מאגרי פסיקה וילקוט הפרסומים',
+        integrationNote:
+          'מקור נט המשפט ורקע משפטי טרם חובר למאגר נתוני אמת ישיר. הבדיקה מוגדרת כ-NOT_TESTED עד לחיבור רשמי.',
+        dataSource: 'נט המשפט / פסיקה (ממתין לחיבור)',
       },
-      warnings: [],
+      warnings: [
+        'בדיקת רקע משפטי והליכים נגד המוכר/יזם טרם חוברה למאגר חי — מומלץ לבצע בדיקה פרטנית על ידי עו״ד',
+      ],
     };
   }
 }

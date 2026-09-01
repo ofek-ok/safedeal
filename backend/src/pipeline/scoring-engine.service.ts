@@ -317,16 +317,18 @@ export class ScoringEngineService {
 
     // 5. רשם המשכונות: משכון פעיל על הנכס/בעלים (משקל 9.0%)
     const pledges = sources.pledges?.data;
-    let pledgeScore: TestScoreValue = 100;
-    let pledgeExpl = 'לא נמצאו משכונות או שעבודים פעילים ברשם המשכונות';
+    let pledgeScore: TestScoreValue = 'NOT_TESTED';
+    let pledgeExpl = 'מקור רשם המשכונות טרם חובר למאגר חי (מומלץ עיון פרטני)';
     let pledgeOverride: OverrideAction = 'NONE';
-    if (pledges?.hasPledges === true) {
-      pledgeScore = 0;
-      pledgeExpl = 'נמצא משכון פעיל מאומת ברשם המשכונות';
-      pledgeOverride = 'STOP';
-    } else if (sources.pledges?.success === false) {
-      pledgeScore = 75;
-      pledgeExpl = 'בדיקת רשם המשכונות בוצעה בסריקת ילקוט הפרסומים הרשמי';
+    if (sources.pledges?.success && pledges?.hasPledges !== null) {
+      if (pledges?.hasPledges === true) {
+        pledgeScore = 0;
+        pledgeExpl = 'נמצא משכון פעיל מאומת ברשם המשכונות';
+        pledgeOverride = 'STOP';
+      } else {
+        pledgeScore = 100;
+        pledgeExpl = 'לא נמצאו משכונות או שעבודים פעילים ברשם המשכונות';
+      }
     }
     tests.push({
       id: 'sh-pledges-active',
@@ -345,13 +347,18 @@ export class ScoringEngineService {
 
     // 6. רקע משפטי: נבו / תקדין / נט המשפט (משקל 9.0%)
     const judicial = sources.judicial?.data;
-    let lawsuitScore: TestScoreValue = 100;
-    let lawsuitExpl = 'לא נמצאו תביעות או הליכי הוצאה לפועל פעילים כנגד המוכר';
+    let lawsuitScore: TestScoreValue = 'NOT_TESTED';
+    let lawsuitExpl = 'מקור נט המשפט טרם חובר למאגר חי (מומלץ בדיקה ע״י עו״ד)';
     let lawsuitOverride: OverrideAction = 'NONE';
-    if (judicial?.hasActiveLawsuits === true) {
-      lawsuitScore = 25;
-      lawsuitExpl = 'קיימות אינדיקציות להליכים משפטיים או חובות אישיים של המוכר';
-      lawsuitOverride = 'HOLD';
+    if (sources.judicial?.success && judicial?.hasActiveLawsuits !== null) {
+      if (judicial?.hasActiveLawsuits === true) {
+        lawsuitScore = 25;
+        lawsuitExpl = 'קיימות אינדיקציות להליכים משפטיים או חובות אישיים של המוכר';
+        lawsuitOverride = 'HOLD';
+      } else {
+        lawsuitScore = 100;
+        lawsuitExpl = 'לא נמצאו תביעות או הליכי הוצאה לפועל פעילים כנגד המוכר';
+      }
     }
     tests.push({
       id: 'sh-judicial-lawsuits',
@@ -568,13 +575,18 @@ export class ScoringEngineService {
 
     // 5. רשם משכונות ושעבודים: בטוחה פעילה ושעבודי יזם (משקל 25.0%)
     const pledges = sources.pledges?.data;
-    let devPledgesScore: TestScoreValue = 100;
-    let devPledgesExpl = 'שעבוד שגרתי לבנק מלווה בצירוף ערבות חוק מכר';
+    let devPledgesScore: TestScoreValue = 'NOT_TESTED';
+    let devPledgesExpl = 'מקור רשם המשכונות טרם חובר למאגר חי (מומלץ אימות ליווי בנקאי)';
     let devPledgesOverride: OverrideAction = 'NONE';
-    if (pledges?.hasPledges === true) {
-      devPledgesScore = 25;
-      devPledgesExpl = 'אותרו שעבודים ללא אימות מכתב החרגה מבנק מלווה';
-      devPledgesOverride = 'HOLD';
+    if (sources.pledges?.success && pledges?.hasPledges !== null) {
+      if (pledges?.hasPledges === true) {
+        devPledgesScore = 25;
+        devPledgesExpl = 'אותרו שעבודים ללא אימות מכתב החרגה מבנק מלווה';
+        devPledgesOverride = 'HOLD';
+      } else {
+        devPledgesScore = 100;
+        devPledgesExpl = 'שעבוד שגרתי לבנק מלווה בצירוף ערבות חוק מכר';
+      }
     }
     tests.push({
       id: 'dev-pledges-collateral',
@@ -593,13 +605,18 @@ export class ScoringEngineService {
 
     // 6. רקע משפטי: תביעות גדולות ואיחורי מסירה (משקל 16.0%)
     const judicial = sources.judicial?.data;
-    let devLawsuitScore: TestScoreValue = 85;
-    let devLawsuitExpl = 'לא אותרו דפוסי איחור במסירה או תביעות קבלניות חריגות';
+    let devLawsuitScore: TestScoreValue = 'NOT_TESTED';
+    let devLawsuitExpl = 'מקור נט המשפט ופסיקה טרם חובר למאגר חי (מומלץ בדיקה ע״י עו״ד)';
     let devLawsuitOverride: OverrideAction = 'NONE';
-    if (judicial?.hasActiveLawsuits === true) {
-      devLawsuitScore = 50;
-      devLawsuitExpl = 'אותרו תביעות דיירים קודמות בעניין ליקויים או איחורי מסירה';
-      devLawsuitOverride = 'HOLD';
+    if (sources.judicial?.success && judicial?.hasActiveLawsuits !== null) {
+      if (judicial?.hasActiveLawsuits === true) {
+        devLawsuitScore = 50;
+        devLawsuitExpl = 'אותרו תביעות דיירים קודמות בעניין ליקויים או איחורי מסירה';
+        devLawsuitOverride = 'HOLD';
+      } else {
+        devLawsuitScore = 85;
+        devLawsuitExpl = 'לא אותרו דפוסי איחור במסירה או תביעות קבלניות חריגות';
+      }
     }
     tests.push({
       id: 'dev-judicial-claims',

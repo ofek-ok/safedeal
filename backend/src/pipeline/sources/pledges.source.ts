@@ -25,14 +25,13 @@ export class PledgesSource {
     ownerName?: string;
     ownerId?: string;
   }): Promise<SourceResult<PledgesData>> {
-    const ownerInfo = params.ownerName || (params.ownerId ? `ת"ז/ח"פ ${params.ownerId}` : `גוש ${params.block}`);
+    const ownerInfo =
+      params.ownerName ||
+      (params.ownerId ? `ת"ז/ח"פ ${params.ownerId}` : `גוש ${params.block}`);
     this.logger.log(
-      `PledgesSource (AI Agent): Executing automatic Yalkut HaPirsumim & Pledges scan for ${ownerInfo}`,
+      `PledgesSource: Integration not yet connected for ${ownerInfo} (awaiting live API key)`,
     );
 
-    // AI Agent automatic scan simulation based on open gazette & registry records
-    const hasPledges = false;
-    const pledgesCount = 0;
     const searchReference = [
       params.ownerName ? `שם המוכר: ${params.ownerName}` : null,
       params.ownerId ? `ת"ז/ח"פ: ${params.ownerId}` : null,
@@ -44,19 +43,22 @@ export class PledgesSource {
 
     return {
       source: 'pledges',
-      success: true,
+      success: false,
       data: {
-        hasPledges,
-        pledgesCount,
+        hasPledges: null,
+        pledgesCount: null,
         pledges: [],
-        verificationStatus: 'verified',
+        verificationStatus: 'manual_required',
         manualCheckUrl: 'https://www.gov.il/he/service/pawn_perusal',
         searchReference,
-        estimatedFee: 'חינם (סוכן AI אלקטרוני)',
-        integrationNote: 'בוצעה סריקה אוטומטית מלאה בילקוט הפרסומים ובמאגרים ממשלתיים גלויים — לא נמצאו הודעות משכון או שיעבוד רשום.',
-        dataSource: 'ילקוט הפרסומים הרשמי + סוכן חיפוש AI',
+        estimatedFee: '₪11 (עיון מקוון ברשם המשכונות)',
+        integrationNote:
+          'מקור רשם המשכונות טרם חובר למאגר נתוני אמת ישיר. הבדיקה מוגדרת כ-NOT_TESTED עד לחיבור רשמי.',
+        dataSource: 'רשם המשכונות (ממתין לחיבור)',
       },
-      warnings: [],
+      warnings: [
+        'בדיקת רשם המשכונות לא בוצעה באופן אוטומטי — מומלץ להוציא דו״ח עיון ברשם המשכונות',
+      ],
     };
   }
 }

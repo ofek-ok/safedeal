@@ -563,7 +563,10 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           <div className="space-y-2 sm:space-y-4">
             <p className="flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">
               נסח טאבו
-              <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">מומלץ לדוח מלא</span>
+              <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">מומלץ</span>
+            </p>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              מומלץ לצרף נסח טאבו: הוא עוזר לנו לדייק את נתוני הנכס ולקצר את זמן הכנת הדוח. אפשר להמשיך גם בלי המסמך.
             </p>
             <Dropzone
               id="tabu-upload"
@@ -572,7 +575,6 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
               file={data.step4.tabuFile}
               tag="נסח טאבו"
-              required
               onSelect={(f) => setStep4("tabuFile", f)}
               onRemove={() => setStep4("tabuFile", null)}
             />

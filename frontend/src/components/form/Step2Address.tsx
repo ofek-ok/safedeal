@@ -95,7 +95,12 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
 
     const controller = new AbortController();
     let cancelled = false;
+    let timedOut = false;
     const timer = window.setTimeout(async () => {
+      const timeout = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 15000);
       setIsLookingUp(true);
       try {
         const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -122,11 +127,12 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         onChange({ ...data, block: blockValue, parcel: parcelValue });
         setLookupSuccess(true);
       } catch (error) {
-        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
+        if (cancelled || (error instanceof DOMException && error.name === "AbortError" && !timedOut)) return;
         setLookupError(error instanceof Error && error.message === "not-found"
           ? "לא נמצאו גוש וחלקה לכתובת. אפשר להזין אותם ידנית."
           : "לא ניתן להתחבר כרגע למאגר. אפשר להזין את הנתונים ידנית.");
       } finally {
+        window.clearTimeout(timeout);
         if (!cancelled) setIsLookingUp(false);
       }
     }, 1000);

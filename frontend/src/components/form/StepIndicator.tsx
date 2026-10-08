@@ -4,7 +4,7 @@ const STEPS = [
   { id: 1, label: "סוג נכס" },
   { id: 2, label: "כתובת" },
   { id: 3, label: "פרטים" },
-  { id: 4, label: "תשלום" },
+  { id: 4, label: "שליחה" },
 ];
 
 export function StepIndicator({ current }: { current: number }) {

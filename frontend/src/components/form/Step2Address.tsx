@@ -100,11 +100,10 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
       const timeout = window.setTimeout(() => {
         timedOut = true;
         controller.abort();
-      }, 15000);
+      }, 25000);
       setIsLookingUp(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-        const response = await fetch(`${apiBase.replace(/\/$/, "")}/api/v1/properties/cadastral-lookup`, {
+        const response = await fetch("/api/cadastral-lookup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

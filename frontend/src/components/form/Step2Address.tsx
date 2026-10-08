@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Info, AlertCircle, Wand2, Loader2 } from "lucide-react";
+import { Info, AlertCircle, Loader2 } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
 import { GovAutocomplete } from "./GovAutocomplete";
 
@@ -76,63 +76,67 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [lookupSuccess, setLookupSuccess] = useState(false);
 
-  const set = <K extends keyof Step2PropertyId>(k: K, v: string) =>
+  const set = <K extends keyof Step2PropertyId>(k: K, v: string) => {
+    setLookupError(null);
+    setLookupSuccess(false);
     onChange({ ...data, [k]: v });
-
-  useEffect(() => {
-    // Load govmap script on mount
-    if (typeof window !== "undefined" && !document.getElementById("govmap-script")) {
-      const script = document.createElement("script");
-      script.id = "govmap-script";
-      script.src = "https://govmap.gov.il/govmap/api/govmap.api.js";
-      script.async = true;
-      document.body.appendChild(script);
-    }
-  }, []);
+  };
 
   useEffect(() => {
     const { city, street, houseNumber, block, parcel } = data;
-    // Magic UX: only trigger if full address is present and block/parcel are empty
-    if (!city || !street || !houseNumber || block || parcel) return;
+    const normalizedCity = city.trim();
+    const normalizedStreet = street.trim();
+    const normalizedHouseNumber = houseNumber.trim();
 
-    const timer = setTimeout(() => {
-      // @ts-ignore - govmap is attached to window
-      if (typeof window === "undefined" || !window.govmap || !window.govmap.searchAndLocate) return;
+    if (!normalizedCity || !normalizedStreet || !normalizedHouseNumber || block || parcel) {
+      setIsLookingUp(false);
+      return;
+    }
 
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
       setIsLookingUp(true);
-      setLookupError(null);
-      setLookupSuccess(false);
-
-      const fullAddress = `${street} ${houseNumber}, ${city}`;
-      
-      // @ts-ignore
-      window.govmap.searchAndLocate({
-        // @ts-ignore
-        type: window.govmap.locateType.addressToLotParcel,
-        address: fullAddress
-      })
-      .then((res: any) => {
-        if (res && res.length > 0 && res[0].Lot && res[0].Parcel) {
-          onChange({
-            ...data,
-            block: res[0].Lot.toString(),
-            parcel: res[0].Parcel.toString(),
-          });
-          setLookupSuccess(true);
-          setTimeout(() => setLookupSuccess(false), 5000);
-        } else {
-          setLookupError("לא נמצאו גוש וחלקה אוטומטית");
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+        const response = await fetch(`${apiBase.replace(/\/$/, "")}/api/v1/properties/cadastral-lookup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            city: normalizedCity,
+            street: normalizedStreet,
+            houseNumber: normalizedHouseNumber,
+          }),
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(response.status === 404 ? "not-found" : "unavailable");
         }
-      })
-      .catch((err: any) => {
-        setLookupError("שגיאה בחילוץ גוש וחלקה");
-      })
-      .finally(() => {
-        setIsLookingUp(false);
-      });
-    }, 1500); // 1.5s debounce
 
-    return () => clearTimeout(timer);
+        const blockValue = result?.block == null ? "" : String(result.block).trim();
+        const parcelValue = result?.parcel == null ? "" : String(result.parcel).trim();
+        if (!blockValue || !parcelValue) throw new Error("not-found");
+        if (cancelled) return;
+
+        onChange({ ...data, block: blockValue, parcel: parcelValue });
+        setLookupSuccess(true);
+      } catch (error) {
+        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
+        setLookupError(error instanceof Error && error.message === "not-found"
+          ? "לא נמצאו גוש וחלקה לכתובת. אפשר להזין אותם ידנית."
+          : "לא ניתן להתחבר כרגע למאגר. אפשר להזין את הנתונים ידנית.");
+      } finally {
+        if (!cancelled) setIsLookingUp(false);
+      }
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      controller.abort();
+      setIsLookingUp(false);
+    };
   }, [data.city, data.street, data.houseNumber, data.block, data.parcel]);
 
   const errors = showErrors
@@ -253,7 +257,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         <div className="p-3.5 sm:p-5 rounded-xl border border-white/[0.06] bg-white/[0.01] flex items-start gap-3 sm:gap-4">
           <Info size={13} className="shrink-0 mt-0.5 text-[#00C896]" />
           <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
-            נתוני הגוש והחלקה יאותרו אוטומטית לפי הכתובת. תוכלו להזינם ידנית לדיוק מקסימלי בנסח הטאבו.
+            המערכת תנסה לאתר את הגוש והחלקה לפי הכתובת. מומלץ לוודא את הנתונים מול נסח הטאבו, ואפשר להזינם ידנית.
           </p>
         </div>
       </div>

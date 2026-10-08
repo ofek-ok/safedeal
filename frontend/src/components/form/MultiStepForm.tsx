@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, ArrowLeft, ExternalLink, FileText, Clock, Lock, BarChart3 } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { StepIndicator } from "./StepIndicator";
 import { Step1PropertyType } from "./Step1PropertyType";
 import { Step2Address } from "./Step2Address";
@@ -17,7 +16,6 @@ export function MultiStepForm() {
   const [formData, setFormData] = useState<WizardFormData>(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted]       = useState(false);
-  const [jobId, setJobId]               = useState<string | null>(null);
   const [intakeCaseNumber, setIntakeCaseNumber] = useState<string | null>(null);
   const [showErrors, setShowErrors]     = useState(false);
 
@@ -37,81 +35,22 @@ export function MultiStepForm() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-      if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
-      
-      let savedTabuName = formData.step4.tabuFile?.name ?? null;
+      const staffApiUrl = (process.env.NEXT_PUBLIC_SAFEDEAL_STAFF_API_URL ?? "https://nadlan-risk-platform.ofek-okonski-7581.chatgpt.site").replace(/\/+$/, "");
+      const intakeForm = new FormData();
+      intakeForm.append("intake", JSON.stringify({
+        personal: formData.step1,
+        location: formData.step2,
+        deal: formData.step3,
+      }));
+      if (formData.step4.tabuFile) intakeForm.append("files", formData.step4.tabuFile);
 
-      // Save the complete customer submission to the staff workspace first.
-      let staffCaseNumber = intakeCaseNumber;
-      if (!staffCaseNumber) {
-        const staffApiUrl = (process.env.NEXT_PUBLIC_SAFEDEAL_STAFF_API_URL ?? "https://nadlan-risk-platform.ofek-okonski-7581.chatgpt.site").replace(/\/+$/, "");
-        const intakeForm = new FormData();
-        intakeForm.append("intake", JSON.stringify({
-          personal: formData.step1,
-          location: formData.step2,
-          deal: formData.step3,
-        }));
-        if (formData.step4.tabuFile) intakeForm.append("files", formData.step4.tabuFile);
-
-        const intakeResponse = await fetch(`${staffApiUrl}/api/intake`, { method: "POST", body: intakeForm });
-        const intakeResult = await intakeResponse.json().catch(() => ({})) as { caseNumber?: string; error?: string };
-        if (!intakeResponse.ok || !intakeResult.caseNumber) {
-          throw new Error(intakeResult.error ?? "לא הצלחנו לשמור את הבקשה במערכת SafeDeal. הפרטים נשארו בטופס — נסו שוב.");
-        }
-        staffCaseNumber = intakeResult.caseNumber;
-        setIntakeCaseNumber(staffCaseNumber);
+      const intakeResponse = await fetch(`${staffApiUrl}/api/intake`, { method: "POST", body: intakeForm });
+      const intakeResult = await intakeResponse.json().catch(() => ({})) as { caseNumber?: string; error?: string };
+      if (!intakeResponse.ok || !intakeResult.caseNumber) {
+        throw new Error(intakeResult.error ?? "לא הצלחנו לשלוח את הבקשה. הפרטים נשארו בטופס — נסו שוב.");
       }
 
-      // 1. Upload file if it exists
-      if (formData.step4.tabuFile) {
-        const uploadData = new FormData();
-        uploadData.append("file", formData.step4.tabuFile);
-        
-        try {
-          const upRes = await fetch(`${apiUrl}/api/v1/properties/upload-doc`, {
-            method: "POST",
-            body: uploadData,
-          });
-          if (upRes.ok) {
-            const upJson = await upRes.json();
-            savedTabuName = upJson.filename; // Use the unique server-generated name
-          } else {
-            console.error("Upload failed with status", upRes.status);
-            alert(`Upload failed: ${upRes.status}`);
-          }
-        } catch (e) {
-          console.error("File upload failed", e);
-          alert("File upload connection error");
-        }
-      }
-
-      // 2. Start analysis
-      const res = await fetch(`${apiUrl}/api/v1/properties/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          personal:  {
-            ...formData.step1,
-            email: formData.step1.email || undefined,
-          },
-          location:  formData.step2,
-          deal:      formData.step3,
-          documents: {
-            tabuFileName: savedTabuName,
-          },
-        }),
-      });
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Analysis failed:", res.status, errorText);
-        alert(`הבקשה נשמרה במערכת העובדים (מספר תיק ${staffCaseNumber}), אך הפקת הדוח נכשלה כרגע. אפשר לנסות שוב בלי ליצור תיק כפול.`);
-        return;
-      }
-      
-      const json = await res.json();
-      setJobId(json.jobId);
+      setIntakeCaseNumber(intakeResult.caseNumber);
       setSubmitted(true);
     } catch (err) {
       console.error("Submission error", err);
@@ -126,16 +65,16 @@ export function MultiStepForm() {
       <div className="flex flex-col items-center text-center py-16 px-4 animate-fade-in-up">
         <div className="mb-10 p-6 rounded-full border border-[#00C896]/30 bg-[#00C896]/5 relative">
           <div className="absolute inset-0 rounded-full border border-[#00C896]/10 scale-125 animate-pulse" />
-          <SafeDealLogo size="md" iconOnly />
+          <CheckCircle2 size={30} className="text-[#00C896]" aria-hidden="true" />
         </div>
 
         <div className="mb-12">
           <div className="w-8 h-[1px] bg-[#00C896] mx-auto mb-6"></div>
           <h2 className="text-3xl md:text-4xl text-white mb-6" style={{ fontFamily: "var(--font-serif)" }}>
-            הבדיקה שלכם התקבלה בהצלחה
+            קיבלנו את הבקשה שלכם
           </h2>
           <p className="text-slate-400 text-sm tracking-wider leading-relaxed max-w-md mx-auto">
-            הדוח המשוקלל עבור{" "}
+            אנחנו עובדים על בדיקת הנכס{" "}
             {formData.step2.street ? (
               <span className="text-white">
                 {formData.step2.street} {formData.step2.houseNumber},{" "}
@@ -144,40 +83,18 @@ export function MultiStepForm() {
             ) : (
               <span className="text-white">הנכס המבוקש</span>
             )}{" "}
-            נשלח לבדיקה, והצוות כבר קיבל את פרטי הנכס והמסמכים. מספר התיק במערכת: {intakeCaseNumber ?? jobId}.
+            הצוות קיבל את כל הפרטים והמסמכים. הדוח יישלח אליכם בתוך כ־24 שעות.
           </p>
           <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-6">
-            מספר בקשה:{" "}
-            <span className="text-[#00C896] font-mono text-xs">#{jobId}</span>
+            מספר פנייה:{" "}
+            <span className="text-[#00C896] font-mono text-xs">{intakeCaseNumber}</span>
           </p>
-        </div>
-
-        <Link
-          href={`/report/${jobId}`}
-          className="group flex items-center justify-center gap-3 py-4 px-10 border border-[#00C896] bg-[#00C896]/10 hover:bg-[#00C896]/20 text-[#00C896] transition-all duration-300 w-full sm:w-auto uppercase tracking-widest text-xs mb-12"
-        >
-          <FileText size={14} />
-          <span>הצג דוח מלא</span>
-          <ExternalLink size={14} className="group-hover:translate-x-[-2px] group-hover:-translate-y-[2px] transition-transform" />
-        </Link>
-
-        <div className="grid grid-cols-3 gap-3 sm:gap-8 p-4 sm:p-8 border-y border-white/[0.06] w-full max-w-lg mb-12">
-          {[
-            { num: "100K+", label: "עסקאות מנותחות" },
-            { num: "~5",    label: "דקות לדוח"  },
-            { num: "8",     label: "מקורות מידע"     },
-          ].map(({ num, label }) => (
-            <div key={label} className="text-center flex flex-col gap-2">
-              <p className="text-2xl text-[#00C896]" style={{ fontFamily: "var(--font-serif)" }}>{num}</p>
-              <p className="text-[9px] uppercase tracking-widest text-slate-500">{label}</p>
-            </div>
-          ))}
         </div>
 
         <button
           onClick={() => {
             setSubmitted(false); setStep(1);
-            setFormData(INITIAL_FORM_DATA); setJobId(null); setIntakeCaseNumber(null);
+            setFormData(INITIAL_FORM_DATA); setIntakeCaseNumber(null);
           }}
           className="text-[10px] uppercase tracking-widest text-slate-400 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1"
         >
@@ -205,7 +122,7 @@ export function MultiStepForm() {
           כמה פרטים על הנכס - ואנחנו מתחילים לבדוק
         </h1>
         <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-          ללא שדות חובה — מלאו את מה שנוח לכם וקבלו דוח תוך דקות.
+          מלאו את הפרטים שברשותכם ונשלח לכם את הדוח בתוך כ־24 שעות.
         </p>
       </div>
 

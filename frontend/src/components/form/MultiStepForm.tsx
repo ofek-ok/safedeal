@@ -18,6 +18,7 @@ export function MultiStepForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted]       = useState(false);
   const [jobId, setJobId]               = useState<string | null>(null);
+  const [intakeCaseNumber, setIntakeCaseNumber] = useState<string | null>(null);
   const [showErrors, setShowErrors]     = useState(false);
 
   const TOTAL = 4;
@@ -33,12 +34,34 @@ export function MultiStepForm() {
   const back = () => { if (step > 1)    setStep((s) => s - 1); };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
       let apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
       if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
       
       let savedTabuName = formData.step4.tabuFile?.name ?? null;
+
+      // Save the complete customer submission to the staff workspace first.
+      let staffCaseNumber = intakeCaseNumber;
+      if (!staffCaseNumber) {
+        const staffApiUrl = (process.env.NEXT_PUBLIC_SAFEDEAL_STAFF_API_URL ?? "https://nadlan-risk-platform.ofek-okonski-7581.chatgpt.site").replace(/\/+$/, "");
+        const intakeForm = new FormData();
+        intakeForm.append("intake", JSON.stringify({
+          personal: formData.step1,
+          location: formData.step2,
+          deal: formData.step3,
+        }));
+        if (formData.step4.tabuFile) intakeForm.append("files", formData.step4.tabuFile);
+
+        const intakeResponse = await fetch(`${staffApiUrl}/api/intake`, { method: "POST", body: intakeForm });
+        const intakeResult = await intakeResponse.json().catch(() => ({})) as { caseNumber?: string; error?: string };
+        if (!intakeResponse.ok || !intakeResult.caseNumber) {
+          throw new Error(intakeResult.error ?? "לא הצלחנו לשמור את הבקשה במערכת SafeDeal. הפרטים נשארו בטופס — נסו שוב.");
+        }
+        staffCaseNumber = intakeResult.caseNumber;
+        setIntakeCaseNumber(staffCaseNumber);
+      }
 
       // 1. Upload file if it exists
       if (formData.step4.tabuFile) {
@@ -83,8 +106,7 @@ export function MultiStepForm() {
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Analysis failed:", res.status, errorText);
-        alert(`Analysis API failed: ${res.status}\nCheck console for details.\nURL: ${apiUrl}/api/v1/properties/analyze`);
-        setIsSubmitting(false);
+        alert(`הבקשה נשמרה במערכת העובדים (מספר תיק ${staffCaseNumber}), אך הפקת הדוח נכשלה כרגע. אפשר לנסות שוב בלי ליצור תיק כפול.`);
         return;
       }
       
@@ -93,7 +115,7 @@ export function MultiStepForm() {
       setSubmitted(true);
     } catch (err) {
       console.error("Submission error", err);
-      alert("Submission connection error");
+      alert(err instanceof Error ? err.message : "לא הצלחנו לשלוח את הבקשה. הפרטים נשארו בטופס — נסו שוב.");
     } finally {
       setIsSubmitting(false);
     }
@@ -122,7 +144,7 @@ export function MultiStepForm() {
             ) : (
               <span className="text-white">הנכס המבוקש</span>
             )}{" "}
-            נוצר בהצלחה מ-8 מקורות מידע. נשלח אותו למייל שהזנתם ברגע שיהיה מוכן.
+            נשלח לבדיקה, והצוות כבר קיבל את פרטי הנכס והמסמכים. מספר התיק במערכת: {intakeCaseNumber ?? jobId}.
           </p>
           <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-6">
             מספר בקשה:{" "}
@@ -155,7 +177,7 @@ export function MultiStepForm() {
         <button
           onClick={() => {
             setSubmitted(false); setStep(1);
-            setFormData(INITIAL_FORM_DATA); setJobId(null);
+            setFormData(INITIAL_FORM_DATA); setJobId(null); setIntakeCaseNumber(null);
           }}
           className="text-[10px] uppercase tracking-widest text-slate-400 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1"
         >

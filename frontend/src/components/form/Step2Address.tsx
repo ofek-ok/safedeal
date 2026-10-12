@@ -99,11 +99,12 @@ type GovMapSdk = {
     params: {
       geometry: string;
       radius: number;
-      layers: Array<{ name: string; fields: string }>;
+      layers: Array<{ name: string; fields: string[] }>;
     },
     apiToken: string,
   ) => Promise<GovMapLookupResponse>;
 };
+
 declare global {
   interface Window {
     govmap?: GovMapSdk;
@@ -133,6 +134,7 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
   }
   return govMapSdkPromise;
 }
+
 function attributeValue(attributes: Record<string, unknown> | undefined, field: string) {
   const value = Object.entries(attributes ?? {}).find(([name]) => name.toUpperCase() === field)?.[1];
   return value == null ? "" : String(value).trim();
@@ -174,37 +176,37 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         const timeout = new Promise<never>((_, reject) => {
           requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
         });
-        const address = normalizedStreet + " " + normalizedHouseNumber + " " + normalizedCity;
-        const search = await sdk.search({
-          searchText: address,
-          language: "he",
-          maxResults: 5,
-          isAccurate: true,
-          apiKey: govMapApiToken,
-        });
-        if (
-          (search.status !== undefined && search.status !== 0) ||
-          (search.errorCode !== undefined && search.errorCode !== 0)
-        ) {
-          throw new Error("unavailable");
-        }
+        const lookup = (async () => {
+          const address = `${normalizedStreet} ${normalizedHouseNumber} ${normalizedCity}`;
+          const search = await sdk.search({
+            searchText: address,
+            language: "he",
+            maxResults: 5,
+            isAccurate: true,
+            apiKey: govMapApiToken,
+          });
+          if (
+            (search.status !== undefined && search.status !== 0) ||
+            (search.errorCode !== undefined && search.errorCode !== 0)
+          ) {
+            throw new Error("unavailable");
+          }
 
-        const addressResult = search.results?.find(
-          (item) => item.type === "address" && item.centroid,
-        ) ?? search.results?.find((item) => item.centroid);
-        if (!addressResult?.centroid) throw new Error("address-not-found");
+          const addressResult = search.results?.find(
+            (item) => item.type === "address" && item.centroid,
+          ) ?? search.results?.find((item) => item.centroid);
+          if (!addressResult?.centroid) throw new Error("address-not-found");
 
-        const result = await Promise.race([
-          sdk.getLayerFeaturesByLocation(
+          return sdk.getLayerFeaturesByLocation(
             {
               geometry: addressResult.centroid.replace(/^POINT\s+\(/i, "POINT("),
               radius: 20,
-              layers: [{ name: "PARCEL_ALL", fields: "GUSH_NUM,PARCEL" }],
+              layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
             },
             govMapApiToken,
-          ),
-          timeout,
-        ]);
+          );
+        })();
+        const result = await Promise.race([lookup, timeout]);
         if (cancelled) return;
         if (
           (result.status !== undefined && result.status !== 0) ||
@@ -217,12 +219,49 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           ([name]) => name.toUpperCase() === "PARCEL_ALL",
         )?.[1] ?? [];
         if (!parcelLayer.length) throw new Error("parcel-not-found");
-        const parcels = parcelLayer
+        let parcels = parcelLayer
           .map((feature) => ({
             block: attributeValue(feature.attributes, "GUSH_NUM"),
             parcel: attributeValue(feature.attributes, "PARCEL"),
           }))
           .filter((item) => item.block && item.parcel);
+
+        if (!parcels.length) {
+          const featureIds = parcelLayer
+            .map((feature) => feature.id)
+            .filter((id): id is string | number => typeof id === "string" || typeof id === "number")
+            .map(String);
+          if (!featureIds.length) throw new Error("parcel-fields-missing");
+
+          const fallbackResponse = await Promise.race([
+            fetch("/api/cadastral-parcel", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ featureIds }),
+            }).then(async (response) => {
+              if (!response.ok) throw new Error("parcel-fields-missing");
+              return response.json() as Promise<{
+                parcels?: Array<{ block?: string; parcel?: string }>;
+                featureCount?: number;
+                propertyKeys?: string[];
+              }>;
+            }),
+            timeout,
+          ]);
+          console.info(
+            "[GovMap] WFS response",
+            JSON.stringify({
+              featureCount: fallbackResponse.featureCount,
+              propertyKeys: fallbackResponse.propertyKeys,
+            }),
+          );
+          parcels = (fallbackResponse.parcels ?? [])
+            .map((item) => ({
+              block: String(item.block ?? "").trim(),
+              parcel: String(item.parcel ?? "").trim(),
+            }))
+            .filter((item) => item.block && item.parcel);
+        }
         const uniqueParcels = [...new Map(
           parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const),
         ).values()];

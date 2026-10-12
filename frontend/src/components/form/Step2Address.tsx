@@ -71,7 +71,10 @@ function EditorialInput({
   );
 }
 
-type GovMapParcelFeature = { attributes?: Record<string, unknown> };
+type GovMapParcelFeature = {
+  attributes?: Record<string, unknown>;
+  values?: Record<string, unknown> | unknown[];
+};
 type GovMapLookupResponse = {
   layers?: Record<string, GovMapParcelFeature[]>;
   status?: number;

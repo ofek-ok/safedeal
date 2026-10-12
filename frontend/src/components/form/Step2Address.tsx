@@ -233,32 +233,34 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
             .map(String);
           if (!featureIds.length) throw new Error("parcel-fields-missing");
 
+          const safeFeatureIds = featureIds
+            .filter((id) => /^[A-Za-z0-9_.:-]{1,100}$/.test(id))
+            .map((id) => id.includes(".") ? id : `PARCEL_ALL.${id}`);
+          const wfsUrl = new URL("https://open.govmap.gov.il/geoserver/opendata/wfs");
+          wfsUrl.search = new URLSearchParams({
+            service: "WFS",
+            version: "2.0.0",
+            request: "GetFeature",
+            typeNames: "opendata:PARCEL_ALL",
+            featureID: safeFeatureIds.join(","),
+            count: "10",
+            propertyName: "GUSH_NUM,PARCEL",
+            outputFormat: "application/json",
+          }).toString();
           const fallbackResponse = await Promise.race([
-            fetch("/api/cadastral-parcel", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ featureIds }),
-            }).then(async (response) => {
-              if (!response.ok) throw new Error("parcel-fields-missing");
-              return response.json() as Promise<{
-                parcels?: Array<{ block?: string; parcel?: string }>;
-                featureCount?: number;
-                propertyKeys?: string[];
-              }>;
-            }),
+            fetch(wfsUrl, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(12_000) })
+              .then(async (response) => {
+                if (!response.ok) throw new Error("parcel-fields-missing");
+                return response.json() as Promise<{
+                  features?: Array<{ properties?: Record<string, unknown> | null }>;
+                }>;
+              }),
             timeout,
           ]);
-          console.info(
-            "[GovMap] WFS response",
-            JSON.stringify({
-              featureCount: fallbackResponse.featureCount,
-              propertyKeys: fallbackResponse.propertyKeys,
-            }),
-          );
-          parcels = (fallbackResponse.parcels ?? [])
-            .map((item) => ({
-              block: String(item.block ?? "").trim(),
-              parcel: String(item.parcel ?? "").trim(),
+          parcels = (fallbackResponse.features ?? [])
+            .map((feature) => ({
+              block: attributeValue(feature.properties ?? undefined, "GUSH_NUM"),
+              parcel: attributeValue(feature.properties ?? undefined, "PARCEL"),
             }))
             .filter((item) => item.block && item.parcel);
         }

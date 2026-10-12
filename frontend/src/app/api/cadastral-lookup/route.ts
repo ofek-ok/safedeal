@@ -1,6 +1,5 @@
-const STAFF_API_URL = (
-  process.env.SAFEDEAL_STAFF_API_URL ?? "https://safedeal-staff.vercel.app"
-).replace(/\\/+$/, "");
+const STAFF_API_URL =
+  process.env.SAFEDEAL_STAFF_API_URL || "https://safedeal-staff.vercel.app";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -13,7 +12,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await fetch(`${STAFF_API_URL}/api/cadastral-lookup`, {
+    const endpoint = new URL("/api/cadastral-lookup", STAFF_API_URL);
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ city, street, houseNumber }),

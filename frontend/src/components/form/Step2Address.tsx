@@ -72,8 +72,8 @@ function EditorialInput({
 }
 
 type GovMapParcelFeature = {
+  id?: string | number;
   attributes?: Record<string, unknown>;
-  values?: Record<string, unknown> | unknown[];
 };
 type GovMapLookupResponse = {
   layers?: Record<string, GovMapParcelFeature[]>;
@@ -207,18 +207,6 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           );
         })();
         const result = await Promise.race([lookup, timeout]);
-        console.info(
-          "[GovMap] parcel response fields",
-          JSON.stringify(
-            Object.entries(result.layers ?? {}).map(([name, features]) => ({
-              name,
-              count: features.length,
-              featureKeys: Object.keys(features[0] ?? {}),
-              attributeKeys: Object.keys(features[0]?.attributes ?? {}),
-              valueKeys: Object.keys(features[0]?.values ?? {}),
-            })),
-          ),
-        );
         if (cancelled) return;
         if (
           (result.status !== undefined && result.status !== 0) ||
@@ -231,12 +219,38 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           ([name]) => name.toUpperCase() === "PARCEL_ALL",
         )?.[1] ?? [];
         if (!parcelLayer.length) throw new Error("parcel-not-found");
-        const parcels = parcelLayer
+        let parcels = parcelLayer
           .map((feature) => ({
             block: attributeValue(feature.attributes, "GUSH_NUM"),
             parcel: attributeValue(feature.attributes, "PARCEL"),
           }))
           .filter((item) => item.block && item.parcel);
+
+        if (!parcels.length) {
+          const featureIds = parcelLayer
+            .map((feature) => feature.id)
+            .filter((id): id is string | number => typeof id === "string" || typeof id === "number")
+            .map(String);
+          if (!featureIds.length) throw new Error("parcel-fields-missing");
+
+          const fallbackResponse = await Promise.race([
+            fetch("/api/cadastral-parcel", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ featureIds }),
+            }).then(async (response) => {
+              if (!response.ok) throw new Error("parcel-fields-missing");
+              return response.json() as Promise<{ parcels?: Array<{ block?: string; parcel?: string }> }>;
+            }),
+            timeout,
+          ]);
+          parcels = (fallbackResponse.parcels ?? [])
+            .map((item) => ({
+              block: String(item.block ?? "").trim(),
+              parcel: String(item.parcel ?? "").trim(),
+            }))
+            .filter((item) => item.block && item.parcel);
+        }
         const uniqueParcels = [...new Map(
           parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const),
         ).values()];

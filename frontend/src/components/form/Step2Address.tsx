@@ -71,34 +71,39 @@ function EditorialInput({
   );
 }
 
-type GovMapLocateResponse = {
-  data?: Array<{ Values?: unknown[]; gushSuffix?: number | null }>;
+type GovMapParcelFeature = {
+  id?: string | number;
+  attributes?: Record<string, unknown>;
+};
+type GovMapLookupResponse = {
+  layers?: Record<string, GovMapParcelFeature[]>;
+  status?: number;
+  errorCode?: number;
+  message?: string | null;
+};
+type GovMapSearchResponse = {
+  results?: Array<{ type?: string; text?: string; score?: number; centroid?: string }>;
   status?: number;
   errorCode?: number;
   message?: string | null;
 };
 type GovMapSdk = {
-  locateType: { addressToLotParcel: string };
-  createMap: (
-    mapDivId: string,
-    options: {
-      token: string;
-      layers: string[];
-      visibleLayers: string[];
-      layersMode: number;
-      showXY: boolean;
-      identifyOnClick: boolean;
-      isEmbeddedToggle: boolean;
-      background: string;
-      zoomButtons: boolean;
+  search: (params: {
+    searchText: string;
+    language: "he";
+    maxResults: number;
+    isAccurate: boolean;
+    apiKey: string;
+  }) => Promise<GovMapSearchResponse>;
+  getLayerFeaturesByLocation: (
+    params: {
+      geometry: string;
+      radius: number;
+      layers: Array<{ name: string; fields: string }>;
     },
-  ) => void;
-  searchAndLocate: (
-    params: { type: string; address: string },
-    mapDivId?: string,
-  ) => Promise<GovMapLocateResponse>;
+    apiToken: string,
+  ) => Promise<GovMapLookupResponse>;
 };
-
 declare global {
   interface Window {
     govmap?: GovMapSdk;
@@ -107,7 +112,6 @@ declare global {
 
 const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN?.trim();
 let govMapSdkPromise: Promise<GovMapSdk> | null = null;
-let govMapMapPromise: Promise<void> | null = null;
 
 function loadGovMapSdk(): Promise<GovMapSdk> {
   if (window.govmap) return Promise.resolve(window.govmap);
@@ -170,41 +174,34 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         const timeout = new Promise<never>((_, reject) => {
           requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
         });
-        const mapDivId = "safedeal-govmap-cadastral";
-        let mapInit = govMapMapPromise;
-        if (!mapInit) {
-          mapInit = new Promise<void>((resolve, reject) => {
-            const mapDiv = document.getElementById(mapDivId);
-            if (!mapDiv) {
-              reject(new Error("map-not-ready"));
-              return;
-            }
-            try {
-              sdk.createMap(mapDivId, {
-                token: govMapApiToken,
-                layers: ["PARCEL_ALL"],
-                visibleLayers: [],
-                layersMode: 2,
-                showXY: false,
-                identifyOnClick: false,
-                isEmbeddedToggle: false,
-                background: "1",
-                zoomButtons: false,
-              });
-              window.setTimeout(resolve, 2500);
-            } catch (error) {
-              reject(error);
-            }
-          });
-          govMapMapPromise = mapInit;
+        const address = normalizedStreet + " " + normalizedHouseNumber + " " + normalizedCity;
+        const search = await sdk.search({
+          searchText: address,
+          language: "he",
+          maxResults: 5,
+          isAccurate: true,
+          apiKey: govMapApiToken,
+        });
+        if (
+          (search.status !== undefined && search.status !== 0) ||
+          (search.errorCode !== undefined && search.errorCode !== 0)
+        ) {
+          throw new Error("unavailable");
         }
 
-        await mapInit;
-        const address = normalizedStreet + " " + normalizedHouseNumber + ", " + normalizedCity;
+        const addressResult = search.results?.find(
+          (item) => item.type === "address" && item.centroid,
+        ) ?? search.results?.find((item) => item.centroid);
+        if (!addressResult?.centroid) throw new Error("address-not-found");
+
         const result = await Promise.race([
-          sdk.searchAndLocate(
-            { type: sdk.locateType.addressToLotParcel, address },
-            mapDivId,
+          sdk.getLayerFeaturesByLocation(
+            {
+              geometry: addressResult.centroid.replace(/^POINT\\s+\\(/i, "POINT("),
+              radius: 20,
+              layers: [{ name: "PARCEL_ALL", fields: "GUSH_NUM,PARCEL" }],
+            },
+            govMapApiToken,
           ),
           timeout,
         ]);
@@ -216,10 +213,14 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           throw new Error("unavailable");
         }
 
-        const parcels = (result.data ?? [])
-          .map((item) => ({
-            block: String(item.Values?.[0] ?? "").trim(),
-            parcel: String(item.Values?.[1] ?? "").trim(),
+        const parcelLayer = Object.entries(result.layers ?? {}).find(
+          ([name]) => name.toUpperCase() === "PARCEL_ALL",
+        )?.[1] ?? [];
+        if (!parcelLayer.length) throw new Error("parcel-not-found");
+        const parcels = parcelLayer
+          .map((feature) => ({
+            block: attributeValue(feature.attributes, "GUSH_NUM"),
+            parcel: attributeValue(feature.attributes, "PARCEL"),
           }))
           .filter((item) => item.block && item.parcel);
         const uniqueParcels = [...new Map(
@@ -380,11 +381,6 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           </p>
         </div>
       </div>
-      <div
-        id="safedeal-govmap-cadastral"
-        aria-hidden="true"
-        style={{ position: "fixed", left: "-10000px", top: 0, width: 600, height: 600, opacity: 0, pointerEvents: "none", overflow: "hidden" }}
-      />
     </div>
   );
 }

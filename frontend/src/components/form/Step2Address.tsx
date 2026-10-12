@@ -71,6 +71,59 @@ function EditorialInput({
   );
 }
 
+type GovMapParcelFeature = { attributes?: Record<string, unknown> };
+type GovMapLookupResponse = {
+  layers?: Record<string, GovMapParcelFeature[]>;
+  status?: number;
+  errorCode?: number;
+  message?: string | null;
+};
+type GovMapSdk = {
+  getLayerFeaturesByLocation: (
+    params: {
+      address: string;
+      radius: number;
+      layers: Array<{ name: string; fields: string[] }>;
+    },
+    apiToken: string,
+  ) => Promise<GovMapLookupResponse>;
+};
+
+declare global {
+  interface Window {
+    govmap?: GovMapSdk;
+  }
+}
+
+const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN?.trim();
+let govMapSdkPromise: Promise<GovMapSdk> | null = null;
+
+function loadGovMapSdk(): Promise<GovMapSdk> {
+  if (window.govmap) return Promise.resolve(window.govmap);
+  if (!govMapSdkPromise) {
+    govMapSdkPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://www.govmap.gov.il/govmap/api/govmap.api.js";
+      script.async = true;
+      script.onload = () => {
+        if (window.govmap) resolve(window.govmap);
+        else reject(new Error("GovMap SDK did not initialize."));
+      };
+      script.onerror = () => {
+        govMapSdkPromise = null;
+        reject(new Error("GovMap SDK failed to load."));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return govMapSdkPromise;
+}
+
+function attributeValue(attributes: Record<string, unknown> | undefined, field: string) {
+  const value = Object.entries(attributes ?? {}).find(([name]) => name.toUpperCase() === field)?.[1];
+  return value == null ? "" : String(value).trim();
+}
+
 export function Step2Address({ data, onChange, showErrors }: Props) {
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -93,45 +146,66 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
       return;
     }
 
-    const controller = new AbortController();
+    if (!govMapApiToken) {
+      setLookupError("החיפוש האוטומטי לא הוגדר. אפשר להזין גוש וחלקה ידנית.");
+      return;
+    }
+
     let cancelled = false;
-    let timedOut = false;
+    let requestTimeout: number | undefined;
     const timer = window.setTimeout(async () => {
-      const timeout = window.setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, 25000);
       setIsLookingUp(true);
       try {
-        const response = await fetch("/api/cadastral-lookup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            city: normalizedCity,
-            street: normalizedStreet,
-            houseNumber: normalizedHouseNumber,
-          }),
-          signal: controller.signal,
+        const sdk = await loadGovMapSdk();
+        const lookup = sdk.getLayerFeaturesByLocation(
+          {
+            address: `${normalizedStreet} ${normalizedHouseNumber}, ${normalizedCity}`,
+            radius: 100,
+            layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
+          },
+          govMapApiToken,
+        );
+        const timeout = new Promise<never>((_, reject) => {
+          requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
         });
-        const result = await response.json().catch(() => null);
-        if (!response.ok) {
-          throw new Error(response.status === 404 ? "not-found" : "unavailable");
+        const result = await Promise.race([lookup, timeout]);
+        if (cancelled) return;
+        if (
+          (result.status !== undefined && result.status !== 0) ||
+          (result.errorCode !== undefined && result.errorCode !== 0)
+        ) {
+          throw new Error("unavailable");
         }
 
-        const blockValue = result?.block == null ? "" : String(result.block).trim();
-        const parcelValue = result?.parcel == null ? "" : String(result.parcel).trim();
-        if (!blockValue || !parcelValue) throw new Error("not-found");
-        if (cancelled) return;
+        const parcelLayer = Object.entries(result.layers ?? {}).find(
+          ([name]) => name.toUpperCase() === "PARCEL_ALL",
+        )?.[1] ?? [];
+        const parcels = parcelLayer
+          .map((feature) => ({
+            block: attributeValue(feature.attributes, "GUSH_NUM"),
+            parcel: attributeValue(feature.attributes, "PARCEL"),
+          }))
+          .filter((item) => item.block && item.parcel);
+        const uniqueParcels = [...new Map(
+          parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const),
+        ).values()];
 
-        onChange({ ...data, block: blockValue, parcel: parcelValue });
+        if (!uniqueParcels.length) throw new Error("not-found");
+        if (uniqueParcels.length > 1) throw new Error("ambiguous");
+        const { block, parcel: parcelNumber } = uniqueParcels[0];
+        onChange({ ...data, block, parcel: parcelNumber });
         setLookupSuccess(true);
       } catch (error) {
-        if (cancelled || (error instanceof DOMException && error.name === "AbortError" && !timedOut)) return;
+        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
         setLookupError(error instanceof Error && error.message === "not-found"
           ? "לא נמצאו גוש וחלקה לכתובת. אפשר להזין אותם ידנית."
-          : "לא ניתן להתחבר כרגע למאגר. אפשר להזין את הנתונים ידנית.");
+          : error instanceof Error && error.message === "ambiguous"
+            ? "הכתובת משויכת ליותר מגוש או חלקה אחד. בדקו את נסח הטאבו והזינו את הנתונים ידנית."
+            : error instanceof Error && error.message === "timeout"
+              ? "החיפוש נמשך זמן רב. אפשר להזין גוש וחלקה ידנית."
+              : "GovMap לא הצליח לאתר את הכתובת. אפשר להזין גוש וחלקה ידנית.");
       } finally {
-        window.clearTimeout(timeout);
+        if (requestTimeout) window.clearTimeout(requestTimeout);
         if (!cancelled) setIsLookingUp(false);
       }
     }, 1000);
@@ -139,7 +213,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
-      controller.abort();
+      if (requestTimeout) window.clearTimeout(requestTimeout);
       setIsLookingUp(false);
     };
   }, [data.city, data.street, data.houseNumber, data.block, data.parcel]);

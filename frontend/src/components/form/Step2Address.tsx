@@ -240,21 +240,10 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
               body: JSON.stringify({ featureIds }),
             }).then(async (response) => {
               if (!response.ok) throw new Error("parcel-fields-missing");
-              return response.json() as Promise<{
-                parcels?: Array<{ block?: string; parcel?: string }>;
-                featureCount?: number;
-                propertyKeys?: string[];
-              }>;
+              return response.json() as Promise<{ parcels?: Array<{ block?: string; parcel?: string }> }>;
             }),
             timeout,
           ]);
-          console.info(
-            "[GovMap] WFS response",
-            JSON.stringify({
-              featureCount: fallbackResponse.featureCount,
-              propertyKeys: fallbackResponse.propertyKeys,
-            }),
-          );
           parcels = (fallbackResponse.parcels ?? [])
             .map((item) => ({
               block: String(item.block ?? "").trim(),

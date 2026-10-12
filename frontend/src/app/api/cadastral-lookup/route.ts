@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+const STAFF_API_URL = "https://safedeal-staff.vercel.app";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -9,37 +9,26 @@ export async function POST(request: Request) {
   if (!city || !street || !houseNumber) {
     return Response.json({ message: "עיר, רחוב ומספר בית הם שדות חובה." }, { status: 400 });
   }
-  if (!API_BASE) {
-    return Response.json({ code: "BACKEND_NOT_CONFIGURED" }, { status: 503 });
-  }
 
   try {
-    const response = await fetch(
-      `${API_BASE.replace(/\/+$/, "")}/api/v1/properties/cadastral-lookup`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ city, street, houseNumber }),
-        signal: AbortSignal.timeout(20_000),
-        cache: "no-store",
-      },
-    );
-    const result = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      return Response.json(
-        { code: response.status === 404 ? "PARCEL_NOT_FOUND" : "CADASTRAL_UPSTREAM_ERROR" },
-        { status: response.status },
-      );
-    }
-
-    return Response.json(result, { headers: { "Cache-Control": "no-store" } });
+    const response = await fetch(`${STAFF_API_URL}/api/cadastral-lookup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ city, street, houseNumber }),
+      signal: AbortSignal.timeout(27_000),
+      cache: "no-store",
+    });
+    const result = await response.json().catch(() => ({ error: "תשובה לא תקינה ממאגר הגושים והחלקות." }));
+    return Response.json(result, {
+      status: response.status,
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     const timedOut = error instanceof Error && error.name === "TimeoutError";
-    console.error("Cadastral lookup backend request failed", timedOut ? "timeout" : "connection error");
+    console.error("Cadastral lookup staff API request failed", timedOut ? "timeout" : "connection error");
     return Response.json(
       { code: timedOut ? "CADASTRAL_UPSTREAM_TIMEOUT" : "CADASTRAL_BACKEND_UNAVAILABLE" },
-      { status: timedOut ? 504 : 502 },
+      { status: timedOut ? 504 : 502, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

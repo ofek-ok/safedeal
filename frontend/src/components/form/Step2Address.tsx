@@ -240,7 +240,11 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
               body: JSON.stringify({ featureIds }),
             }).then(async (response) => {
               if (!response.ok) throw new Error("parcel-fields-missing");
-              return response.json() as Promise<{ parcels?: Array<{ block?: string; parcel?: string }> }>;
+              return response.json() as Promise<{
+                parcels?: Array<{ block?: string; parcel?: string }>;
+                featureCount?: number;
+                propertyKeys?: string[];
+              }>;
             }),
             timeout,
           ]);

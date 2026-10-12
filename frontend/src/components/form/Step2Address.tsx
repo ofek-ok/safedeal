@@ -98,6 +98,37 @@ type GovMapSdk = {
     mapDivId?: string,
   ) => Promise<GovMapLocateResponse>;
 };
+
+declare global {
+  interface Window {
+    govmap?: GovMapSdk;
+  }
+}
+
+const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN?.trim();
+let govMapSdkPromise: Promise<GovMapSdk> | null = null;
+let govMapMapPromise: Promise<void> | null = null;
+
+function loadGovMapSdk(): Promise<GovMapSdk> {
+  if (window.govmap) return Promise.resolve(window.govmap);
+  if (!govMapSdkPromise) {
+    govMapSdkPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://www.govmap.gov.il/govmap/api/govmap.api.js";
+      script.async = true;
+      script.onload = () => {
+        if (window.govmap) resolve(window.govmap);
+        else reject(new Error("GovMap SDK did not initialize."));
+      };
+      script.onerror = () => {
+        govMapSdkPromise = null;
+        reject(new Error("GovMap SDK failed to load."));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return govMapSdkPromise;
+}
 function attributeValue(attributes: Record<string, unknown> | undefined, field: string) {
   const value = Object.entries(attributes ?? {}).find(([name]) => name.toUpperCase() === field)?.[1];
   return value == null ? "" : String(value).trim();

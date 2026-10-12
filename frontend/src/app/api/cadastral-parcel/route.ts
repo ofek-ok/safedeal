@@ -9,13 +9,15 @@ function textValue(value: unknown) {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const inputIds = Array.isArray(body?.featureIds) ? body.featureIds : [];
-  const featureIds = [...new Set(
-    inputIds
-      .filter((value: unknown): value is string | number => typeof value === "string" || typeof value === "number")
-      .map((value: string | number) => String(value).trim())
-      .filter((value: string) => /^[A-Za-z0-9_.:-]{1,100}$/.test(value)),
-  )].slice(0, 10);
+  const inputIds: unknown[] = Array.isArray(body?.featureIds) ? body.featureIds : [];
+  const validIds: string[] = [];
+
+  for (const value of inputIds) {
+    if (typeof value !== "string" && typeof value !== "number") continue;
+    const id = String(value).trim();
+    if (/^[A-Za-z0-9_.:-]{1,100}$/.test(id)) validIds.push(id);
+  }
+  const featureIds = [...new Set(validIds)].slice(0, 10);
 
   if (!featureIds.length) {
     return Response.json({ error: "Missing valid parcel feature IDs." }, { status: 400 });

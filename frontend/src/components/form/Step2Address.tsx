@@ -197,7 +197,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         const result = await Promise.race([
           sdk.getLayerFeaturesByLocation(
             {
-              geometry: addressResult.centroid.replace(/^POINT\\s+\\(/i, "POINT("),
+              geometry: addressResult.centroid.replace(/^POINT\s+\(/i, "POINT("),
               radius: 20,
               layers: [{ name: "PARCEL_ALL", fields: "GUSH_NUM,PARCEL" }],
             },

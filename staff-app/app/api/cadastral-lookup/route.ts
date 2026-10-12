@@ -48,6 +48,7 @@ export async function POST(request: Request) {
   const origin = request.headers.get("origin");
   if (!allowedOrigin(origin, request.url)) return json({ error: "מקור הבקשה אינו מורשה." }, 403, origin);
 
+  // Keep GOVMAP_APP_ID in the safedeal-staff Vercel project (server-side only).
   const credential = process.env.GOVMAP_APP_ID;
   if (!credential) return json({ error: "חיבור GovMap אינו מוגדר כרגע." }, 503, origin);
 

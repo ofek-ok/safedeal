@@ -244,6 +244,13 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
             }),
             timeout,
           ]);
+          console.info(
+            "[GovMap] WFS response",
+            JSON.stringify({
+              featureCount: fallbackResponse.featureCount,
+              propertyKeys: fallbackResponse.propertyKeys,
+            }),
+          );
           parcels = (fallbackResponse.parcels ?? [])
             .map((item) => ({
               block: String(item.block ?? "").trim(),

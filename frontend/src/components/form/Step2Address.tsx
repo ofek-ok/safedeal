@@ -192,7 +192,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           const addressResult = search.results?.find(
             (item) => item.type === "address" && item.centroid,
           ) ?? search.results?.find((item) => item.centroid);
-          if (!addressResult?.centroid) throw new Error("not-found");
+          if (!addressResult?.centroid) throw new Error("address-not-found");
 
           return sdk.getLayerFeaturesByLocation(
             {
@@ -215,6 +215,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         const parcelLayer = Object.entries(result.layers ?? {}).find(
           ([name]) => name.toUpperCase() === "PARCEL_ALL",
         )?.[1] ?? [];
+        if (!parcelLayer.length) throw new Error("parcel-not-found");
         const parcels = parcelLayer
           .map((feature) => ({
             block: attributeValue(feature.attributes, "GUSH_NUM"),
@@ -225,16 +226,20 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const),
         ).values()];
 
-        if (!uniqueParcels.length) throw new Error("not-found");
+        if (!uniqueParcels.length) throw new Error("parcel-fields-missing");
         if (uniqueParcels.length > 1) throw new Error("ambiguous");
         const { block, parcel: parcelNumber } = uniqueParcels[0];
         onChange({ ...data, block, parcel: parcelNumber });
         setLookupSuccess(true);
       } catch (error) {
         if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
-        setLookupError(error instanceof Error && error.message === "not-found"
-          ? "לא נמצאו גוש וחלקה לכתובת. אפשר להזין אותם ידנית."
-          : error instanceof Error && error.message === "ambiguous"
+        setLookupError(error instanceof Error && error.message === "address-not-found"
+          ? "GovMap לא מצא את הכתובת המדויקת. בחרו יישוב ורחוב מהרשימה או הזינו גוש וחלקה ידנית."
+          : error instanceof Error && error.message === "parcel-not-found"
+            ? "הכתובת נמצאה, אך לא נמצא שיוך לחלקה במאגר. אפשר להזין גוש וחלקה ידנית."
+            : error instanceof Error && error.message === "parcel-fields-missing"
+              ? "נמצאה חלקה, אך נתוני הגוש והחלקה לא הוחזרו. אפשר להזין אותם ידנית."
+              : error instanceof Error && error.message === "ambiguous"
             ? "הכתובת משויכת ליותר מגוש או חלקה אחד. בדקו את נסח הטאבו והזינו את הנתונים ידנית."
             : error instanceof Error && error.message === "timeout"
               ? "החיפוש נמשך זמן רב. אפשר להזין גוש וחלקה ידנית."

@@ -54,11 +54,7 @@ export async function POST(request: Request) {
       }))
       .filter((item) => item.block && item.parcel);
 
-    return Response.json({
-      parcels,
-      featureCount: result.features?.length ?? 0,
-      propertyKeys: Object.keys(result.features?.[0]?.properties ?? {}),
-    });
+    return Response.json({ parcels });
   } catch {
     return Response.json({ error: "Parcel data source unavailable." }, { status: 502 });
   }

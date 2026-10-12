@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     typeNames: "opendata:PARCEL_ALL",
     featureID: wfsIds.join(","),
     count: "10",
+    propertyName: "GUSH_NUM,PARCEL",
     outputFormat: "application/json",
   }).toString();
 

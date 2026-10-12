@@ -204,6 +204,14 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           );
         })();
         const result = await Promise.race([lookup, timeout]);
+        console.info(
+          "[GovMap] parcel response fields",
+          Object.entries(result.layers ?? {}).map(([name, features]) => ({
+            name,
+            count: features.length,
+            attributeKeys: Object.keys(features[0]?.attributes ?? {}),
+          })),
+        );
         if (cancelled) return;
         if (
           (result.status !== undefined && result.status !== 0) ||

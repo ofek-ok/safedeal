@@ -210,7 +210,9 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
             Object.entries(result.layers ?? {}).map(([name, features]) => ({
               name,
               count: features.length,
+              featureKeys: Object.keys(features[0] ?? {}),
               attributeKeys: Object.keys(features[0]?.attributes ?? {}),
+              valueKeys: Object.keys(features[0]?.values ?? {}),
             })),
           ),
         );

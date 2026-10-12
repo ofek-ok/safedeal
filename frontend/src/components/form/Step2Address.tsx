@@ -78,10 +78,23 @@ type GovMapLookupResponse = {
   errorCode?: number;
   message?: string | null;
 };
+type GovMapSearchResponse = {
+  results?: Array<{ type?: string; text?: string; score?: number; centroid?: string }>;
+  status?: number;
+  errorCode?: number;
+  message?: string | null;
+};
 type GovMapSdk = {
+  search: (params: {
+    searchText: string;
+    language: "he";
+    maxResults: number;
+    isAccurate: boolean;
+    apiKey: string;
+  }) => Promise<GovMapSearchResponse>;
   getLayerFeaturesByLocation: (
     params: {
-      address: string;
+      geometry: string;
       radius: number;
       layers: Array<{ name: string; fields: string[] }>;
     },
@@ -157,17 +170,39 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
       setIsLookingUp(true);
       try {
         const sdk = await loadGovMapSdk();
-        const lookup = sdk.getLayerFeaturesByLocation(
-          {
-            address: `${normalizedStreet} ${normalizedHouseNumber}, ${normalizedCity}`,
-            radius: 100,
-            layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
-          },
-          govMapApiToken,
-        );
         const timeout = new Promise<never>((_, reject) => {
           requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
         });
+        const lookup = (async () => {
+          const address = `${normalizedStreet} ${normalizedHouseNumber}, ${normalizedCity}`;
+          const search = await sdk.search({
+            searchText: address,
+            language: "he",
+            maxResults: 5,
+            isAccurate: true,
+            apiKey: govMapApiToken,
+          });
+          if (
+            (search.status !== undefined && search.status !== 0) ||
+            (search.errorCode !== undefined && search.errorCode !== 0)
+          ) {
+            throw new Error("unavailable");
+          }
+
+          const addressResult = search.results?.find(
+            (item) => item.type === "address" && item.centroid,
+          ) ?? search.results?.find((item) => item.centroid);
+          if (!addressResult?.centroid) throw new Error("not-found");
+
+          return sdk.getLayerFeaturesByLocation(
+            {
+              geometry: addressResult.centroid,
+              radius: 20,
+              layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
+            },
+            govMapApiToken,
+          );
+        })();
         const result = await Promise.race([lookup, timeout]);
         if (cancelled) return;
         if (

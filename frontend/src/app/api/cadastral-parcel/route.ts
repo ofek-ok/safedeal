@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const upstream = await fetch(url, {
       headers: { Accept: "application/json" },
       cache: "no-store",
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(18_000),
     });
     if (!upstream.ok) {
       return Response.json({ error: "Parcel data source unavailable." }, { status: 502 });

@@ -174,7 +174,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
         });
         const lookup = (async () => {
-          const address = `${normalizedStreet} ${normalizedHouseNumber}, ${normalizedCity}`;
+          const address = `${normalizedStreet} ${normalizedHouseNumber} ${normalizedCity}`;
           const search = await sdk.search({
             searchText: address,
             language: "he",

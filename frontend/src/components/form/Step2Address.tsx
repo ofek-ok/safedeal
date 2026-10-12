@@ -199,9 +199,9 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
 
           return sdk.getLayerFeaturesByLocation(
             {
-              geometry: addressResult.centroid,
+              geometry: addressResult.centroid.replace(/^POINT\\s+\\(/i, "POINT("),
               radius: 20,
-              layers: [{ name: "PARCEL_ALL", fields: ["*"] }],
+              layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
             },
             govMapApiToken,
           );

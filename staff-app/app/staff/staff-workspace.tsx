@@ -54,6 +54,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [search, setSearch] = useState("");
   const [section, setSection] = useState<"dashboard" | "cases" | "tools" | "team">("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileCaseOpen, setMobileCaseOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -92,6 +93,12 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
 
   useEffect(() => { void loadCases(false); if (staff.role === "admin") void loadTeam(); }, [loadCases, loadTeam, staff.role]);
   useEffect(() => { void loadDetail(selectedId); }, [loadDetail, selectedId]);
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMobileNavOpen(false); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [mobileNavOpen]);
   const filteredCases = useMemo(() => cases.filter((row) => `${row.caseNumber} ${row.clientName} ${row.city} ${row.street}`.toLowerCase().includes(search.toLowerCase())), [cases, search]);
   const selectedCase = cases.find((row) => row.id === selectedId) ?? null;
   const activeCount = cases.filter((item) => item.status !== "דוח נשלח").length;
@@ -225,21 +232,24 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
 
   const dueLabel = (value: string | null) => value ? new Intl.DateTimeFormat("he-IL", { dateStyle: "medium" }).format(new Date(value)) : "לא נקבע";
   const sectionLabel = section === "dashboard" ? "לוח בקרה" : section === "cases" ? "ניהול תיקים" : section === "tools" ? "כלים חשובים" : "ניהול צוות";
-  const openCase = (id: string) => { setSelectedId(id); setSection("cases"); };
-  const navigateSection = (next: typeof section) => { setSection(next); setMobileNavOpen(false); };
+  const openCase = (id: string) => { setSelectedId(id); setSection("cases"); setMobileCaseOpen(true); };
+  const navigateSection = (next: typeof section) => { setSection(next); setMobileNavOpen(false); if (next === "cases") setMobileCaseOpen(false); };
 
   return <div className="staff-app" dir="rtl">
-    <aside className={`staff-sidebar ${mobileNavOpen ? "is-open" : ""}`}>
+    <a className="staff-skip-link" href="#staff-content">דילוג לתוכן הראשי</a>
+    <aside className={`staff-sidebar ${mobileNavOpen ? "is-open" : ""}`} aria-label="ניווט מערכת SafeDeal">
       <div className="staff-brand"><span className="staff-mark">SD</span><span><b>SafeDeal</b><small>ניהול בדיקות</small></span><button className="mobile-nav-close" type="button" aria-label="סגירת תפריט" onClick={() => setMobileNavOpen(false)}><X size={20} /></button></div>
       <div className="sidebar-caption">סביבת צוות</div>
-      <button className={`side-link ${section === "dashboard" ? "active" : ""}`} title="לוח בקרה" aria-label="לוח בקרה" onClick={() => navigateSection("dashboard")}><Gauge size={18} />לוח בקרה</button>
-      <button className={`side-link ${section === "cases" ? "active" : ""}`} title="תיקים" aria-label="תיקים" onClick={() => navigateSection("cases")}><LayoutDashboard size={18} />תיקים <span>{cases.length}</span></button>
-      <button className={`side-link ${section === "tools" ? "active" : ""}`} title="כלים חשובים" aria-label="כלים חשובים" onClick={() => navigateSection("tools")}><Wrench size={18} />כלים חשובים</button>
-      {staff.role === "admin" && <button className={`side-link ${section === "team" ? "active" : ""}`} title="צוות" aria-label="צוות" onClick={() => { navigateSection("team"); void loadTeam(); }}><Users size={18} />צוות</button>}
+      <nav className="staff-nav" aria-label="ניווט ראשי">
+        <button className={`side-link ${section === "dashboard" ? "active" : ""}`} aria-current={section === "dashboard" ? "page" : undefined} onClick={() => navigateSection("dashboard")}><Gauge size={18} />לוח בקרה</button>
+        <button className={`side-link ${section === "cases" ? "active" : ""}`} aria-current={section === "cases" ? "page" : undefined} onClick={() => navigateSection("cases")}><LayoutDashboard size={18} />תיקים <span>{cases.length}</span></button>
+        <button className={`side-link ${section === "tools" ? "active" : ""}`} aria-current={section === "tools" ? "page" : undefined} onClick={() => navigateSection("tools")}><Wrench size={18} />כלים חשובים</button>
+        {staff.role === "admin" && <button className={`side-link ${section === "team" ? "active" : ""}`} aria-current={section === "team" ? "page" : undefined} onClick={() => { navigateSection("team"); void loadTeam(); }}><Users size={18} />צוות</button>}
+      </nav>
       <div className="sidebar-bottom"><div className="sidebar-security"><ShieldCheck size={17} /><span><b>גישה מאובטחת</b><small>רק צוות מורשה</small></span></div><div className="staff-profile"><div className="profile-avatar">{staff.displayName.slice(0, 1)}</div><span><b>{staff.displayName}</b><small>{staff.role === "admin" ? "מנהלת מערכת" : "אנליסט"}</small></span><a title="התנתקות" href="/signout-with-chatgpt?return_to=%2F"><LogOut size={16} /></a></div></div>
     </aside>
     {mobileNavOpen && <button className="staff-nav-scrim" type="button" aria-label="סגירת תפריט" onClick={() => setMobileNavOpen(false)} />}
-    <main className="staff-main">
+    <main className="staff-main" id="staff-content" tabIndex={-1}>
       <header className="staff-topbar"><button className="mobile-nav-toggle" type="button" aria-label="פתיחת תפריט" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(true)}><Menu size={19} /><span>תפריט</span></button><div className="breadcrumb">SafeDeal <ChevronLeft size={14} /> {sectionLabel}</div><div className="topbar-user"><span className="topbar-dot" /> סביבת עבודה פנימית <span className="topbar-divider" /> {staff.email}</div></header>
       <div className="staff-content">
         {section === "dashboard" ? <>
@@ -252,11 +262,12 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
           <div className="staff-heading"><div><div className="eyebrow">יום עבודה, {new Intl.DateTimeFormat("he-IL", { dateStyle: "full" }).format(new Date())}</div><h1>ניהול בדיקות</h1><p>תיקים, מסמכים ובקרת ממצאים במקום אחד.</p></div><button className="outline-action" onClick={() => { void loadCases(); if (staff.role === "admin") void loadTeam(); }}><Activity size={16} />רענון</button></div>
           <div className="staff-metrics"><article><span className="metric-label">תיקים פעילים</span><b>{loading ? "—" : activeCount}</b><small>מתוך {cases.length} תיקים במערכת</small></article><article><span className="metric-label">ממצאים בתיקים</span><b>{reviewCount}</b><small>נוספו על ידי צוות הבדיקה</small></article><article><span className="metric-label">ממתינים למסמכים</span><b>{cases.filter((item) => item.status === "ממתין למסמכים").length}</b><small>דורשים מעקב מול הלקוח</small></article></div>
           {managerError && <div className="notice error"><CircleAlert size={17} />{managerError}</div>}
-          <section className="case-workspace-new">
+          <section className={`case-workspace-new ${mobileCaseOpen ? "mobile-detail-open" : ""}`}>
             <div className="case-list-new"><div className="list-head"><div><b>תיקי בדיקה</b><small>תיקים שנפתחו דרך טופס הלקוחות</small></div><span className="list-count">{filteredCases.length}</span></div><label className="case-search"><Search size={16} /><input placeholder="חיפוש לפי לקוח, עיר או מספר תיק" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
-              <div className="case-list-scroll">{loading ? <div className="empty-state">טוען תיקים…</div> : filteredCases.length === 0 ? <div className="empty-state"><Building2 size={26} /><b>{cases.length ? "לא נמצאו תיקים" : "עדיין לא נפתחו תיקים"}</b><span>{cases.length ? "נסו לשנות את מילות החיפוש." : "בקשות שיישלחו מפרונט הלקוחות יופיעו כאן."}</span></div> : filteredCases.map((row) => <button key={row.id} className={`case-row-new ${selectedId === row.id ? "selected" : ""}`} onClick={() => setSelectedId(row.id)}><span className="case-row-icon"><Building2 size={17} /></span><span className="case-row-copy"><b>{row.clientName}</b><small>{row.assetType} · {row.street} {row.house}, {row.city}</small><span><i className={`status-dot-new state-${statuses.indexOf(row.status)}`} />{row.status}<em>{row.caseNumber}</em></span></span><ChevronLeft size={16} className="case-row-chevron" /></button>)}</div>
+              <div className="case-list-scroll">{loading ? <div className="empty-state">טוען תיקים…</div> : filteredCases.length === 0 ? <div className="empty-state"><Building2 size={26} /><b>{cases.length ? "לא נמצאו תיקים" : "עדיין לא נפתחו תיקים"}</b><span>{cases.length ? "נסו לשנות את מילות החיפוש." : "בקשות שיישלחו מפרונט הלקוחות יופיעו כאן."}</span></div> : filteredCases.map((row) => <button key={row.id} className={`case-row-new ${selectedId === row.id ? "selected" : ""}`} onClick={() => { setSelectedId(row.id); setMobileCaseOpen(true); }}><span className="case-row-icon"><Building2 size={17} /></span><span className="case-row-copy"><b>{row.clientName}</b><small>{row.assetType} · {row.street} {row.house}, {row.city}</small><span><i className={`status-dot-new state-${statuses.indexOf(row.status)}`} />{row.status}<em>{row.caseNumber}</em></span></span><ChevronLeft size={16} className="case-row-chevron" /></button>)}</div>
             </div>
-            <div className="case-detail-new">{!selectedCase || !detail ? <div className="empty-detail"><Building2 size={26} /><b>{cases.length ? "בחרו תיק מהרשימה" : "התיק הראשון יופיע כאן"}</b><span>פרטי הלקוח, הנכס והבדיקה יוצגו באזור הזה.</span></div> : <>
+              <div className="case-detail-new">{!selectedCase || !detail ? <div className="empty-detail"><Building2 size={26} /><b>{cases.length ? "בחרו תיק מהרשימה" : "התיק הראשון יופיע כאן"}</b><span>פרטי הלקוח, הנכס והבדיקה יוצגו באזור הזה.</span></div> : <>
+              <button className="case-mobile-back" type="button" onClick={() => setMobileCaseOpen(false)}><ChevronLeft size={16} />חזרה לרשימת התיקים</button>
               <div className="detail-top"><div><span className="case-number">{selectedCase.caseNumber}</span><h2>{selectedCase.clientName}</h2><p>{selectedCase.assetType} · {selectedCase.street} {selectedCase.house}, {selectedCase.city}</p></div><span className={`status-tag state-${statuses.indexOf(selectedCase.status)}`}>{selectedCase.status}</span></div>
               <div className="detail-controls"><label>סטטוס<select value={selectedCase.status} disabled={busy} onChange={(e) => void updateCase({ status: e.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select></label>{staff.role === "admin" && <label>אנליסט אחראי<select value={selectedCase.analystEmail ?? ""} disabled={busy} onChange={(e) => void updateCase({ analystEmail: e.target.value })}><option value="">לא משויך</option>{team.filter((member) => member.active && member.role === "analyst").map((member) => <option key={member.email} value={member.email}>{member.displayName}</option>)}</select></label>}{staff.role === "admin" && <label>תאריך יעד<input type="date" value={selectedCase.dueAt ? new Date(selectedCase.dueAt).toISOString().slice(0, 10) : ""} disabled={busy} onChange={(e) => void updateCase({ dueAt: e.target.value ? new Date(`${e.target.value}T23:59:00`).toISOString() : null })} /></label>}<div className="due-chip"><CalendarClock size={16} /><span><small>תאריך יעד</small><b>{dueLabel(selectedCase.dueAt)}</b></span></div></div>
               <div className="contact-strip"><div><small>דוא״ל לקוח</small><a href={`mailto:${selectedCase.clientEmail}`}>{selectedCase.clientEmail}</a></div><div><small>טלפון</small><a href={`tel:${selectedCase.clientPhone}`}>{selectedCase.clientPhone}</a></div><div><small>מחיר מבוקש</small><b>₪ {selectedCase.price || "לא צוין"}</b></div></div>

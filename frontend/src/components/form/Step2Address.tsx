@@ -71,38 +71,34 @@ function EditorialInput({
   );
 }
 
-type GovMapParcelFeature = {
-  attributes?: Record<string, unknown>;
-  values?: Record<string, unknown> | unknown[];
-};
 type GovMapLookupResponse = {
-  layers?: Record<string, GovMapParcelFeature[]>;
-  status?: number;
-  errorCode?: number;
-  message?: string | null;
-};
-type GovMapSearchResponse = {
-  results?: Array<{ type?: string; text?: string; score?: number; centroid?: string }>;
+  data?: Array<{ Values?: unknown[]; gushSuffix?: number | null }>;
   status?: number;
   errorCode?: number;
   message?: string | null;
 };
 type GovMapSdk = {
-  search: (params: {
-    searchText: string;
-    language: "he";
-    maxResults: number;
-    isAccurate: boolean;
-    apiKey: string;
-  }) => Promise<GovMapSearchResponse>;
-  getLayerFeaturesByLocation: (
-    params: {
-      geometry: string;
-      radius: number;
-      layers: Array<{ name: string; fields: string[] }>;
+  locateType: { addressToLotParcel: unknown };
+  createMap: (
+    mapDivId: string,
+    settings: {
+      token: string;
+      center: { x: number; y: number };
+      level: number;
+      showXY: boolean;
+      identifyOnClick: boolean;
+      isEmbeddedToggle: boolean;
+      background: string;
+      layersMode: number;
+      zoomButtons: boolean;
+      onLoad: () => void;
+      onError: () => void;
     },
-    apiToken: string,
-  ) => Promise<GovMapLookupResponse>;
+  ) => void;
+  searchAndLocate: (params: {
+    type: unknown;
+    address: string;
+  }) => Promise<GovMapLookupResponse>;
 };
 
 declare global {
@@ -135,9 +131,32 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
   return govMapSdkPromise;
 }
 
-function attributeValue(attributes: Record<string, unknown> | undefined, field: string) {
-  const value = Object.entries(attributes ?? {}).find(([name]) => name.toUpperCase() === field)?.[1];
-  return value == null ? "" : String(value).trim();
+let govMapMapPromise: Promise<void> | null = null;
+
+function initializeGovMapMap(sdk: GovMapSdk): Promise<void> {
+  if (!govMapMapPromise) {
+    govMapMapPromise = new Promise((resolve, reject) => {
+      try {
+        sdk.createMap("safedeal-govmap-hidden-map", {
+          token: govMapApiToken ?? "",
+          center: { x: 192000, y: 620000 },
+          level: 3,
+          showXY: false,
+          identifyOnClick: false,
+          isEmbeddedToggle: false,
+          background: "1",
+          layersMode: 1,
+          zoomButtons: false,
+          onLoad: resolve,
+          onError: () => reject(new Error("unavailable")),
+        });
+      } catch (error) {
+        govMapMapPromise = null;
+        reject(error);
+      }
+    });
+  }
+  return govMapMapPromise;
 }
 
 export function Step2Address({ data, onChange, showErrors }: Props) {
@@ -177,48 +196,13 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
         });
         const lookup = (async () => {
-          const address = `${normalizedStreet} ${normalizedHouseNumber} ${normalizedCity}`;
-          const search = await sdk.search({
-            searchText: address,
-            language: "he",
-            maxResults: 5,
-            isAccurate: true,
-            apiKey: govMapApiToken,
+          await initializeGovMapMap(sdk);
+          return sdk.searchAndLocate({
+            type: sdk.locateType.addressToLotParcel,
+            address: `${normalizedStreet} ${normalizedHouseNumber}, ${normalizedCity}`,
           });
-          if (
-            (search.status !== undefined && search.status !== 0) ||
-            (search.errorCode !== undefined && search.errorCode !== 0)
-          ) {
-            throw new Error("unavailable");
-          }
-
-          const addressResult = search.results?.find(
-            (item) => item.type === "address" && item.centroid,
-          ) ?? search.results?.find((item) => item.centroid);
-          if (!addressResult?.centroid) throw new Error("address-not-found");
-
-          return sdk.getLayerFeaturesByLocation(
-            {
-              geometry: addressResult.centroid,
-              radius: 20,
-              layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
-            },
-            govMapApiToken,
-          );
         })();
         const result = await Promise.race([lookup, timeout]);
-        console.info(
-          "[GovMap] parcel response fields",
-          JSON.stringify(
-            Object.entries(result.layers ?? {}).map(([name, features]) => ({
-              name,
-              count: features.length,
-              featureKeys: Object.keys(features[0] ?? {}),
-              attributeKeys: Object.keys(features[0]?.attributes ?? {}),
-              valueKeys: Object.keys(features[0]?.values ?? {}),
-            })),
-          ),
-        );
         if (cancelled) return;
         if (
           (result.status !== undefined && result.status !== 0) ||
@@ -227,14 +211,10 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           throw new Error("unavailable");
         }
 
-        const parcelLayer = Object.entries(result.layers ?? {}).find(
-          ([name]) => name.toUpperCase() === "PARCEL_ALL",
-        )?.[1] ?? [];
-        if (!parcelLayer.length) throw new Error("parcel-not-found");
-        const parcels = parcelLayer
-          .map((feature) => ({
-            block: attributeValue(feature.attributes, "GUSH_NUM"),
-            parcel: attributeValue(feature.attributes, "PARCEL"),
+        const parcels = (result.data ?? [])
+          .map((item) => ({
+            block: String(item.Values?.[0] ?? "").trim(),
+            parcel: String(item.Values?.[1] ?? "").trim(),
           }))
           .filter((item) => item.block && item.parcel);
         const uniqueParcels = [...new Map(
@@ -283,6 +263,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
 
   return (
     <div className="space-y-4 sm:space-y-10 animate-fade-in-up">
+      <div id="safedeal-govmap-hidden-map" aria-hidden="true" style={{ position: "fixed", left: "-10000px", top: 0, width: 480, height: 320 }} />
       {/* Heading */}
       <div className="mb-4 sm:mb-10 text-right">
         <div className="w-8 h-[1px] bg-[#00C896] mb-2 sm:mb-4"></div>

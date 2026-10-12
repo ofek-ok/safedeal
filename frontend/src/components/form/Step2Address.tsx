@@ -71,70 +71,33 @@ function EditorialInput({
   );
 }
 
-type GovMapParcelFeature = {
-  id?: string | number;
-  attributes?: Record<string, unknown>;
-};
-type GovMapLookupResponse = {
-  layers?: Record<string, GovMapParcelFeature[]>;
-  status?: number;
-  errorCode?: number;
-  message?: string | null;
-};
-type GovMapSearchResponse = {
-  results?: Array<{ type?: string; text?: string; score?: number; centroid?: string }>;
+type GovMapLocateResponse = {
+  data?: Array<{ Values?: unknown[]; gushSuffix?: number | null }>;
   status?: number;
   errorCode?: number;
   message?: string | null;
 };
 type GovMapSdk = {
-  search: (params: {
-    searchText: string;
-    language: "he";
-    maxResults: number;
-    isAccurate: boolean;
-    apiKey: string;
-  }) => Promise<GovMapSearchResponse>;
-  getLayerFeaturesByLocation: (
-    params: {
-      geometry: string;
-      radius: number;
-      layers: Array<{ name: string; fields: string[] }>;
+  locateType: { addressToLotParcel: string };
+  createMap: (
+    mapDivId: string,
+    options: {
+      token: string;
+      layers: string[];
+      visibleLayers: string[];
+      layersMode: number;
+      showXY: boolean;
+      identifyOnClick: boolean;
+      isEmbeddedToggle: boolean;
+      background: string;
+      zoomButtons: boolean;
     },
-    apiToken: string,
-  ) => Promise<GovMapLookupResponse>;
+  ) => void;
+  searchAndLocate: (
+    params: { type: string; address: string },
+    mapDivId?: string,
+  ) => Promise<GovMapLocateResponse>;
 };
-
-declare global {
-  interface Window {
-    govmap?: GovMapSdk;
-  }
-}
-
-const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN?.trim();
-let govMapSdkPromise: Promise<GovMapSdk> | null = null;
-
-function loadGovMapSdk(): Promise<GovMapSdk> {
-  if (window.govmap) return Promise.resolve(window.govmap);
-  if (!govMapSdkPromise) {
-    govMapSdkPromise = new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://www.govmap.gov.il/govmap/api/govmap.api.js";
-      script.async = true;
-      script.onload = () => {
-        if (window.govmap) resolve(window.govmap);
-        else reject(new Error("GovMap SDK did not initialize."));
-      };
-      script.onerror = () => {
-        govMapSdkPromise = null;
-        reject(new Error("GovMap SDK failed to load."));
-      };
-      document.head.appendChild(script);
-    });
-  }
-  return govMapSdkPromise;
-}
-
 function attributeValue(attributes: Record<string, unknown> | undefined, field: string) {
   const value = Object.entries(attributes ?? {}).find(([name]) => name.toUpperCase() === field)?.[1];
   return value == null ? "" : String(value).trim();
@@ -176,37 +139,44 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         const timeout = new Promise<never>((_, reject) => {
           requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
         });
-        const lookup = (async () => {
-          const address = `${normalizedStreet} ${normalizedHouseNumber} ${normalizedCity}`;
-          const search = await sdk.search({
-            searchText: address,
-            language: "he",
-            maxResults: 5,
-            isAccurate: true,
-            apiKey: govMapApiToken,
+        const mapDivId = "safedeal-govmap-cadastral";
+        let mapInit = govMapMapPromise;
+        if (!mapInit) {
+          mapInit = new Promise<void>((resolve, reject) => {
+            const mapDiv = document.getElementById(mapDivId);
+            if (!mapDiv) {
+              reject(new Error("map-not-ready"));
+              return;
+            }
+            try {
+              sdk.createMap(mapDivId, {
+                token: govMapApiToken,
+                layers: ["PARCEL_ALL"],
+                visibleLayers: [],
+                layersMode: 2,
+                showXY: false,
+                identifyOnClick: false,
+                isEmbeddedToggle: false,
+                background: "1",
+                zoomButtons: false,
+              });
+              window.setTimeout(resolve, 2500);
+            } catch (error) {
+              reject(error);
+            }
           });
-          if (
-            (search.status !== undefined && search.status !== 0) ||
-            (search.errorCode !== undefined && search.errorCode !== 0)
-          ) {
-            throw new Error("unavailable");
-          }
+          govMapMapPromise = mapInit;
+        }
 
-          const addressResult = search.results?.find(
-            (item) => item.type === "address" && item.centroid,
-          ) ?? search.results?.find((item) => item.centroid);
-          if (!addressResult?.centroid) throw new Error("address-not-found");
-
-          return sdk.getLayerFeaturesByLocation(
-            {
-              geometry: addressResult.centroid.replace(/^POINT\s+\(/i, "POINT("),
-              radius: 20,
-              layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
-            },
-            govMapApiToken,
-          );
-        })();
-        const result = await Promise.race([lookup, timeout]);
+        await mapInit;
+        const address = normalizedStreet + " " + normalizedHouseNumber + ", " + normalizedCity;
+        const result = await Promise.race([
+          sdk.searchAndLocate(
+            { type: sdk.locateType.addressToLotParcel, address },
+            mapDivId,
+          ),
+          timeout,
+        ]);
         if (cancelled) return;
         if (
           (result.status !== undefined && result.status !== 0) ||
@@ -215,55 +185,12 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           throw new Error("unavailable");
         }
 
-        const parcelLayer = Object.entries(result.layers ?? {}).find(
-          ([name]) => name.toUpperCase() === "PARCEL_ALL",
-        )?.[1] ?? [];
-        if (!parcelLayer.length) throw new Error("parcel-not-found");
-        let parcels = parcelLayer
-          .map((feature) => ({
-            block: attributeValue(feature.attributes, "GUSH_NUM"),
-            parcel: attributeValue(feature.attributes, "PARCEL"),
+        const parcels = (result.data ?? [])
+          .map((item) => ({
+            block: String(item.Values?.[0] ?? "").trim(),
+            parcel: String(item.Values?.[1] ?? "").trim(),
           }))
           .filter((item) => item.block && item.parcel);
-
-        if (!parcels.length) {
-          const featureIds = parcelLayer
-            .map((feature) => feature.id)
-            .filter((id): id is string | number => typeof id === "string" || typeof id === "number")
-            .map(String);
-          if (!featureIds.length) throw new Error("parcel-fields-missing");
-
-          const safeFeatureIds = featureIds
-            .filter((id) => /^[A-Za-z0-9_.:-]{1,100}$/.test(id))
-            .map((id) => id.includes(".") ? id : `PARCEL_ALL.${id}`);
-          const wfsUrl = new URL("https://open.govmap.gov.il/geoserver/opendata/wfs");
-          wfsUrl.search = new URLSearchParams({
-            service: "WFS",
-            version: "2.0.0",
-            request: "GetFeature",
-            typeNames: "opendata:PARCEL_ALL",
-            featureID: safeFeatureIds.join(","),
-            count: "10",
-            propertyName: "GUSH_NUM,PARCEL",
-            outputFormat: "application/json",
-          }).toString();
-          const fallbackResponse = await Promise.race([
-            fetch(wfsUrl, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(12_000) })
-              .then(async (response) => {
-                if (!response.ok) throw new Error("parcel-fields-missing");
-                return response.json() as Promise<{
-                  features?: Array<{ properties?: Record<string, unknown> | null }>;
-                }>;
-              }),
-            timeout,
-          ]);
-          parcels = (fallbackResponse.features ?? [])
-            .map((feature) => ({
-              block: attributeValue(feature.properties ?? undefined, "GUSH_NUM"),
-              parcel: attributeValue(feature.properties ?? undefined, "PARCEL"),
-            }))
-            .filter((item) => item.block && item.parcel);
-        }
         const uniqueParcels = [...new Map(
           parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const),
         ).values()];
@@ -422,6 +349,11 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           </p>
         </div>
       </div>
+      <div
+        id="safedeal-govmap-cadastral"
+        aria-hidden="true"
+        style={{ position: "fixed", left: "-10000px", top: 0, width: 600, height: 600, opacity: 0, pointerEvents: "none", overflow: "hidden" }}
+      />
     </div>
   );
 }

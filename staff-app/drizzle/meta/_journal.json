@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1791450185551,
+      "tag": "0000_faulty_vulture",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791450341153,
+      "tag": "0001_damp_karnak",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791456034619,
+      "tag": "0002_low_vector",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791703770115,
+      "tag": "0003_green_lethal_legion",
+      "breakpoints": true
+    }
+  ]
+}

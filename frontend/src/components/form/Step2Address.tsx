@@ -5,6 +5,99 @@ import { Info, AlertCircle, Loader2 } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
 import { GovAutocomplete } from "./GovAutocomplete";
 
+
+type GovMapLookupResult = {
+  errorCode?: number;
+  data?: Array<{ Values?: unknown[] }>;
+};
+
+type GovMapSdk = {
+  locateType: { lotParcelToAddress: unknown };
+  createMap: (elementId: string, options: {
+    token: string; layers?: string[]; showXY?: boolean; identifyOnClick?: boolean;
+    isEmbeddedToggle?: boolean; zoomButtons?: boolean; onLoad?: () => void;
+  }) => void;
+  searchAndLocate: (params: { type: unknown; address: string }) => Promise<GovMapLookupResult>;
+};
+
+declare global { interface Window { govmap?: GovMapSdk } }
+
+const govMapToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN;
+let govMapScriptPromise: Promise<GovMapSdk> | null = null;
+let govMapMapPromise: Promise<GovMapSdk> | null = null;
+
+function loadGovMapSdk(): Promise<GovMapSdk> {
+  if (typeof window === "undefined") return Promise.reject(new Error("unavailable"));
+  if (window.govmap?.createMap && window.govmap?.searchAndLocate) return Promise.resolve(window.govmap);
+  if (!govMapScriptPromise) {
+    govMapScriptPromise = new Promise((resolve, reject) => {
+      let script = document.getElementById("safedeal-govmap-sdk") as HTMLScriptElement | null;
+      const cleanup = () => { script?.removeEventListener("load", onLoad); script?.removeEventListener("error", onError); };
+      const onLoad = () => {
+        cleanup();
+        if (window.govmap?.createMap && window.govmap?.searchAndLocate) resolve(window.govmap);
+        else reject(new Error("unavailable"));
+      };
+      const onError = () => { cleanup(); govMapScriptPromise = null; reject(new Error("unavailable")); };
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "safedeal-govmap-sdk";
+        script.src = "https://www.govmap.gov.il/govmap/api/govmap.api.js";
+        script.async = true;
+      }
+      script.addEventListener("load", onLoad, { once: true });
+      script.addEventListener("error", onError, { once: true });
+      if (!script.isConnected) document.head.appendChild(script);
+    });
+  }
+  return govMapScriptPromise;
+}
+
+function getGovMapSdk(): Promise<GovMapSdk> {
+  if (!govMapToken) return Promise.reject(new Error("unavailable"));
+  if (!govMapMapPromise) {
+    govMapMapPromise = loadGovMapSdk()
+      .then((sdk) => new Promise<GovMapSdk>((resolve, reject) => {
+        const timeout = window.setTimeout(() => { govMapMapPromise = null; reject(new Error("timeout")); }, 10_000);
+        try {
+          sdk.createMap("safedeal-govmap-runtime", {
+            token: govMapToken, showXY: false, identifyOnClick: false, isEmbeddedToggle: false, zoomButtons: false,
+            onLoad: () => { window.clearTimeout(timeout); resolve(sdk); },
+          });
+        } catch { window.clearTimeout(timeout); govMapMapPromise = null; reject(new Error("unavailable")); }
+      }))
+      .catch((error) => { govMapMapPromise = null; throw error; });
+  }
+  return govMapMapPromise;
+}
+
+async function findCadastralParcel(address: string): Promise<{ block: string; parcel: string }> {
+  const sdk = await getGovMapSdk();
+  let timeout: number | undefined;
+  let result: GovMapLookupResult;
+  try {
+    result = await Promise.race([
+      sdk.searchAndLocate({ type: sdk.locateType.lotParcelToAddress, address }),
+      new Promise<never>((_, reject) => {
+        timeout = window.setTimeout(() => reject(new Error("timeout")), 10_000);
+      }),
+    ]);
+  } finally {
+    if (timeout) window.clearTimeout(timeout);
+  }
+  if ((result.status !== undefined && result.status !== 0) || (result.errorCode !== undefined && result.errorCode !== 0)) {
+    throw new Error("unavailable");
+  }
+  const parcels = (result.data ?? []).map((item) => ({
+    block: item.Values?.[0] == null ? "" : String(item.Values[0]).trim(),
+    parcel: item.Values?.[1] == null ? "" : String(item.Values[1]).trim(),
+  })).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
+  const unique = [...new Map(parcels.map((item) => [item.block + "/" + item.parcel, item])).values()];
+  if (!unique.length) throw new Error("address-not-found");
+  if (unique.length > 1) throw new Error("ambiguous");
+  return unique[0];
+}
+
 interface Props {
   data: Step2PropertyId;
   onChange: (d: Step2PropertyId) => void;
@@ -84,87 +177,36 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
   };
 
   useEffect(() => {
-    const { city, street, houseNumber, block, parcel } = data;
-    const normalizedCity = city.trim();
-    const normalizedStreet = street.trim();
-    const normalizedHouseNumber = houseNumber.trim();
+    const normalizedCity = data.city.trim();
+    const normalizedStreet = data.street.trim();
+    const normalizedHouseNumber = data.houseNumber.trim();
 
-    if (!normalizedCity || !normalizedStreet || !normalizedHouseNumber || block || parcel) {
+    if (!normalizedCity || !normalizedStreet || !normalizedHouseNumber || data.block || data.parcel) {
       setIsLookingUp(false);
       return;
     }
 
     let cancelled = false;
-    let requestTimeout: number | undefined;
-    const controller = new AbortController();
     const timer = window.setTimeout(async () => {
+      setLookupError(null);
+      setLookupSuccess(false);
       setIsLookingUp(true);
-      requestTimeout = window.setTimeout(() => controller.abort(), 24_000);
       try {
-        // Use the server-side cadastral endpoint instead of booting a full map
-        // in the customer's browser.
-        const response = await fetch("/api/cadastral-lookup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({
-            city: normalizedCity,
-            street: normalizedStreet,
-            houseNumber: normalizedHouseNumber,
-          }),
-          signal: controller.signal,
-          cache: "no-store",
-        });
-        const result = await response.json().catch(() => null) as
-          | { block?: unknown; parcel?: unknown; error?: unknown; code?: unknown }
-          | null;
+        const address = normalizedStreet + " " + normalizedHouseNumber + ", " + normalizedCity;
+        const result = await findCadastralParcel(address);
         if (cancelled) return;
-
-        if (!response.ok) {
-          console.error(
-            "Cadastral lookup failed",
-            response.status,
-            typeof result?.code === "string" ? result.code : "NO_UPSTREAM_CODE",
-            typeof result?.error === "string" ? result.error : "No error details",
-          );
-          if (response.status === 404) throw new Error("address-not-found");
-          if (response.status === 409) throw new Error("ambiguous");
-          if (response.status === 504) throw new Error("timeout");
-          throw new Error("unavailable");
-        }
-
-        const foundBlock = result?.block == null ? "" : String(result.block).trim();
-        const foundParcel = result?.parcel == null ? "" : String(result.parcel).trim();
-        if (!foundBlock || !foundParcel) throw new Error("parcel-fields-missing");
-        onChange({ ...data, block: foundBlock, parcel: foundParcel });
+        onChange({ ...data, block: result.block, parcel: result.parcel });
         setLookupSuccess(true);
       } catch (error) {
         if (cancelled) return;
-        const code = error instanceof Error && error.name === "AbortError"
-          ? "timeout"
-          : error instanceof Error
-            ? error.message
-            : "unavailable";
-        setLookupError(
-          code === "address-not-found" ||
-          code === "parcel-fields-missing" ||
-          code === "ambiguous" ||
-          code === "timeout"
-            ? code
-            : "unavailable",
-        );
+        const code = error instanceof Error ? error.message : "unavailable";
+        setLookupError(code === "address-not-found" || code === "ambiguous" || code === "timeout" ? code : "unavailable");
       } finally {
-        if (requestTimeout) window.clearTimeout(requestTimeout);
         if (!cancelled) setIsLookingUp(false);
       }
-    }, 350);
+    }, 300);
 
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-      if (requestTimeout) window.clearTimeout(requestTimeout);
-      controller.abort();
-      setIsLookingUp(false);
-    };
+    return () => { cancelled = true; window.clearTimeout(timer); setIsLookingUp(false); };
   }, [data.city, data.street, data.houseNumber, data.block, data.parcel]);
 
   const errors: Partial<Record<keyof Step2PropertyId, string>> = showErrors
@@ -180,7 +222,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
   const addressLookupMessage = lookupError === "address-not-found"
     ? "לא הצלחנו לאתר את הגוש והחלקה לפי הכתובת. אפשר להוציא אותם באתר הממשלתי ולהזין כאן."
     : lookupError === "timeout"
-      ? "האיתור האוטומטי לא הושלם בתוך כ־24 שניות. אפשר להזין גוש וחלקה ידנית לפי האתר הממשלתי ולהמשיך."
+      ? "האיתור האוטומטי לא הושלם בזמן. אפשר להזין גוש וחלקה ידנית לפי האתר הממשלתי ולהמשיך."
       : lookupError === "unavailable"
         ? "האיתור האוטומטי לא זמין כרגע. אפשר למצוא את הגוש והחלקה באתר הממשלתי ולהזין אותם כאן."
         : null;

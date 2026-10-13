@@ -16,7 +16,7 @@ type GovMapSdk = {
   locateType: { lotParcelToAddress: unknown };
   createMap?: (elementId: string, options: {
     token: string; layers?: string[]; showXY?: boolean; identifyOnClick?: boolean;
-    isEmbeddedToggle?: boolean; zoomButtons?: boolean; onLoad?: () => void;
+    isEmbeddedToggle?: boolean; zoomButtons?: boolean; onLoad?: () => void; onError?: (error?: unknown) => void;
   }) => void;
   searchAndLocate?: (params: { type: unknown; address: string }) => Promise<GovMapLookupResult>;
 };
@@ -64,6 +64,7 @@ function getGovMapSdk(): Promise<GovMapSdk> {
           sdk.createMap!("safedeal-govmap-runtime", {
             token: govMapToken, showXY: false, identifyOnClick: false, isEmbeddedToggle: false, zoomButtons: false,
             onLoad: () => { window.clearTimeout(timeout); resolve(sdk); },
+            onError: () => { window.clearTimeout(timeout); govMapMapPromise = null; reject(new Error("unavailable")); },
           });
         } catch { window.clearTimeout(timeout); govMapMapPromise = null; reject(new Error("unavailable")); }
       }))
@@ -182,6 +183,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
     const normalizedStreet = data.street.trim();
     const normalizedHouseNumber = data.houseNumber.trim();
 
+    if (normalizedCity) void getGovMapSdk().catch(() => {});
     if (!normalizedCity || !normalizedStreet || !normalizedHouseNumber || data.block || data.parcel) {
       setIsLookingUp(false);
       return;

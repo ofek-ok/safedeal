@@ -13,11 +13,11 @@ type GovMapLookupResult = {
 
 type GovMapSdk = {
   locateType: { lotParcelToAddress: unknown };
-  createMap: (elementId: string, options: {
+  createMap?: (elementId: string, options: {
     token: string; layers?: string[]; showXY?: boolean; identifyOnClick?: boolean;
     isEmbeddedToggle?: boolean; zoomButtons?: boolean; onLoad?: () => void;
   }) => void;
-  searchAndLocate: (params: { type: unknown; address: string }) => Promise<GovMapLookupResult>;
+  searchAndLocate?: (params: { type: unknown; address: string }) => Promise<GovMapLookupResult>;
 };
 
 declare global { interface Window { govmap?: GovMapSdk } }
@@ -28,14 +28,14 @@ let govMapMapPromise: Promise<GovMapSdk> | null = null;
 
 function loadGovMapSdk(): Promise<GovMapSdk> {
   if (typeof window === "undefined") return Promise.reject(new Error("unavailable"));
-  if (window.govmap?.createMap && window.govmap?.searchAndLocate) return Promise.resolve(window.govmap);
+  if (typeof window.govmap?.createMap === "function" && typeof window.govmap.searchAndLocate === "function") return Promise.resolve(window.govmap);
   if (!govMapScriptPromise) {
     govMapScriptPromise = new Promise((resolve, reject) => {
       let script = document.getElementById("safedeal-govmap-sdk") as HTMLScriptElement | null;
       const cleanup = () => { script?.removeEventListener("load", onLoad); script?.removeEventListener("error", onError); };
       const onLoad = () => {
         cleanup();
-        if (window.govmap?.createMap && window.govmap?.searchAndLocate) resolve(window.govmap);
+        if (typeof window.govmap?.createMap === "function" && typeof window.govmap.searchAndLocate === "function") resolve(window.govmap);
         else reject(new Error("unavailable"));
       };
       const onError = () => { cleanup(); govMapScriptPromise = null; reject(new Error("unavailable")); };
@@ -60,7 +60,7 @@ function getGovMapSdk(): Promise<GovMapSdk> {
       .then((sdk) => new Promise<GovMapSdk>((resolve, reject) => {
         const timeout = window.setTimeout(() => { govMapMapPromise = null; reject(new Error("timeout")); }, 10_000);
         try {
-          sdk.createMap("safedeal-govmap-runtime", {
+          sdk.createMap!("safedeal-govmap-runtime", {
             token: govMapToken, showXY: false, identifyOnClick: false, isEmbeddedToggle: false, zoomButtons: false,
             onLoad: () => { window.clearTimeout(timeout); resolve(sdk); },
           });
@@ -77,7 +77,7 @@ async function findCadastralParcel(address: string): Promise<{ block: string; pa
   let result: GovMapLookupResult;
   try {
     result = await Promise.race([
-      sdk.searchAndLocate({ type: sdk.locateType.lotParcelToAddress, address }),
+      sdk.searchAndLocate!({ type: sdk.locateType.lotParcelToAddress, address }),
       new Promise<never>((_, reject) => {
         timeout = window.setTimeout(() => reject(new Error("timeout")), 10_000);
       }),

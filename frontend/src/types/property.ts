@@ -192,7 +192,7 @@ export interface Step3DealDetails {
   // ── Smart Optional Fields ──
   sellerName?: string;
   sellerIdNumber?: string;
-  sellers: SellerDetails[];
+  sellers?: SellerDetails[];
   isRented?: boolean;
   hasAdditions?: boolean;
   developerName?: string;

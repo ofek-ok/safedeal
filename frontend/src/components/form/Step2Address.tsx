@@ -115,7 +115,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
           cache: "no-store",
         });
         const result = await response.json().catch(() => null) as
-          | { block?: unknown; parcel?: unknown; error?: unknown }
+          | { block?: unknown; parcel?: unknown; error?: unknown; code?: unknown }
           | null;
         if (cancelled) return;
 

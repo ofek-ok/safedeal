@@ -5,46 +5,42 @@ import { Info, AlertCircle, Loader2 } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
 import { GovAutocomplete } from "./GovAutocomplete";
 
-type GovMapLookupResult = {
-  status?: number;
-  errorCode?: number;
-  message?: string | null;
-  data?: Array<{ Values?: unknown[]; gushSuffix?: number | null }>;
+type GovMapSearchResponse = {
+  results?: Array<{ type?: string; text?: string; centroid?: string; score?: number }>;
+  resultsCount?: number;
 };
-
+type GovMapSpatialResponse = {
+  layers?: Record<string, Array<{ attributes?: Record<string, unknown>; fields?: Array<{ fieldName?: string; fieldValue?: unknown }> }>>;
+};
 type GovMapSdk = {
-  locateType?: { lotParcelToAddress: number };
-  createMap?: (mapId: string, settings: {
-    token: string;
-    layers?: string[];
-    showXY?: boolean;
-    identifyOnClick?: boolean;
-    bgButton?: boolean;
-    zoomButtons?: boolean;
-    layersMode?: number;
-    onLoad?: () => void;
-    onError?: () => void;
-  }) => void;
-  searchAndLocate?: (params: { type: number; address: string; mapDivId?: string }) => Promise<GovMapLookupResult>;
+  search?: (params: {
+    searchText: string;
+    language: "he";
+    maxResults: number;
+    isAccurate: boolean;
+    apiKey: string;
+  }) => Promise<GovMapSearchResponse>;
+  getLayerFeaturesByLocation?: (data: {
+    geometry: string;
+    radius: number;
+    layers: Array<{ name: string; fields: string[] }>;
+  }, apiToken: string) => Promise<GovMapSpatialResponse>;
 };
-
 declare global { interface Window { govmap?: GovMapSdk } }
 
 const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN;
-const govMapMapId = "safedeal-govmap-runtime";
 let govMapSdkPromise: Promise<GovMapSdk> | null = null;
-let govMapReadyPromise: Promise<GovMapSdk> | null = null;
 
 function loadGovMapSdk(): Promise<GovMapSdk> {
   if (typeof window === "undefined") return Promise.reject(new Error("unavailable"));
-  if (typeof window.govmap?.searchAndLocate === "function") return Promise.resolve(window.govmap);
+  if (window.govmap?.search && window.govmap.getLayerFeaturesByLocation) return Promise.resolve(window.govmap);
   if (!govMapSdkPromise) {
     govMapSdkPromise = new Promise((resolve, reject) => {
       let script = document.getElementById("safedeal-govmap-sdk") as HTMLScriptElement | null;
       const cleanup = () => { script?.removeEventListener("load", onLoad); script?.removeEventListener("error", onError); };
       const onLoad = () => {
         cleanup();
-        if (window.govmap?.searchAndLocate && window.govmap.createMap && window.govmap.locateType) resolve(window.govmap);
+        if (window.govmap?.search && window.govmap.getLayerFeaturesByLocation) resolve(window.govmap);
         else reject(new Error("unavailable"));
       };
       const onError = () => { cleanup(); govMapSdkPromise = null; reject(new Error("unavailable")); };
@@ -57,97 +53,83 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
       script.addEventListener("load", onLoad, { once: true });
       script.addEventListener("error", onError, { once: true });
       if (!script.isConnected) document.head.appendChild(script);
-      else if (window.govmap?.searchAndLocate) onLoad();
+      else if (window.govmap?.search && window.govmap.getLayerFeaturesByLocation) onLoad();
     });
   }
   return govMapSdkPromise;
 }
 
-async function ensureGovMapReady(): Promise<GovMapSdk> {
-  if (!govMapApiToken) throw new Error("unavailable");
-  if (!govMapReadyPromise) {
-    govMapReadyPromise = loadGovMapSdk().then((sdk) => new Promise<GovMapSdk>((resolve, reject) => {
-      if (!sdk.createMap || !sdk.locateType) return reject(new Error("unavailable"));
-      const mapElement = document.getElementById(govMapMapId);
-      if (!mapElement) return reject(new Error("unavailable"));
-      let settled = false;
-      let observer: MutationObserver | null = null;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timer);
-        observer?.disconnect();
-        resolve(sdk);
-      };
-      const fail = () => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timer);
-        observer?.disconnect();
-        reject(new Error("unavailable"));
-      };
-      const watchFrame = () => {
-        const frame = document.querySelector<HTMLIFrameElement>(`iframe#${govMapMapId}`);
-        if (frame) frame.addEventListener("load", finish, { once: true });
-      };
-      const timer = window.setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        observer?.disconnect();
-        console.warn("GovMap map initialization timed out");
-        reject(new Error("map-timeout"));
-      }, 15_000);
-      observer = new MutationObserver(watchFrame);
-      observer.observe(document.body, { childList: true, subtree: true });
-      sdk.createMap(govMapMapId, {
-        token: govMapApiToken,
-        layers: [],
-        showXY: false,
-        identifyOnClick: false,
-        bgButton: false,
-        zoomButtons: false,
-        layersMode: 4,
-        onLoad: finish,
-        onError: fail,
-      });
-      watchFrame();
-    })).catch((error) => {
-      govMapReadyPromise = null;
-      throw error;
-    });
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, code: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(code)), timeoutMs);
+    promise.then(
+      (value) => { window.clearTimeout(timer); resolve(value); },
+      (error) => { window.clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
+function normalizeAddress(value: string) {
+  return value.normalize("NFKC").toLocaleLowerCase("he").replace(/[^\\p{L}\\p{N}]/gu, "");
+}
+
+function readParcelValue(feature: { attributes?: Record<string, unknown>; fields?: Array<{ fieldName?: string; fieldValue?: unknown }> }, names: string[]) {
+  const wanted = new Set(names.map((name) => name.toUpperCase()));
+  for (const [key, value] of Object.entries(feature.attributes ?? {})) {
+    if (wanted.has(key.toUpperCase()) && value != null) return String(value).trim();
   }
-  return govMapReadyPromise;
+  for (const field of feature.fields ?? []) {
+    if (field.fieldName && wanted.has(field.fieldName.toUpperCase()) && field.fieldValue != null) return String(field.fieldValue).trim();
+  }
+  return "";
 }
 
 async function findCadastralParcel(city: string, street: string, houseNumber: string): Promise<{ block: string; parcel: string }> {
-  const sdk = await ensureGovMapReady();
-  if (!sdk.searchAndLocate || !sdk.locateType) throw new Error("unavailable");
-  const address = `${street} ${houseNumber}, ${city}`;
-  let response: GovMapLookupResult;
-  try {
-    response = await Promise.race([
-      sdk.searchAndLocate({ type: sdk.locateType.lotParcelToAddress, address, mapDivId: govMapMapId }),
-      new Promise<never>((_, reject) => window.setTimeout(() => {
-        console.warn("GovMap parcel lookup timed out");
-        reject(new Error("lookup-timeout"));
-      }, 12_000)),
-    ]);
-  } catch (error) {
-    if (error instanceof Error && ["map-timeout", "lookup-timeout"].includes(error.message)) throw error;
-    throw new Error("unavailable");
-  }
-  if (response.status !== undefined && response.status !== 0 || response.errorCode !== undefined && response.errorCode !== 0) {
-    if (response.status === 1 && response.data?.length) throw new Error("ambiguous");
-    throw new Error("address-not-found");
-  }
-  const parcels = (response.data ?? []).map((item) => {
-    const values = item.Values ?? [];
-    return { block: String(values[0] ?? "").trim(), parcel: String(values[1] ?? "").trim() };
-  }).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
-  const uniqueParcels = [...new Map(parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const)).values()];
-  if (!uniqueParcels.length) throw new Error("parcel-not-found");
-  if (uniqueParcels.length > 1) throw new Error("ambiguous");
-  return uniqueParcels[0];
+  if (!govMapApiToken) throw new Error("unavailable");
+  const sdk = await withTimeout(loadGovMapSdk(), 8_000, "lookup-timeout");
+  if (!sdk.search || !sdk.getLayerFeaturesByLocation) throw new Error("unavailable");
+
+  // Use GovMap's documented no-map functions. The API key is validated from this approved
+  // customer origin; no map iframe or server-side request is involved.
+  const address = `${street} ${houseNumber} ${city}`;
+  const search = await withTimeout(sdk.search({
+    searchText: address,
+    language: "he",
+    maxResults: 8,
+    isAccurate: true,
+    apiKey: govMapApiToken,
+  }), 8_000, "lookup-timeout");
+
+  const normalizedStreet = normalizeAddress(street);
+  const normalizedCity = normalizeAddress(city);
+  const normalizedHouse = normalizeAddress(houseNumber);
+  const addressMatches = (search.results ?? []).filter((result) => {
+    if (result.type !== "address" || !result.text || !result.centroid) return false;
+    const candidate = normalizeAddress(result.text);
+    return candidate === normalizeAddress(address) ||
+      (candidate.includes(normalizedStreet) && candidate.includes(normalizedHouse) && candidate.includes(normalizedCity));
+  });
+  if (!addressMatches.length) throw new Error("address-not-found");
+  if (addressMatches.length > 1) throw new Error("ambiguous");
+
+  const centroid = addressMatches[0].centroid!.match(/^POINT\\s*\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)\\s*\\)$/i);
+  if (!centroid) throw new Error("address-not-found");
+
+  const spatial = await withTimeout(sdk.getLayerFeaturesByLocation({
+    geometry: `POINT(${centroid[1]} ${centroid[2]})`,
+    radius: 5,
+    layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
+  }, govMapApiToken), 8_000, "lookup-timeout");
+
+  const features = spatial.layers?.PARCEL_ALL ?? spatial.layers?.parcel_all ?? [];
+  const parcels = features.map((feature) => ({
+    block: readParcelValue(feature, ["GUSH_NUM", "GUSH", "BLOCK"]),
+    parcel: readParcelValue(feature, ["PARCEL", "PARCEL_NUM"]),
+  })).filter((item) => /^\\d+$/.test(item.block) && /^\\d+$/.test(item.parcel));
+  const unique = [...new Map(parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const)).values()];
+  if (!unique.length) throw new Error("parcel-not-found");
+  if (unique.length > 1) throw new Error("ambiguous");
+  return unique[0];
 }
 
 interface Props {

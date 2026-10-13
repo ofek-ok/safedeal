@@ -346,8 +346,8 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
         <div className="grid grid-cols-3 gap-2 sm:gap-6">
           {(
             [
-              { key: "block",     label: "גוש",      placeholder: "מס׳ גוש" },
-              { key: "parcel",    label: "חלקה",     placeholder: "מס׳ חלקה" },
+              { key: "block",     label: "גוש *",      placeholder: "מס׳ גוש" },
+              { key: "parcel",    label: "חלקה *",     placeholder: "מס׳ חלקה" },
               { key: "subParcel", label: "תת-חלקה",  placeholder: "מס׳" },
             ] as { key: keyof Step2PropertyId; label: string; placeholder: string }[]
           ).map(({ key, label, placeholder }) => (

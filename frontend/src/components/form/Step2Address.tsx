@@ -71,12 +71,10 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
 }
 
 function withTimeout<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => {
-      window.setTimeout(() => reject(new Error("timeout")), milliseconds);
-    }),
-  ]);
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error("timeout")), milliseconds);
+    promise.then(resolve, reject).finally(() => window.clearTimeout(timer));
+  });
 }
 
 function normalizeAddress(value: string): string {
@@ -84,7 +82,7 @@ function normalizeAddress(value: string): string {
     .normalize("NFKC")
     .replace(/[־–—-]/g, " ")
     .replace(/[.,'"׳״]/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/\s+/g, " ")
     .trim()
     .toLocaleLowerCase("he");
 }
@@ -111,8 +109,8 @@ async function findCadastralParcel(address: string): Promise<{ block: string; pa
   if (!exactAddressResults.length) throw new Error("address-not-found");
 
   const locations = [...new Map(exactAddressResults
-    .filter((result) => typeof result.centroid === "string" && /^POINT\\s*\\(\\s*-?\\d+(?:\\.\\d+)?\\s+-?\\d+(?:\\.\\d+)?\\s*\\)$/i.test(result.centroid))
-    .map((result) => [result.centroid!.replace(/\\s+/g, ""), result.centroid!])).values()];
+    .filter((result) => typeof result.centroid === "string" && /^POINT\s*\(\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*\)$/i.test(result.centroid))
+    .map((result) => [result.centroid!.replace(/\s+/g, ""), result.centroid!])).values()];
   if (!locations.length) throw new Error("address-not-found");
   if (locations.length > 1) throw new Error("ambiguous");
 
@@ -135,7 +133,7 @@ async function findCadastralParcel(address: string): Promise<{ block: string; pa
       block: String(attributes.GUSH_NUM ?? attributes.gush_num ?? "").trim(),
       parcel: String(attributes.PARCEL ?? attributes.parcel ?? "").trim(),
     };
-  }).filter((item) => /^\\d+$/.test(item.block) && /^\\d+$/.test(item.parcel));
+  }).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
   const unique = [...new Map(parcels.map((item) => [item.block + "/" + item.parcel, item])).values()];
   if (!unique.length) throw new Error("parcel-not-found");
   if (unique.length > 1) throw new Error("ambiguous");

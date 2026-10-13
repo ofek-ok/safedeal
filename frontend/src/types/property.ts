@@ -164,6 +164,11 @@ export interface ReportData {
   missingDataWarnings?: string[];
 }
 
+export interface SellerDetails {
+  name: string;
+  idNumber: string;
+}
+
 export interface Step3DealDetails {
   dealType: DealType | "";
   askingPrice: string;   // raw numeric string (formatted for display)

@@ -25,10 +25,9 @@ export function MultiStepForm() {
     if (step === 1) {
       const address = formData.step2;
       const hasAddress = address.city.trim() && address.street.trim() && address.houseNumber.trim();
-      const hasCadastralId = address.block.trim() && address.parcel.trim();
       const sellers = formData.step3.sellers ?? [];
       const hasNamedSeller = sellers.length > 0 && sellers.every((seller) => seller.name.trim());
-      if (!hasAddress || !hasCadastralId || !hasNamedSeller) {
+      if (!hasAddress || !hasNamedSeller) {
         setShowErrors(true);
         return;
       }

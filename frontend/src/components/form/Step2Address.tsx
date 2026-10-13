@@ -73,6 +73,10 @@ function normalizeAddress(value: string) {
   return value.normalize("NFKC").toLocaleLowerCase("he").replace(/[^\p{L}\p{N}]/gu, "");
 }
 
+function formatGovMapAddress(city: string, street: string, houseNumber: string) {
+  return `${street.trim()} ${houseNumber.trim()}, ${city.trim()}`;
+}
+
 function readParcelValue(feature: { attributes?: Record<string, unknown>; fields?: Array<{ fieldName?: string; fieldValue?: unknown }> }, names: string[]) {
   const wanted = new Set(names.map((name) => name.toUpperCase()));
   for (const [key, value] of Object.entries(feature.attributes ?? {})) {
@@ -91,7 +95,8 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
 
   // Use GovMap's documented no-map functions. The API key is validated from this approved
   // customer origin; no map iframe or server-side request is involved.
-  const address = `${street} ${houseNumber} ${city}`;
+  // GovMap expects the canonical order: street + house number, then locality.
+  const address = formatGovMapAddress(city, street, houseNumber);
   const search = await withTimeout(sdk.search({
     searchText: address,
     language: "he",
@@ -348,6 +353,15 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
             />
           </Field>
         </div>
+
+        {data.city.trim() && data.street.trim() && data.houseNumber.trim() && (
+          <p className="text-[11px] sm:text-xs text-slate-500" dir="rtl">
+            כתובת החיפוש שנשלחת ל־GovMap:{" "}
+            <span className="text-slate-300">
+              {formatGovMapAddress(data.city, data.street, data.houseNumber)}
+            </span>
+          </p>
+        )}
 
         {(isLookingUp || addressLookupMessage) && (
           <div

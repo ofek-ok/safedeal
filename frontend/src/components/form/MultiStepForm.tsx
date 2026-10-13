@@ -41,7 +41,7 @@ export function MultiStepForm() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const staffApiUrl = (process.env.NEXT_PUBLIC_SAFEDEAL_STAFF_API_URL ?? "https://nadlan-risk-platform.ofek-okonski-7581.chatgpt.site").replace(/\/+$/, "");
+      const staffApiUrl = (process.env.NEXT_PUBLIC_SAFEDEAL_STAFF_API_URL ?? "https://safedeal-staff.vercel.app").replace(/\/+$/, "");
       const intakeForm = new FormData();
       intakeForm.append("intake", JSON.stringify({
         personal: formData.step1,

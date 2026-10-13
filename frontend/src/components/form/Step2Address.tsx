@@ -76,7 +76,7 @@ async function ensureGovMapReady(): Promise<GovMapSdk> {
       }, 12_000);
       sdk.createMap(govMapMapId, {
         token: govMapApiToken,
-        layers: ["PARCEL_ALL"],
+        layers: [],
         showXY: false,
         identifyOnClick: false,
         bgButton: false,
@@ -403,7 +403,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       <div
         id={govMapMapId}
         aria-hidden="true"
-        style={{ position: "fixed", left: "-10000px", top: 0, width: 640, height: 440, opacity: 0, pointerEvents: "none" }}
+        style={{ position: "fixed", left: 0, top: 0, width: 640, height: 440, opacity: 0, pointerEvents: "none", zIndex: -1 }}
       />
     </div>
   );

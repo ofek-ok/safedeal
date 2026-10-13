@@ -220,7 +220,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       setLookupSuccess(false);
       setIsLookingUp(true);
       try {
-        const address = normalizedStreet + " " + normalizedHouseNumber + ", " + normalizedCity;
+        const address = normalizedStreet + " " + normalizedHouseNumber + " " + normalizedCity;
         const result = await findCadastralParcel(address);
         if (cancelled) return;
         onChange({ ...data, block: result.block, parcel: result.parcel });

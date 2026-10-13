@@ -175,11 +175,13 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
     let requestTimeout: number | undefined;
     const timer = window.setTimeout(async () => {
       setIsLookingUp(true);
+      const timeout = new Promise<never>((_, reject) => {
+        requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 12_000);
+      });
       try {
-        const sdk = await initializeGovMapLookup();
-        const timeout = new Promise<never>((_, reject) => {
-          requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
-        });
+        // Start the deadline before SDK/map initialization so a stalled GovMap
+        // onLoad callback cannot leave the customer waiting indefinitely.
+        const sdk = await Promise.race([initializeGovMapLookup(), timeout]);
         const address = `${normalizedStreet} ${normalizedHouseNumber}, ${normalizedCity}`;
         const lookup = sdk.searchAndLocate({
           type: sdk.locateType.lotParcelToAddress,
@@ -212,6 +214,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       } catch (error) {
         if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
         const code = error instanceof Error ? error.message : "unavailable";
+        if (code === "timeout") govMapMapPromise = null;
         setLookupError(
           code === "address-not-found" ||
           code === "parcel-not-found" ||
@@ -225,7 +228,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
         if (requestTimeout) window.clearTimeout(requestTimeout);
         if (!cancelled) setIsLookingUp(false);
       }
-    }, 1000);
+    }, 400);
 
     return () => {
       cancelled = true;
@@ -234,6 +237,12 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       setIsLookingUp(false);
     };
   }, [data.city, data.street, data.houseNumber, data.block, data.parcel]);
+
+  // Warm GovMap while the customer fills in the first-step details.
+  // This removes SDK download and map initialization from the lookup's critical path.
+  useEffect(() => {
+    if (govMapApiToken) void initializeGovMapLookup().catch(() => {});
+  }, []);
 
   const errors: Partial<Record<keyof Step2PropertyId, string>> = showErrors
     ? {
@@ -248,7 +257,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
   const addressLookupMessage = lookupError === "address-not-found"
     ? "לא הצלחנו לאתר את הגוש והחלקה לפי הכתובת. אפשר להוציא אותם באתר הממשלתי ולהזין כאן."
     : lookupError === "timeout"
-      ? "האיתור עדיין מתבצע. המתינו לסיום לפני המעבר לשלב הבא. אם לא יימצאו נתונים, תוכלו להזין אותם ידנית."
+      ? "האיתור האוטומטי לא הושלם בזמן. אפשר להזין גוש וחלקה ידנית לפי האתר הממשלתי ולהמשיך."
       : lookupError === "unavailable"
         ? "האיתור האוטומטי לא זמין כרגע. אפשר למצוא את הגוש והחלקה באתר הממשלתי ולהזין אותם כאן."
         : null;

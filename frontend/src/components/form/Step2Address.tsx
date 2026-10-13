@@ -242,17 +242,15 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
         city: !data.city.trim() ? "שם העיר הוא שדה חובה" : undefined,
         street: !data.street.trim() ? "שם הרחוב הוא שדה חובה" : undefined,
         houseNumber: !data.houseNumber.trim() ? "מספר הבית הוא שדה חובה" : undefined,
-        block: !data.block.trim() ? "יש להזין גוש כדי להמשיך" : undefined,
-        parcel: !data.parcel.trim() ? "יש להזין חלקה כדי להמשיך" : undefined,
       }
     : {};
 
   const addressLookupMessage = lookupError === "address-not-found"
-    ? "לא הצלחנו לאתר את הגוש והחלקה לפי הכתובת. אפשר להוציא אותם באתר הממשלתי ולהזין כאן."
+    ? "האיתור האוטומטי לא מצא התאמה. אין צורך לעצור — האנליסט יאתר ויאמת את פרטי הרישום."
     : lookupError === "timeout"
-      ? "האיתור האוטומטי לא הושלם בזמן. אפשר להזין גוש וחלקה ידנית לפי האתר הממשלתי ולהמשיך."
+      ? "האיתור האוטומטי לא הושלם בזמן. אפשר להמשיך — האנליסט יאתר ויאמת את הגוש והחלקה."
       : lookupError === "unavailable"
-        ? "האיתור האוטומטי לא זמין כרגע. אפשר למצוא את הגוש והחלקה באתר הממשלתי ולהזין אותם כאן."
+        ? "האיתור האוטומטי לא זמין כרגע. אפשר להמשיך — האנליסט יאתר ויאמת את הגוש והחלקה."
         : null;
   const parcelLookupMessage = lookupError === "parcel-not-found"
     ? "לא נמצאה התאמה לגוש ולחלקה. היכנסו לאתר הממשלתי לאיתור לפי כתובת, ואז הזינו כאן את המספרים."
@@ -327,7 +325,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
             aria-live="polite"
           >
             {isLookingUp ? <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" /> : <Info size={14} className="mt-0.5 shrink-0" />}
-            <span>{isLookingUp ? "אנחנו מאתרים את הגוש והחלקה לפי הכתובת. כדאי להמתין לסיום האיתור לפני שממשיכים…" : addressLookupMessage}</span>
+            <span>{isLookingUp ? "אנחנו בודקים את הכתובת ברקע. אין צורך להמתין — האנליסט יוודא את פרטי הרישום." : addressLookupMessage}</span>
           </div>
         )}
 
@@ -345,12 +343,12 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
         <div className="grid grid-cols-3 gap-2 sm:gap-6">
           {(
             [
-              { key: "block",     label: "גוש *",      placeholder: "מס׳ גוש" },
-              { key: "parcel",    label: "חלקה *",     placeholder: "מס׳ חלקה" },
+              { key: "block",     label: "גוש",      placeholder: "מס׳ גוש" },
+              { key: "parcel",    label: "חלקה",     placeholder: "מס׳ חלקה" },
               { key: "subParcel", label: "תת-חלקה",  placeholder: "מס׳" },
             ] as { key: keyof Step2PropertyId; label: string; placeholder: string }[]
           ).map(({ key, label, placeholder }) => (
-            <Field key={key} id={key} label={label} optional={key === "subParcel"} error={errors[key as "block" | "parcel"]}>
+            <Field key={key} id={key} label={label} optional error={errors[key as "block" | "parcel"]}>
               <EditorialInput
                 id={key}
                 inputMode="numeric"
@@ -370,12 +368,12 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
             aria-live="polite"
           >
             {lookupSuccess ? <Info size={14} className="mt-0.5 shrink-0" /> : <AlertCircle size={14} className="mt-0.5 shrink-0" />}
-            <span>{lookupSuccess ? "האיתור האוטומטי החזיר גוש וחלקה, אך אינו אישור רשמי. השוו לתוצאה באתר הממשלתי. במקרה של פער, הזינו כאן את הערכים שמופיעים שם." : parcelLookupMessage}</span>
+            <span>{lookupSuccess ? "נמצאה התאמה אוטומטית אפשרית. האנליסט יבדוק אותה מול נסח הטאבו לפני הפקת הדוח." : parcelLookupMessage}</span>
           </div>
         )}
 
         <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
-          גוש וחלקה נדרשים להמשך. יש להשוות כל תוצאה אוטומטית מול{" "}
+          אין צורך לדעת גוש וחלקה כדי לשלוח את הבקשה. האנליסט יאתר ויאמת אותם מול נסח הטאבו. אם הם כבר בידיכם, אפשר להזין אותם כמידע עזר. איתור עצמאי זמין גם ב{" "}
           <a
             href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html"
             target="_blank"
@@ -384,7 +382,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
           >
             האתר הממשלתי לאיתור גוש וחלקה לפי כתובת
           </a>
-          . אם המספרים שונים, הזינו כאן את הגוש והחלקה שמופיעים באתר הממשלתי.
+          .
         </p>
 
       </div>

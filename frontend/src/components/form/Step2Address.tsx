@@ -66,10 +66,38 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
 async function ensureGovMapReady(): Promise<GovMapSdk> {
   if (!govMapApiToken) throw new Error("unavailable");
   if (!govMapReadyPromise) {
-    govMapReadyPromise = loadGovMapSdk().then((sdk) => {
-      if (!sdk.createMap || !sdk.locateType) throw new Error("unavailable");
+    govMapReadyPromise = loadGovMapSdk().then((sdk) => new Promise<GovMapSdk>((resolve, reject) => {
+      if (!sdk.createMap || !sdk.locateType) return reject(new Error("unavailable"));
       const mapElement = document.getElementById(govMapMapId);
-      if (!mapElement) throw new Error("unavailable");
+      if (!mapElement) return reject(new Error("unavailable"));
+      let settled = false;
+      let observer: MutationObserver | null = null;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        observer?.disconnect();
+        resolve(sdk);
+      };
+      const fail = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        observer?.disconnect();
+        reject(new Error("unavailable"));
+      };
+      const watchFrame = () => {
+        const frame = mapElement.querySelector("iframe");
+        if (frame) frame.addEventListener("load", finish, { once: true });
+      };
+      const timer = window.setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        observer?.disconnect();
+        reject(new Error("timeout"));
+      }, 15_000);
+      observer = new MutationObserver(watchFrame);
+      observer.observe(mapElement, { childList: true, subtree: true });
       sdk.createMap(govMapMapId, {
         token: govMapApiToken,
         layers: [],
@@ -78,9 +106,11 @@ async function ensureGovMapReady(): Promise<GovMapSdk> {
         bgButton: false,
         zoomButtons: false,
         layersMode: 4,
+        onLoad: finish,
+        onError: fail,
       });
-      return sdk;
-    }).catch((error) => {
+      watchFrame();
+    })).catch((error) => {
       govMapReadyPromise = null;
       throw error;
     });

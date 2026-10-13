@@ -142,7 +142,7 @@ function attributeValue(attributes: Record<string, unknown> | undefined, field: 
 
 export function Step2Address({ data, onChange, showErrors }: Props) {
   const [isLookingUp, setIsLookingUp] = useState(false);
-  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [lookupError, setLookupError] = useState<"address-not-found" | "parcel-not-found" | "parcel-fields-missing" | "ambiguous" | "timeout" | "unavailable" | null>(null);
   const [lookupSuccess, setLookupSuccess] = useState(false);
 
   const set = <K extends keyof Step2PropertyId>(k: K, v: string) => {
@@ -163,7 +163,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
     }
 
     if (!govMapApiToken) {
-      setLookupError("החיפוש האוטומטי לא הוגדר. אפשר להזין גוש וחלקה ידנית.");
+      setLookupError("unavailable");
       return;
     }
 
@@ -239,7 +239,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ featureIds }),
             }).then(async (response) => {
-              if (!response.ok) throw new Error("parcel-fields-missing");
+              if (!response.ok) throw new Error("unavailable");
               return response.json() as Promise<{ parcels?: Array<{ block?: string; parcel?: string }> }>;
             }),
             timeout,
@@ -262,17 +262,16 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         setLookupSuccess(true);
       } catch (error) {
         if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
-        setLookupError(error instanceof Error && error.message === "address-not-found"
-          ? "GovMap לא מצא את הכתובת המדויקת. בחרו יישוב ורחוב מהרשימה או הזינו גוש וחלקה ידנית."
-          : error instanceof Error && error.message === "parcel-not-found"
-            ? "הכתובת נמצאה, אך לא נמצא שיוך לחלקה במאגר. אפשר להזין גוש וחלקה ידנית."
-            : error instanceof Error && error.message === "parcel-fields-missing"
-              ? "נמצאה חלקה, אך נתוני הגוש והחלקה לא הוחזרו. אפשר להזין אותם ידנית."
-              : error instanceof Error && error.message === "ambiguous"
-            ? "הכתובת משויכת ליותר מגוש או חלקה אחד. בדקו את נסח הטאבו והזינו את הנתונים ידנית."
-            : error instanceof Error && error.message === "timeout"
-              ? "החיפוש נמשך זמן רב. אפשר להזין גוש וחלקה ידנית."
-              : "GovMap לא הצליח לאתר את הכתובת. אפשר להזין גוש וחלקה ידנית.");
+        const code = error instanceof Error ? error.message : "unavailable";
+        setLookupError(
+          code === "address-not-found" ||
+          code === "parcel-not-found" ||
+          code === "parcel-fields-missing" ||
+          code === "ambiguous" ||
+          code === "timeout"
+            ? code
+            : "unavailable",
+        );
       } finally {
         if (requestTimeout) window.clearTimeout(requestTimeout);
         if (!cancelled) setIsLookingUp(false);
@@ -294,6 +293,21 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         houseNumber: !data.houseNumber.trim() ? "מספר הבית הוא שדה חובה" : undefined,
       }
     : {};
+
+  const addressLookupMessage = lookupError === "address-not-found"
+    ? "לא מצאנו את הכתובת במאגר. בחרו עיר ורחוב מהרשימה או בדקו את הכתובת."
+    : lookupError === "timeout"
+      ? "האיתור מתעכב. אפשר להמשיך ולמלא גוש וחלקה ידנית."
+      : lookupError === "unavailable"
+        ? "האיתור האוטומטי אינו זמין כרגע. אפשר להמשיך ולמלא גוש וחלקה ידנית."
+        : null;
+  const parcelLookupMessage = lookupError === "parcel-not-found"
+    ? "הכתובת נמצאה, אך לא אותרה עבורה חלקה. הזינו גוש וחלקה ידנית."
+    : lookupError === "parcel-fields-missing"
+      ? "נמצאה חלקה, אך המאגר לא החזיר את מספרי הגוש והחלקה. הזינו אותם ידנית או השתמשו בקישור לאיתור לפי כתובת."
+      : lookupError === "ambiguous"
+        ? "לכתובת נמצאו כמה חלקות אפשריות. בדקו את נסח הטאבו והזינו את הגוש והחלקה המתאימים."
+        : null;
 
   return (
     <div className="space-y-4 sm:space-y-10 animate-fade-in-up">
@@ -354,6 +368,17 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           </Field>
         </div>
 
+        {(isLookingUp || addressLookupMessage) && (
+          <div
+            className={`flex items-start gap-2 text-xs leading-relaxed ${addressLookupMessage ? "text-amber-300" : "text-[#00C896]"}`}
+            role={addressLookupMessage ? "status" : "status"}
+            aria-live="polite"
+          >
+            {isLookingUp ? <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" /> : <Info size={14} className="mt-0.5 shrink-0" />}
+            <span>{isLookingUp ? "מאתר גוש וחלקה לפי הכתובת..." : addressLookupMessage}</span>
+          </div>
+        )}
+
         {/* Cadastral divider */}
         <div className="flex items-center gap-3 sm:gap-4 py-2 sm:py-4 mt-2 sm:mt-6">
           <div className="flex-1 h-[1px] bg-white/[0.06]" />
@@ -362,22 +387,6 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
             זיהוי קדסטרלי
           </span>
           <div className="flex-1 h-[1px] bg-white/[0.06]" />
-        </div>
-
-        {/* Auto Lookup Status */}
-        <div className="flex flex-col items-center min-h-[24px] sm:min-h-[30px] justify-center">
-          {isLookingUp && (
-            <div className="flex items-center gap-2 text-[10px] text-[#00C896] uppercase tracking-widest bg-[#00C896]/10 px-3 py-1 rounded-full">
-              <Loader2 size={12} className="animate-spin" />
-              מאתר גוש וחלקה...
-            </div>
-          )}
-          {!isLookingUp && lookupError && (
-            <span className="text-red-400 text-[10px] bg-red-400/10 px-3 py-1 rounded">{lookupError}</span>
-          )}
-          {!isLookingUp && lookupSuccess && (
-            <span className="text-[#00C896] text-[10px] bg-[#00C896]/10 px-3 py-1 rounded">הושלם בהצלחה! אנא ודאו את הנתונים מול הטאבו.</span>
-          )}
         </div>
 
         {/* Block / Parcel / Sub-parcel */}
@@ -400,6 +409,17 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
             </Field>
           ))}
         </div>
+
+        {(parcelLookupMessage || lookupSuccess) && (
+          <div
+            className={`flex items-start gap-2 text-xs leading-relaxed ${lookupSuccess ? "text-[#00C896]" : "text-amber-300"}`}
+            role="status"
+            aria-live="polite"
+          >
+            {lookupSuccess ? <Info size={14} className="mt-0.5 shrink-0" /> : <AlertCircle size={14} className="mt-0.5 shrink-0" />}
+            <span>{lookupSuccess ? "הגוש והחלקה אותרו. מומלץ לוודא את הנתונים מול נסח הטאבו." : parcelLookupMessage}</span>
+          </div>
+        )}
 
         <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
           לדיוק מרבי, אפשר{" "}

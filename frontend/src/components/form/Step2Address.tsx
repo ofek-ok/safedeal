@@ -236,9 +236,11 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
 
   const errors = showErrors
     ? {
-        city:        !data.city.trim()        ? "שם העיר הוא שדה חובה" : undefined,
-        street:      !data.street.trim()      ? "שם הרחוב הוא שדה חובה" : undefined,
+        city: !data.city.trim() ? "שם העיר הוא שדה חובה" : undefined,
+        street: !data.street.trim() ? "שם הרחוב הוא שדה חובה" : undefined,
         houseNumber: !data.houseNumber.trim() ? "מספר הבית הוא שדה חובה" : undefined,
+        block: !data.block.trim() ? "יש להזין גוש כדי להמשיך" : undefined,
+        parcel: !data.parcel.trim() ? "יש להזין חלקה כדי להמשיך" : undefined,
       }
     : {};
 
@@ -264,8 +266,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
         aria-hidden="true"
         className="pointer-events-none fixed -left-[10000px] top-0 h-[500px] w-[500px] opacity-0"
       />
-      {/* Heading */}
-      <div className="mb-4 sm:mb-10 text-right">
+      {!hideHeading && <div className="mb-4 sm:mb-10 text-right">
         <div className="w-8 h-[1px] bg-[#00C896] mb-2 sm:mb-4"></div>
         <span className="text-[#00C896] text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1 sm:mb-3 block">
           שלב 02
@@ -276,7 +277,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
         <p className="text-slate-400 text-xs sm:text-sm tracking-wider">
           הכניסו את כתובת הנכס לאיתור במאגרי הרישום
         </p>
-      </div>
+      </div>}
 
       <div className="space-y-4 sm:space-y-8">
         {/* City */}

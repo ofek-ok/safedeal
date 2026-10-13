@@ -368,7 +368,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
           </div>
         )}
 
-        <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
+        <p className={`text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed ${data.block.trim() && data.parcel.trim() ? "hidden" : ""}`}>
           גוש וחלקה נדרשים להמשך. אנחנו מנסים לאתר אותם אוטומטית — המתינו להשלמת החיפוש. אם לא נמצאה התאמה, אפשר{" "}
           <a
             href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html"

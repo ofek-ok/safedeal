@@ -115,11 +115,16 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
           cache: "no-store",
         });
         const result = await response.json().catch(() => null) as
-          | { block?: unknown; parcel?: unknown }
+          | { block?: unknown; parcel?: unknown; error?: unknown }
           | null;
         if (cancelled) return;
 
         if (!response.ok) {
+          console.error(
+            "Cadastral lookup failed",
+            response.status,
+            typeof result?.error === "string" ? result.error : "No error details",
+          );
           if (response.status === 404) throw new Error("address-not-found");
           if (response.status === 409) throw new Error("ambiguous");
           if (response.status === 504) throw new Error("timeout");

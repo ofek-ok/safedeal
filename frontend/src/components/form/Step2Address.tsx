@@ -119,17 +119,28 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
 
   const spatial = await withTimeout(sdk.getLayerFeaturesByLocation({
     geometry: `POINT(${centroid[1]} ${centroid[2]})`,
-    radius: 5,
+    radius: 100,
     layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
   }, govMapApiToken), 8_000, "lookup-timeout");
 
-  const features = spatial.layers?.PARCEL_ALL ?? spatial.layers?.parcel_all ?? [];
+  const layerEntries = Object.entries(spatial.layers ?? {});
+  const parcelEntry = layerEntries.find(([name]) => name.toUpperCase().includes("PARCEL"))
+    ?? (layerEntries.length === 1 ? layerEntries[0] : undefined);
+  const features = parcelEntry?.[1] ?? [];
+  console.info("GovMap cadastral response", {
+    layerNames: layerEntries.map(([name]) => name),
+    featureCount: features.length,
+    attributeNames: Object.keys(features[0]?.attributes ?? {}),
+    fieldNames: (features[0]?.fields ?? []).map((field) => field.fieldName).filter(Boolean),
+  });
+  if (!features.length) throw new Error("parcel-not-found");
+
   const parcels = features.map((feature) => ({
     block: readParcelValue(feature, ["GUSH_NUM", "GUSH", "BLOCK"]),
     parcel: readParcelValue(feature, ["PARCEL", "PARCEL_NUM"]),
   })).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
   const unique = [...new Map(parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const)).values()];
-  if (!unique.length) throw new Error("parcel-not-found");
+  if (!unique.length) throw new Error("parcel-fields-missing");
   if (unique.length > 1) throw new Error("ambiguous");
   return unique[0];
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { StepIndicator } from "./StepIndicator";
-import { Step1PropertyType } from "./Step1PropertyType";
+import { Step1PropertyType } from "./Step1PropertyType";\nimport { Step1PropertyAddress } from "./Step1PropertyAddress";
 import { Step2Address } from "./Step2Address";
 import { Step3Details } from "./Step3Details";
 import { Step4Checkout } from "./Step4Checkout";

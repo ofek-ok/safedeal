@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     });
     if (!geocodeResponse.ok) {
       console.error("GovMap geocode failed", geocodeResponse.status);
-      return json({ error: "לא ניתן לאתר את הכתובת כרגע." }, 502, origin);
+      return json({ error: "לא ניתן לאתר את הכתובת כרגע.", code: `GOVMAP_GEOCODE_HTTP_${geocodeResponse.status}` }, 502, origin);
     }
 
     const geocode = await geocodeResponse.json() as GovMapGeocodeResponse;
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     });
     if (!parcelResponse.ok) {
       console.error("GovMap parcel lookup failed", parcelResponse.status);
-      return json({ error: "לא ניתן לקבל נתוני גוש וחלקה כרגע." }, 502, origin);
+      return json({ error: "לא ניתן לקבל נתוני גוש וחלקה כרגע.", code: `GOVMAP_PARCEL_HTTP_${parcelResponse.status}` }, 502, origin);
     }
 
     const parcelData = await parcelResponse.json() as GovMapIntersectResponse;

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { StepIndicator } from "./StepIndicator";
-import { Step1PropertyType } from "./Step1PropertyType";\nimport { Step1PropertyAddress } from "./Step1PropertyAddress";
-import { Step2Address } from "./Step2Address";
+import { Step1PropertyType } from "./Step1PropertyType";
+import { Step1PropertyAddress } from "./Step1PropertyAddress";
 import { Step3Details } from "./Step3Details";
 import { Step4Checkout } from "./Step4Checkout";
 import { SafeDealLogo } from "@/components/SafeDealLogo";
@@ -22,9 +22,15 @@ export function MultiStepForm() {
   const TOTAL = 4;
 
   const next = () => {
-    if (step === 2 && !formData.step2.city.trim()) {
-      setShowErrors(true);
-      return;
+    if (step === 1) {
+      const address = formData.step2;
+      const hasAddress = address.city.trim() && address.street.trim() && address.houseNumber.trim();
+      const hasCadastralId = address.block.trim() && address.parcel.trim();
+      const hasNamedSeller = formData.step3.sellers.some((seller) => seller.name.trim());
+      if (!hasAddress || !hasCadastralId || !hasNamedSeller) {
+        setShowErrors(true);
+        return;
+      }
     }
     setShowErrors(false);
     if (step < TOTAL) setStep((s) => s + 1);
@@ -130,17 +136,27 @@ export function MultiStepForm() {
       <div className="w-full rounded-2xl border border-white/14 bg-[#0A1628]/85 backdrop-blur-2xl p-4 sm:p-6 md:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
         <div className="min-h-[260px] sm:min-h-[360px]">
           {step === 1 && (
+            <Step1PropertyAddress
+              address={formData.step2}
+              sellers={formData.step3.sellers}
+              onAddressChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
+              onSellersChange={(sellers) => setFormData((f) => ({
+                ...f,
+                step3: {
+                  ...f.step3,
+                  sellers,
+                  sellerName: sellers[0]?.name ?? "",
+                  sellerIdNumber: sellers[0]?.idNumber ?? "",
+                },
+              }))}
+              showErrors={showErrors}
+            />
+          )}
+          {step === 2 && (
             <Step1PropertyType
               data={{ dealType: formData.step3.dealType }}
               onChange={(dealType) => setFormData((f) => ({ ...f, step3: { ...f.step3, dealType } }))}
               onAutoAdvance={next}
-            />
-          )}
-          {step === 2 && (
-            <Step2Address
-              data={formData.step2}
-              onChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
-              showErrors={showErrors}
             />
           )}
           {step === 3 && (

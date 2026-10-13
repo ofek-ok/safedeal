@@ -59,14 +59,33 @@ function getGovMapSdk(): Promise<GovMapSdk> {
   if (!govMapMapPromise) {
     govMapMapPromise = loadGovMapSdk()
       .then((sdk) => new Promise<GovMapSdk>((resolve, reject) => {
-        const timeout = window.setTimeout(() => { govMapMapPromise = null; reject(new Error("timeout")); }, 10_000);
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
+          resolve(sdk);
+        };
+        const timeout = window.setTimeout(finish, 1_200);
         try {
           sdk.createMap!("safedeal-govmap-runtime", {
             token: govMapToken, showXY: false, identifyOnClick: false, isEmbeddedToggle: false, zoomButtons: false,
-            onLoad: () => { window.clearTimeout(timeout); resolve(sdk); },
-            onError: () => { window.clearTimeout(timeout); govMapMapPromise = null; reject(new Error("unavailable")); },
+            onLoad: finish,
+            onError: () => {
+              if (settled) return;
+              settled = true;
+              window.clearTimeout(timeout);
+              govMapMapPromise = null;
+              reject(new Error("unavailable"));
+            },
           });
-        } catch { window.clearTimeout(timeout); govMapMapPromise = null; reject(new Error("unavailable")); }
+        } catch {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
+          govMapMapPromise = null;
+          reject(new Error("unavailable"));
+        }
       }))
       .catch((error) => { govMapMapPromise = null; throw error; });
   }

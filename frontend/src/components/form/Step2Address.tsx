@@ -401,6 +401,19 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           ))}
         </div>
 
+        <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
+          לדיוק מרבי, אפשר{" "}
+          <a
+            href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#00C896] underline underline-offset-4 hover:text-white transition-colors"
+          >
+            לאתר כאן את הגוש והחלקה לפי כתובת הנכס
+          </a>
+          , ואז להזין את הנתונים בשדות למעלה.
+        </p>
+
         {/* Hint */}
         <div className="p-3.5 sm:p-5 rounded-xl border border-white/[0.06] bg-white/[0.01] flex items-start gap-3 sm:gap-4">
           <Info size={13} className="shrink-0 mt-0.5 text-[#00C896]" />

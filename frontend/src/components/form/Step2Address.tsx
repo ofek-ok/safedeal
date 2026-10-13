@@ -100,12 +100,12 @@ async function findCadastralParcel(address: string): Promise<{ block: string; pa
     apiKey: govMapToken,
   }), 8_000);
 
-  const expectedAddress = normalizeAddress(address);
-  const exactAddressResults = (search.results ?? []).filter((result) =>
-    result.type === "address" &&
-    typeof result.text === "string" &&
-    normalizeAddress(result.text) === expectedAddress
-  );
+  const expectedTokens = normalizeAddress(address).split(" ").filter(Boolean);
+  const exactAddressResults = (search.results ?? []).filter((result) => {
+    if (result.type !== "address" || typeof result.text !== "string") return false;
+    const resultTokens = new Set(normalizeAddress(result.text).split(" ").filter(Boolean));
+    return expectedTokens.every((token) => resultTokens.has(token));
+  });
   if (!exactAddressResults.length) throw new Error("address-not-found");
 
   const locations = [...new Map(exactAddressResults

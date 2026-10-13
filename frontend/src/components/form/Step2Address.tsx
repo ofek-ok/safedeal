@@ -94,89 +94,6 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       return;
     }
 
-    if (!govMapApiToken) {
-      setLookupError("unavailable");
-      return;
-    }
-
-    let cancelled = false;
-    let requestTimeout: number | undefined;
-    const timer = window.setTimeout(async () => {
-      setIsLookingUp(true);
-      const timeout = new Promise<never>((_, reject) => {
-        requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 12_000);
-      });
-      try {
-        // Start the deadline before SDK/map initialization so a stalled GovMap
-        // onLoad callback cannot leave the customer waiting indefinitely.
-        const sdk = await Promise.race([initializeGovMapLookup(), timeout]);
-        const address = `${normalizedStreet} ${normalizedHouseNumber}, ${normalizedCity}`;
-        const lookup = sdk.searchAndLocate({
-          type: sdk.locateType.lotParcelToAddress,
-          address,
-        });
-        const result = await Promise.race([lookup, timeout]);
-        if (cancelled) return;
-        if (
-          (result.status !== undefined && result.status !== 0) ||
-          (result.errorCode !== undefined && result.errorCode !== 0)
-        ) {
-          throw new Error("unavailable");
-        }
-
-        const rawParcels = (result.data ?? [])
-          .map((item) => ({
-            block: String(item.Values?.[0] ?? "").trim(),
-            parcel: String(item.Values?.[1] ?? "").trim(),
-          }))
-          .filter((item) => item.block && item.parcel);
-        const uniqueParcels = [...new Map(
-          rawParcels.map((item) => [`${item.block}/${item.parcel}`, item] as const),
-        ).values()];
-
-        if (!uniqueParcels.length) throw new Error("address-not-found");
-        if (uniqueParcels.length > 1) throw new Error("ambiguous");
-        const { block, parcel: parcelNumber } = uniqueParcels[0];
-        onChange({ ...data, block, parcel: parcelNumber });
-        setLookupSuccess(true);
-      } catch (error) {
-        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
-        const code = error instanceof Error ? error.message : "unavailable";
-        if (code === "timeout") govMapMapPromise = null;
-        setLookupError(
-          code === "address-not-found" ||
-          code === "parcel-not-found" ||
-          code === "parcel-fields-missing" ||
-          code === "ambiguous" ||
-          code === "timeout"
-            ? code
-            : "unavailable",
-        );
-      } finally {
-        if (requestTimeout) window.clearTimeout(requestTimeout);
-        if (!cancelled) setIsLookingUp(false);
-      }
-    }, 400);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-      if (requestTimeout) window.clearTimeout(requestTimeout);
-      setIsLookingUp(false);
-    };
-  }, [data.city, data.street, data.houseNumber, data.block, data.parcel]);
-
-  useEffect(() => {
-    const { city, street, houseNumber, block, parcel } = data;
-    const normalizedCity = city.trim();
-    const normalizedStreet = street.trim();
-    const normalizedHouseNumber = houseNumber.trim();
-
-    if (!normalizedCity || !normalizedStreet || !normalizedHouseNumber || block || parcel) {
-      setIsLookingUp(false);
-      return;
-    }
-
     let cancelled = false;
     let requestTimeout: number | undefined;
     const controller = new AbortController();
@@ -184,8 +101,8 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       setIsLookingUp(true);
       requestTimeout = window.setTimeout(() => controller.abort(), 24_000);
       try {
-        // Use the server-side cadastral endpoint. It avoids downloading and
-        // booting the full GovMap map SDK in the customer's browser.
+        // Use the server-side cadastral endpoint instead of booting a full map
+        // in the customer's browser.
         const response = await fetch("/api/cadastral-lookup", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -198,7 +115,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
           cache: "no-store",
         });
         const result = await response.json().catch(() => null) as
-          | { block?: unknown; parcel?: unknown; error?: unknown }
+          | { block?: unknown; parcel?: unknown }
           | null;
         if (cancelled) return;
 

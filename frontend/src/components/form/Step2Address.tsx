@@ -365,7 +365,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
 
         {(parcelLookupMessage || lookupSuccess) && (
           <div
-            className={`flex items-start gap-2 text-xs leading-relaxed ${lookupSuccess ? "text-amber-300" : "text-amber-300"}`}
+            className="flex items-start gap-2 text-xs leading-relaxed text-amber-300"
             role="status"
             aria-live="polite"
           >

@@ -123,6 +123,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
           console.error(
             "Cadastral lookup failed",
             response.status,
+            typeof result?.code === "string" ? result.code : "NO_UPSTREAM_CODE",
             typeof result?.error === "string" ? result.error : "No error details",
           );
           if (response.status === 404) throw new Error("address-not-found");

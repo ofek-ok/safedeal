@@ -359,6 +359,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
                 value={data[key]}
                 onChange={(e) => set(key, e.target.value)}
                 placeholder={placeholder}
+                hasError={!!errors[key as "block" | "parcel"]}
               />
             </Field>
           ))}

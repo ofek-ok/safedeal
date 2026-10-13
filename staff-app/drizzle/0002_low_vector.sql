@@ -1,0 +1,1 @@
+ALTER TABLE `cases` ADD `intake_payload` text DEFAULT '{}' NOT NULL;

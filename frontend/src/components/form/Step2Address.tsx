@@ -66,14 +66,10 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
 async function ensureGovMapReady(): Promise<GovMapSdk> {
   if (!govMapApiToken) throw new Error("unavailable");
   if (!govMapReadyPromise) {
-    govMapReadyPromise = loadGovMapSdk().then((sdk) => new Promise<GovMapSdk>((resolve, reject) => {
-      if (!sdk.createMap || !sdk.locateType) return reject(new Error("unavailable"));
+    govMapReadyPromise = loadGovMapSdk().then((sdk) => {
+      if (!sdk.createMap || !sdk.locateType) throw new Error("unavailable");
       const mapElement = document.getElementById(govMapMapId);
-      if (!mapElement) return reject(new Error("unavailable"));
-      let settled = false;
-      const timer = window.setTimeout(() => {
-        if (!settled) { settled = true; reject(new Error("timeout")); }
-      }, 12_000);
+      if (!mapElement) throw new Error("unavailable");
       sdk.createMap(govMapMapId, {
         token: govMapApiToken,
         layers: [],
@@ -82,20 +78,9 @@ async function ensureGovMapReady(): Promise<GovMapSdk> {
         bgButton: false,
         zoomButtons: false,
         layersMode: 4,
-        onLoad: () => {
-          if (settled) return;
-          settled = true;
-          window.clearTimeout(timer);
-          resolve(sdk);
-        },
-        onError: () => {
-          if (settled) return;
-          settled = true;
-          window.clearTimeout(timer);
-          reject(new Error("unavailable"));
-        },
       });
-    })).catch((error) => {
+      return sdk;
+    }).catch((error) => {
       govMapReadyPromise = null;
       throw error;
     });

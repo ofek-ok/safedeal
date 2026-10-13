@@ -464,19 +464,10 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
             <p className="text-xs text-slate-400 leading-relaxed">
               יש לכם נסח טאבו? אפשר לצרף אותו כאן, אך אין חובה. אם לא צירפתם נסח או שאינכם יודעים את הגוש והחלקה, האנליסט יאתר את פרטי הרישום ויפיק את המסמכים הדרושים.
             </p>
-            {data.step2.block && data.step2.parcel ? (
-              <a
-                href={`https://mekarkein-online.justice.gov.il/voucher/main/${encodeURIComponent(data.step2.block)}/${encodeURIComponent(data.step2.parcel)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex text-xs text-[#00C896] underline underline-offset-4 hover:text-white transition-colors"
-              >
-                להנפקת נסח טאבו לפי גוש {data.step2.block} וחלקה {data.step2.parcel}
-              </a>
-            ) : (
-              <p className="text-xs text-slate-500">אפשר להמשיך גם בלי גוש וחלקה; האנליסט יפיק את הנסח לפי פרטי הנכס.</p>
-            )}
-            <Dropzone
+            <p className="text-xs text-slate-500">
+              האנליסט יפיק את נסח הטאבו לפי הכתובת ופרטי המוכרים, גם אם לא צירפתם מסמך.
+            </p>
+                        <Dropzone
               id="tabu-upload"
               label="גרור לכאן את נסח הטאבו"
               sublabel="או לחצו לבחירת קובץ · PDF, JPG, PNG, WEBP · עד 20MB"

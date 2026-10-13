@@ -125,7 +125,7 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
 function initializeGovMapLookup(): Promise<GovMapSdk> {
   if (!govMapApiToken) return Promise.reject(new Error("unavailable"));
   if (!govMapMapPromise) {
-    govMapMapPromise = loadGovMapSdk().then((sdk) => new Promise((resolve, reject) => {
+    govMapMapPromise = loadGovMapSdk().then((sdk) => new Promise<GovMapSdk>((resolve, reject) => {
       sdk.createMap("safedeal-govmap-runtime", {
         token: govMapApiToken,
         onLoad: () => resolve(sdk),

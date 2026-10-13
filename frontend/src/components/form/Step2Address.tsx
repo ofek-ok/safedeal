@@ -325,7 +325,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
             aria-live="polite"
           >
             {isLookingUp ? <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" /> : <Info size={14} className="mt-0.5 shrink-0" />}
-            <span>{isLookingUp ? "אנחנו בודקים את הכתובת ברקע. אין צורך להמתין — האנליסט יוודא את פרטי הרישום." : addressLookupMessage}</span>
+            <span>{isLookingUp ? "מאתרים את הגוש והחלקה לפי הכתובת. המתינו כמה שניות; אם לא תימצא התאמה, תוכלו להזין אותם ידנית." : addressLookupMessage}</span>
           </div>
         )}
 
@@ -381,7 +381,6 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
             className="text-[#00C896] underline underline-offset-4 hover:text-white transition-colors"
           >
             האתר הממשלתי לאיתור גוש וחלקה לפי כתובת
-          </a>
           </a>. אם לא הצלחתם לאתר אותם, תוכלו להמשיך והאנליסט יבדוק זאת.
         </p>
 

@@ -7,6 +7,7 @@ import { GovAutocomplete } from "./GovAutocomplete";
 
 
 type GovMapLookupResult = {
+  status?: number;
   errorCode?: number;
   data?: Array<{ Values?: unknown[] }>;
 };

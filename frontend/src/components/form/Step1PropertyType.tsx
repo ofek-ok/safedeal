@@ -21,7 +21,7 @@ export function Step1PropertyType({ data, onChange, onAutoAdvance }: Props) {
       <div className="mb-4 sm:mb-10 text-right">
         <div className="w-8 h-[1px] bg-[#00C896] mb-2 sm:mb-4"></div>
         <span className="text-[#00C896] text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1 sm:mb-3 block">
-          שלב 01
+          שלב 02
         </span>
         <h2 className="text-xl sm:text-2xl font-normal text-white mb-1 sm:mb-3" style={{ fontFamily: "var(--font-serif)" }}>
           בחרו סוג נכס

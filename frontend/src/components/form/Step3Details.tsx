@@ -462,7 +462,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">רשות</span>
             </p>
             <p className="text-xs text-slate-400 leading-relaxed">
-              יש לכם נסח טאבו? אפשר לצרף אותו כאן. אין חובה להעלות מסמך — אפשר להמשיך גם בלעדיו. אם תרצו להנפיק נסח, השתמשו בפרטי הגוש והחלקה שמילאתם.
+              יש לכם נסח טאבו? אפשר לצרף אותו כאן, אך אין חובה. אם לא צירפתם נסח או שאינכם יודעים את הגוש והחלקה, האנליסט יאתר את פרטי הרישום ויפיק את המסמכים הדרושים.
             </p>
             {data.step2.block && data.step2.parcel ? (
               <a
@@ -474,7 +474,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
                 להנפקת נסח טאבו לפי גוש {data.step2.block} וחלקה {data.step2.parcel}
               </a>
             ) : (
-              <p className="text-xs text-slate-500">לאחר הזנת הגוש והחלקה, יופיע כאן קישור להנפקת הנסח.</p>
+              <p className="text-xs text-slate-500">אפשר להמשיך גם בלי גוש וחלקה; האנליסט יפיק את הנסח לפי פרטי הנכס.</p>
             )}
             <Dropzone
               id="tabu-upload"

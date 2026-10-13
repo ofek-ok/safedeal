@@ -70,7 +70,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, code: string): P
 }
 
 function normalizeAddress(value: string) {
-  return value.normalize("NFKC").toLocaleLowerCase("he").replace(/[^\\p{L}\\p{N}]/gu, "");
+  return value.normalize("NFKC").toLocaleLowerCase("he").replace(/[^\p{L}\p{N}]/gu, "");
 }
 
 function readParcelValue(feature: { attributes?: Record<string, unknown>; fields?: Array<{ fieldName?: string; fieldValue?: unknown }> }, names: string[]) {
@@ -103,16 +103,18 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
   const normalizedStreet = normalizeAddress(street);
   const normalizedCity = normalizeAddress(city);
   const normalizedHouse = normalizeAddress(houseNumber);
-  const addressMatches = (search.results ?? []).filter((result) => {
-    if (result.type !== "address" || !result.text || !result.centroid) return false;
-    const candidate = normalizeAddress(result.text);
-    return candidate === normalizeAddress(address) ||
-      (candidate.includes(normalizedStreet) && candidate.includes(normalizedHouse) && candidate.includes(normalizedCity));
-  });
+  const addressResults = (search.results ?? []).filter((result) => result.type === "address" && result.text && result.centroid);
+  const exactMatches = addressResults.filter((result) => normalizeAddress(result.text!) === normalizeAddress(address));
+  const addressMatches = exactMatches.length
+    ? exactMatches
+    : addressResults.filter((result) => {
+        const candidate = normalizeAddress(result.text!);
+        return candidate.includes(normalizedStreet) && candidate.includes(normalizedHouse) && candidate.includes(normalizedCity);
+      });
   if (!addressMatches.length) throw new Error("address-not-found");
   if (addressMatches.length > 1) throw new Error("ambiguous");
 
-  const centroid = addressMatches[0].centroid!.match(/^POINT\\s*\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)\\s*\\)$/i);
+  const centroid = addressMatches[0].centroid!.match(/^POINT\s*\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)$/i);
   if (!centroid) throw new Error("address-not-found");
 
   const spatial = await withTimeout(sdk.getLayerFeaturesByLocation({
@@ -125,7 +127,7 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
   const parcels = features.map((feature) => ({
     block: readParcelValue(feature, ["GUSH_NUM", "GUSH", "BLOCK"]),
     parcel: readParcelValue(feature, ["PARCEL", "PARCEL_NUM"]),
-  })).filter((item) => /^\\d+$/.test(item.block) && /^\\d+$/.test(item.parcel));
+  })).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
   const unique = [...new Map(parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const)).values()];
   if (!unique.length) throw new Error("parcel-not-found");
   if (unique.length > 1) throw new Error("ambiguous");
@@ -403,11 +405,6 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
         </p>
 
       </div>
-      <div
-        id={govMapMapId}
-        aria-hidden="true"
-        style={{ position: "fixed", left: 0, top: 0, width: 640, height: 440, opacity: 0, pointerEvents: "none", zIndex: -1 }}
-      />
     </div>
   );
 }

@@ -229,7 +229,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
     const normalizedStreet = data.street.trim();
     const normalizedHouseNumber = data.houseNumber.trim();
 
-    if (normalizedCity) void getGovMapSdk().catch(() => {});
+    if (normalizedCity) void loadGovMapSdk().catch(() => {});
     if (!normalizedCity || !normalizedStreet || !normalizedHouseNumber || data.block || data.parcel) {
       setIsLookingUp(false);
       return;

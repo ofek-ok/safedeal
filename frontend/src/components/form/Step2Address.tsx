@@ -143,7 +143,7 @@ function attributeValue(attributes: Record<string, unknown> | undefined, field: 
   return value == null ? "" : String(value).trim();
 }
 
-export function Step2Address({ data, onChange, showErrors }: Props) {
+export function Step2Address({ data, onChange, showErrors, hideHeading = false }: Props) {
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [lookupError, setLookupError] = useState<"address-not-found" | "parcel-not-found" | "parcel-fields-missing" | "ambiguous" | "timeout" | "unavailable" | null>(null);
   const [lookupSuccess, setLookupSuccess] = useState(false);
@@ -243,16 +243,16 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
     : {};
 
   const addressLookupMessage = lookupError === "address-not-found"
-    ? "לא מצאנו את הכתובת במאגר. בחרו עיר ורחוב מהרשימה או בדקו את הכתובת."
+    ? "לא הצלחנו לאתר את הגוש והחלקה לפי הכתובת. אפשר להוציא אותם באתר הממשלתי ולהזין כאן."
     : lookupError === "timeout"
-      ? "האיתור מתעכב. אפשר להמשיך ולמלא גוש וחלקה ידנית."
+      ? "האיתור עדיין מתבצע. המתינו לסיום לפני המעבר לשלב הבא. אם לא יימצאו נתונים, תוכלו להזין אותם ידנית."
       : lookupError === "unavailable"
-        ? "האיתור האוטומטי אינו זמין כרגע. אפשר להמשיך ולמלא גוש וחלקה ידנית."
+        ? "האיתור האוטומטי לא זמין כרגע. אפשר למצוא את הגוש והחלקה באתר הממשלתי ולהזין אותם כאן."
         : null;
   const parcelLookupMessage = lookupError === "parcel-not-found"
-    ? "הכתובת נמצאה, אך לא אותרה עבורה חלקה. הזינו גוש וחלקה ידנית."
+    ? "לא נמצאה התאמה לגוש ולחלקה. היכנסו לאתר הממשלתי לאיתור לפי כתובת, ואז הזינו כאן את המספרים."
     : lookupError === "parcel-fields-missing"
-      ? "נמצאה חלקה, אך המאגר לא החזיר את מספרי הגוש והחלקה. הזינו אותם ידנית או השתמשו בקישור לאיתור לפי כתובת."
+      ? "הכתובת נמצאה, אך מספרי הגוש והחלקה לא התקבלו. אפשר לאתר אותם באתר הממשלתי ולהזין כאן."
       : lookupError === "ambiguous"
         ? "לכתובת נמצאו כמה חלקות אפשריות. בדקו את נסח הטאבו והזינו את הגוש והחלקה המתאימים."
         : null;
@@ -328,7 +328,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
             aria-live="polite"
           >
             {isLookingUp ? <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" /> : <Info size={14} className="mt-0.5 shrink-0" />}
-            <span>{isLookingUp ? "מאתר גוש וחלקה לפי הכתובת..." : addressLookupMessage}</span>
+            <span>{isLookingUp ? "אנחנו מאתרים את הגוש והחלקה לפי הכתובת. כדאי להמתין לסיום האיתור לפני שממשיכים…" : addressLookupMessage}</span>
           </div>
         )}
 
@@ -351,7 +351,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
               { key: "subParcel", label: "תת-חלקה",  placeholder: "מס׳" },
             ] as { key: keyof Step2PropertyId; label: string; placeholder: string }[]
           ).map(({ key, label, placeholder }) => (
-            <Field key={key} id={key} label={label} optional>
+            <Field key={key} id={key} label={label} optional={key === "subParcel"} error={errors[key as "block" | "parcel"]}>
               <EditorialInput
                 id={key}
                 inputMode="numeric"
@@ -375,16 +375,16 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
         )}
 
         <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
-          לדיוק מרבי, אפשר{" "}
+          גוש וחלקה נדרשים להמשך. אנחנו מנסים לאתר אותם אוטומטית — המתינו להשלמת החיפוש. אם לא נמצאה התאמה, אפשר{" "}
           <a
             href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[#00C896] underline underline-offset-4 hover:text-white transition-colors"
           >
-            לאתר כאן את הגוש והחלקה לפי כתובת הנכס
+להיכנס לאתר הממשלתי ולאתר את הגוש והחלקה לפי כתובת הנכס
           </a>
-          , ואז להזין את הנתונים בשדות למעלה.
+          , ואז להזין את הנתונים בשדות למעלה ולהמשיך.
         </p>
 
       </div>

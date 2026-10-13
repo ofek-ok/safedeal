@@ -9,6 +9,7 @@ interface Props {
   data: Step2PropertyId;
   onChange: (d: Step2PropertyId) => void;
   showErrors: boolean;
+  hideHeading?: boolean;
 }
 
 function Field({

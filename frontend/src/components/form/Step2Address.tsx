@@ -79,6 +79,11 @@ type GovMapLocateResponse = {
 };
 type GovMapSdk = {
   locateType: { lotParcelToAddress: string | number };
+  createMap: (mapDivId: string, settings: {
+    token: string;
+    onLoad: () => void;
+    onError: () => void;
+  }) => void;
   searchAndLocate: (params: {
     type: string | number;
     address: string;
@@ -93,6 +98,7 @@ declare global {
 
 const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN?.trim();
 let govMapSdkPromise: Promise<GovMapSdk> | null = null;
+let govMapMapPromise: Promise<GovMapSdk> | null = null;
 
 function loadGovMapSdk(): Promise<GovMapSdk> {
   if (window.govmap) return Promise.resolve(window.govmap);
@@ -113,6 +119,23 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
     });
   }
   return govMapSdkPromise;
+}
+
+function initializeGovMapLookup(): Promise<GovMapSdk> {
+  if (!govMapApiToken) return Promise.reject(new Error("unavailable"));
+  if (!govMapMapPromise) {
+    govMapMapPromise = loadGovMapSdk().then((sdk) => new Promise((resolve, reject) => {
+      sdk.createMap("safedeal-govmap-runtime", {
+        token: govMapApiToken,
+        onLoad: () => resolve(sdk),
+        onError: () => reject(new Error("unavailable")),
+      });
+    })).catch((error) => {
+      govMapMapPromise = null;
+      throw error;
+    });
+  }
+  return govMapMapPromise;
 }
 
 function attributeValue(attributes: Record<string, unknown> | undefined, field: string) {
@@ -152,7 +175,7 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
     const timer = window.setTimeout(async () => {
       setIsLookingUp(true);
       try {
-        const sdk = await loadGovMapSdk();
+        const sdk = await initializeGovMapLookup();
         const timeout = new Promise<never>((_, reject) => {
           requestTimeout = window.setTimeout(() => reject(new Error("timeout")), 20_000);
         });
@@ -236,6 +259,11 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
 
   return (
     <div className="space-y-4 sm:space-y-10 animate-fade-in-up">
+      <div
+        id="safedeal-govmap-runtime"
+        aria-hidden="true"
+        className="pointer-events-none fixed -left-[10000px] top-0 h-[500px] w-[500px] opacity-0"
+      />
       {/* Heading */}
       <div className="mb-4 sm:mb-10 text-right">
         <div className="w-8 h-[1px] bg-[#00C896] mb-2 sm:mb-4"></div>

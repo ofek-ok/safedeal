@@ -87,17 +87,18 @@ async function ensureGovMapReady(): Promise<GovMapSdk> {
         reject(new Error("unavailable"));
       };
       const watchFrame = () => {
-        const frame = mapElement.querySelector("iframe");
+        const frame = document.querySelector<HTMLIFrameElement>(`iframe#${govMapMapId}`);
         if (frame) frame.addEventListener("load", finish, { once: true });
       };
       const timer = window.setTimeout(() => {
         if (settled) return;
         settled = true;
         observer?.disconnect();
-        reject(new Error("timeout"));
+        console.warn("GovMap map initialization timed out");
+        reject(new Error("map-timeout"));
       }, 15_000);
       observer = new MutationObserver(watchFrame);
-      observer.observe(mapElement, { childList: true, subtree: true });
+      observer.observe(document.body, { childList: true, subtree: true });
       sdk.createMap(govMapMapId, {
         token: govMapApiToken,
         layers: [],
@@ -126,10 +127,13 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
   try {
     response = await Promise.race([
       sdk.searchAndLocate({ type: sdk.locateType.lotParcelToAddress, address }),
-      new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("timeout")), 12_000)),
+      new Promise<never>((_, reject) => window.setTimeout(() => {
+        console.warn("GovMap parcel lookup timed out");
+        reject(new Error("lookup-timeout"));
+      }, 12_000)),
     ]);
   } catch (error) {
-    if (error instanceof Error && error.message === "timeout") throw error;
+    if (error instanceof Error && ["map-timeout", "lookup-timeout"].includes(error.message)) throw error;
     throw new Error("unavailable");
   }
   if (response.status !== undefined && response.status !== 0 || response.errorCode !== undefined && response.errorCode !== 0) {
@@ -215,7 +219,7 @@ function EditorialInput({
 
 export function Step2Address({ data, onChange, showErrors, hideHeading = false }: Props) {
   const [isLookingUp, setIsLookingUp] = useState(false);
-  const [lookupError, setLookupError] = useState<"address-not-found" | "parcel-not-found" | "parcel-fields-missing" | "ambiguous" | "timeout" | "unavailable" | null>(null);
+  const [lookupError, setLookupError] = useState<"address-not-found" | "parcel-not-found" | "parcel-fields-missing" | "ambiguous" | "map-timeout" | "lookup-timeout" | "timeout" | "unavailable" | null>(null);
   const [lookupSuccess, setLookupSuccess] = useState(false);
 
   const set = <K extends keyof Step2PropertyId>(k: K, v: string) => {
@@ -255,7 +259,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       } catch (error) {
         if (cancelled) return;
         const code = error instanceof Error ? error.message : "unavailable";
-        const knownCodes = ["address-not-found", "parcel-not-found", "parcel-fields-missing", "ambiguous", "timeout"];
+        const knownCodes = ["address-not-found", "parcel-not-found", "parcel-fields-missing", "ambiguous", "map-timeout", "lookup-timeout", "timeout"];
         setLookupError(knownCodes.includes(code) ? code as typeof lookupError : "unavailable");
       } finally {
         if (!cancelled) setIsLookingUp(false);
@@ -277,7 +281,9 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
 
   const addressLookupMessage = lookupError === "address-not-found"
     ? "לא נמצאה התאמה אוטומטית. כדי להמשיך, אתרו את הגוש והחלקה באתר הממשלתי והזינו אותם כאן."
-    : lookupError === "timeout"
+    : lookupError === "map-timeout"
+      ? "שירות האיתור לא הצליח לטעון את המפה. הזינו את הגוש והחלקה בעזרת האתר הממשלתי כדי להמשיך."
+      : lookupError === "lookup-timeout" || lookupError === "timeout"
       ? "האיתור האוטומטי מתעכב. המתינו עוד רגע; אם לא תימצא התאמה, תוכלו לאתר את הגוש והחלקה באתר הממשלתי ולהזין אותם כאן."
       : lookupError === "unavailable"
         ? "האיתור האוטומטי לא זמין כרגע. אתרו את הגוש והחלקה באתר הממשלתי והזינו אותם כאן כדי להמשיך."

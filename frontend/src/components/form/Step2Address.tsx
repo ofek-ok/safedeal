@@ -25,7 +25,7 @@ type GovMapSdk = {
     onLoad?: () => void;
     onError?: () => void;
   }) => void;
-  searchAndLocate?: (params: { type: number; address: string }) => Promise<GovMapLookupResult>;
+  searchAndLocate?: (params: { type: number; address: string; mapDivId?: string }) => Promise<GovMapLookupResult>;
 };
 
 declare global { interface Window { govmap?: GovMapSdk } }
@@ -126,7 +126,7 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
   let response: GovMapLookupResult;
   try {
     response = await Promise.race([
-      sdk.searchAndLocate({ type: sdk.locateType.lotParcelToAddress, address }),
+      sdk.searchAndLocate({ type: sdk.locateType.lotParcelToAddress, address, mapDivId: govMapMapId }),
       new Promise<never>((_, reject) => window.setTimeout(() => {
         console.warn("GovMap parcel lookup timed out");
         reject(new Error("lookup-timeout"));

@@ -235,7 +235,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
     };
   }, [data.city, data.street, data.houseNumber, data.block, data.parcel]);
 
-  const errors = showErrors
+  const errors: Partial<Record<keyof Step2PropertyId, string>> = showErrors
     ? {
         city: !data.city.trim() ? "שם העיר הוא שדה חובה" : undefined,
         street: !data.street.trim() ? "שם הרחוב הוא שדה חובה" : undefined,

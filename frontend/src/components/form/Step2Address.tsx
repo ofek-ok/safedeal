@@ -197,16 +197,18 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           ) ?? search.results?.find((item) => item.centroid);
           if (!addressResult?.centroid) throw new Error("address-not-found");
 
-          return sdk.getLayerFeaturesByLocation(
+          const geometry = addressResult.centroid.replace(/^POINT\s+\(/i, "POINT(");
+          const parcelResponse = await sdk.getLayerFeaturesByLocation(
             {
-              geometry: addressResult.centroid.replace(/^POINT\s+\(/i, "POINT("),
+              geometry,
               radius: 20,
               layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
             },
             govMapApiToken,
           );
+          return { parcelResponse, geometry };
         })();
-        const result = await Promise.race([lookup, timeout]);
+        const { parcelResponse: result, geometry: parcelGeometry } = await Promise.race([lookup, timeout]);
         if (cancelled) return;
         if (
           (result.status !== undefined && result.status !== 0) ||
@@ -215,23 +217,20 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
           throw new Error("unavailable");
         }
 
-        const parcelLayer = Object.entries(result.layers ?? {}).find(
-          ([name]) => name.toUpperCase() === "PARCEL_ALL",
-        )?.[1] ?? [];
-        if (!parcelLayer.length) throw new Error("parcel-not-found");
-        let parcels = parcelLayer
-          .map((feature) => ({
-            block: attributeValue(feature.attributes, "GUSH_NUM"),
-            parcel: attributeValue(feature.attributes, "PARCEL"),
-          }))
-          .filter((item) => item.block && item.parcel);
+        const readParcels = async (features: GovMapParcelFeature[]) => {
+          const direct = features
+            .map((feature) => ({
+              block: attributeValue(feature.attributes, "GUSH_NUM"),
+              parcel: attributeValue(feature.attributes, "PARCEL"),
+            }))
+            .filter((item) => item.block && item.parcel);
+          if (direct.length) return direct;
 
-        if (!parcels.length) {
-          const featureIds = parcelLayer
+          const featureIds = features
             .map((feature) => feature.id)
             .filter((id): id is string | number => typeof id === "string" || typeof id === "number")
             .map(String);
-          if (!featureIds.length) throw new Error("parcel-fields-missing");
+          if (!featureIds.length) return [];
 
           const fallbackResponse = await Promise.race([
             fetch("/api/cadastral-parcel", {
@@ -244,17 +243,58 @@ export function Step2Address({ data, onChange, showErrors }: Props) {
             }),
             timeout,
           ]);
-          parcels = (fallbackResponse.parcels ?? [])
+          return (fallbackResponse.parcels ?? [])
             .map((item) => ({
               block: String(item.block ?? "").trim(),
               parcel: String(item.parcel ?? "").trim(),
             }))
             .filter((item) => item.block && item.parcel);
-        }
-        const uniqueParcels = [...new Map(
-          parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const),
+        };
+        const unique = (items: Array<{ block: string; parcel: string }>) => [...new Map(
+          items.map((item) => [`${item.block}/${item.parcel}`, item] as const),
         ).values()];
 
+        let parcelLayer = Object.entries(result.layers ?? {}).find(
+          ([name]) => name.toUpperCase() === "PARCEL_ALL",
+        )?.[1] ?? [];
+        let uniqueParcels = unique(await readParcels(parcelLayer));
+
+        // A 20m search can include neighboring parcels. Retry at the address point
+        // before asking the customer to resolve multiple candidates manually.
+        if (uniqueParcels.length !== 1) {
+          const preciseResult = await Promise.race([
+            sdk.getLayerFeaturesByLocation(
+              {
+                geometry: parcelGeometry,
+                radius: 1,
+                layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
+              },
+              govMapApiToken,
+            ),
+            timeout,
+          ]);
+          if (
+            (preciseResult.status !== undefined && preciseResult.status !== 0) ||
+            (preciseResult.errorCode !== undefined && preciseResult.errorCode !== 0)
+          ) {
+            throw new Error("unavailable");
+          }
+
+          const preciseLayer = Object.entries(preciseResult.layers ?? {}).find(
+            ([name]) => name.toUpperCase() === "PARCEL_ALL",
+          )?.[1] ?? [];
+          if (preciseLayer.length) {
+            const preciseParcels = unique(await readParcels(preciseLayer));
+            if (preciseParcels.length) {
+              parcelLayer = preciseLayer;
+              uniqueParcels = preciseParcels;
+            }
+          } else if (!parcelLayer.length) {
+            parcelLayer = preciseLayer;
+          }
+        }
+
+        if (!parcelLayer.length) throw new Error("parcel-not-found");
         if (!uniqueParcels.length) throw new Error("parcel-fields-missing");
         if (uniqueParcels.length > 1) throw new Error("ambiguous");
         const { block, parcel: parcelNumber } = uniqueParcels[0];

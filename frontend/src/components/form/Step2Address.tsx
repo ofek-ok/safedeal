@@ -194,7 +194,13 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
   const set = <K extends keyof Step2PropertyId>(k: K, v: string) => {
     setLookupError(null);
     setLookupSuccess(false);
-    onChange({ ...data, [k]: v });
+    const next = { ...data, [k]: v };
+    if (k === "city" || k === "street" || k === "houseNumber") {
+      next.block = "";
+      next.parcel = "";
+      next.subParcel = "";
+    }
+    onChange(next);
   };
 
   useEffect(() => {
@@ -359,26 +365,26 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
 
         {(parcelLookupMessage || lookupSuccess) && (
           <div
-            className={`flex items-start gap-2 text-xs leading-relaxed ${lookupSuccess ? "text-[#00C896]" : "text-amber-300"}`}
+            className={`flex items-start gap-2 text-xs leading-relaxed ${lookupSuccess ? "text-amber-300" : "text-amber-300"}`}
             role="status"
             aria-live="polite"
           >
             {lookupSuccess ? <Info size={14} className="mt-0.5 shrink-0" /> : <AlertCircle size={14} className="mt-0.5 shrink-0" />}
-            <span>{lookupSuccess ? "הגוש והחלקה אותרו. מומלץ לוודא את הנתונים מול נסח הטאבו." : parcelLookupMessage}</span>
+            <span>{lookupSuccess ? "האיתור האוטומטי החזיר גוש וחלקה, אך אינו אישור רשמי. השוו לתוצאה באתר הממשלתי. במקרה של פער, הזינו כאן את הערכים שמופיעים שם." : parcelLookupMessage}</span>
           </div>
         )}
 
-        <p className={`text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed ${data.block.trim() && data.parcel.trim() ? "hidden" : ""}`}>
-          גוש וחלקה נדרשים להמשך. אנחנו מנסים לאתר אותם אוטומטית — המתינו להשלמת החיפוש. אם לא נמצאה התאמה, אפשר{" "}
+        <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
+          גוש וחלקה נדרשים להמשך. יש להשוות כל תוצאה אוטומטית מול{" "}
           <a
             href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[#00C896] underline underline-offset-4 hover:text-white transition-colors"
           >
-להיכנס לאתר הממשלתי ולאתר את הגוש והחלקה לפי כתובת הנכס
+            האתר הממשלתי לאיתור גוש וחלקה לפי כתובת
           </a>
-          , ואז להזין את הנתונים בשדות למעלה ולהמשיך.
+          . אם המספרים שונים, הזינו כאן את הגוש והחלקה שמופיעים באתר הממשלתי.
         </p>
 
       </div>

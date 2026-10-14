@@ -5,43 +5,46 @@ import { Info, AlertCircle, Loader2 } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
 import { GovAutocomplete } from "./GovAutocomplete";
 
-type GovMapSearchResponse = {
-  results?: Array<{ type?: string; text?: string; centroid?: string; score?: number }>;
-  resultsCount?: number;
-};
-type GovMapSpatialResponse = {
-  layers?: Record<string, Array<{ attributes?: Record<string, unknown>; fields?: Array<{ fieldName?: string; fieldValue?: unknown }> }>>;
+type GovMapLocateResponse = {
+  data?: Array<{ Values?: unknown[]; gushSuffix?: number | null }>;
+  status?: number;
+  errorCode?: number;
+  message?: string | null;
 };
 type GovMapSdk = {
-  search?: (params: {
-    searchText: string;
-    language: "he";
-    maxResults: number;
-    isAccurate: boolean;
-    apiKey: string;
-  }) => Promise<GovMapSearchResponse>;
-  getLayerFeaturesByLocation?: (data: {
-    geometry: string;
-    radius: number;
-    layers: Array<{ name: string; fields: string[] }>;
-  }, apiToken: string) => Promise<GovMapSpatialResponse>;
+  // GovMap's official address -> parcel example uses lotParcelToAddress with an address.
+  locateType?: { lotParcelToAddress?: unknown };
+  searchAndLocate?: (params: { type: unknown; address: string }) => Promise<GovMapLocateResponse>;
+  createMap?: (elementId: string, options: {
+    token: string;
+    layers?: string[];
+    showXY?: boolean;
+    identifyOnClick?: boolean;
+    isEmbeddedToggle?: boolean;
+    bgButton?: boolean;
+    zoomButtons?: boolean;
+    layersMode?: number;
+    onLoad?: () => void;
+    onError?: (error?: unknown) => void;
+  }) => unknown;
 };
 declare global { interface Window { govmap?: GovMapSdk } }
 
 const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN;
+const govMapMapId = "safedeal-govmap-runtime";
 let govMapSdkPromise: Promise<GovMapSdk> | null = null;
+let govMapMapPromise: Promise<GovMapSdk> | null = null;
 
 function loadGovMapSdk(): Promise<GovMapSdk> {
   if (typeof window === "undefined") return Promise.reject(new Error("unavailable"));
-  if (window.govmap?.search && window.govmap.getLayerFeaturesByLocation) return Promise.resolve(window.govmap);
   if (!govMapSdkPromise) {
     govMapSdkPromise = new Promise((resolve, reject) => {
       let script = document.getElementById("safedeal-govmap-sdk") as HTMLScriptElement | null;
       const cleanup = () => { script?.removeEventListener("load", onLoad); script?.removeEventListener("error", onError); };
       const onLoad = () => {
         cleanup();
-        if (window.govmap?.search && window.govmap.getLayerFeaturesByLocation) resolve(window.govmap);
-        else reject(new Error("unavailable"));
+        if (window.govmap?.createMap && window.govmap.searchAndLocate && window.govmap.locateType?.lotParcelToAddress) resolve(window.govmap);
+        else { govMapSdkPromise = null; reject(new Error("unavailable")); }
       };
       const onError = () => { cleanup(); govMapSdkPromise = null; reject(new Error("unavailable")); };
       if (!script) {
@@ -53,10 +56,42 @@ function loadGovMapSdk(): Promise<GovMapSdk> {
       script.addEventListener("load", onLoad, { once: true });
       script.addEventListener("error", onError, { once: true });
       if (!script.isConnected) document.head.appendChild(script);
-      else if (window.govmap?.search && window.govmap.getLayerFeaturesByLocation) onLoad();
+      else if (window.govmap?.createMap && window.govmap.searchAndLocate && window.govmap.locateType?.lotParcelToAddress) onLoad();
     });
   }
-  return govMapSdkPromise;
+  if (!govMapMapPromise) {
+    govMapMapPromise = govMapSdkPromise.then((sdk) => new Promise<GovMapSdk>((resolve, reject) => {
+      if (!govMapApiToken || !sdk.createMap) { reject(new Error("unavailable")); return; }
+      let mapElement = document.getElementById(govMapMapId);
+      if (!mapElement) {
+        mapElement = document.createElement("div");
+        mapElement.id = govMapMapId;
+        Object.assign(mapElement.style, {
+          position: "fixed", left: "0", top: "0", width: "640px", height: "440px",
+          opacity: "0", pointerEvents: "none", zIndex: "-1",
+        });
+        document.body.appendChild(mapElement);
+      }
+      try {
+        sdk.createMap(govMapMapId, {
+          token: govMapApiToken,
+          layers: [],
+          showXY: false,
+          identifyOnClick: false,
+          isEmbeddedToggle: false,
+          bgButton: false,
+          zoomButtons: false,
+          layersMode: 4,
+          onLoad: () => resolve(sdk),
+          onError: () => { govMapMapPromise = null; reject(new Error("unavailable")); },
+        });
+      } catch {
+        govMapMapPromise = null;
+        reject(new Error("unavailable"));
+      }
+    })).catch((error) => { govMapMapPromise = null; throw error; });
+  }
+  return govMapMapPromise;
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, code: string): Promise<T> {
@@ -69,83 +104,35 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, code: string): P
   });
 }
 
-function normalizeAddress(value: string) {
-  return value.normalize("NFKC").toLocaleLowerCase("he").replace(/[^\p{L}\p{N}]/gu, "");
-}
-
 function formatGovMapAddress(city: string, street: string, houseNumber: string) {
   return `${street.trim()} ${houseNumber.trim()}, ${city.trim()}`;
 }
 
-function readParcelValue(feature: { attributes?: Record<string, unknown>; fields?: Array<{ fieldName?: string; fieldValue?: unknown }> }, names: string[]) {
-  const wanted = new Set(names.map((name) => name.toUpperCase()));
-  for (const [key, value] of Object.entries(feature.attributes ?? {})) {
-    if (wanted.has(key.toUpperCase()) && value != null) return String(value).trim();
-  }
-  for (const field of feature.fields ?? []) {
-    if (field.fieldName && wanted.has(field.fieldName.toUpperCase()) && field.fieldValue != null) return String(field.fieldValue).trim();
-  }
-  return "";
-}
-
 async function findCadastralParcel(city: string, street: string, houseNumber: string): Promise<{ block: string; parcel: string }> {
   if (!govMapApiToken) throw new Error("unavailable");
-  const sdk = await withTimeout(loadGovMapSdk(), 8_000, "lookup-timeout");
-  if (!sdk.search || !sdk.getLayerFeaturesByLocation) throw new Error("unavailable");
+  const sdk = await withTimeout(loadGovMapSdk(), 12_000, "lookup-timeout");
+  if (!sdk.searchAndLocate || !sdk.locateType?.lotParcelToAddress) throw new Error("unavailable");
 
-  // Use GovMap's documented no-map functions. The API key is validated from this approved
-  // customer origin; no map iframe or server-side request is involved.
-  // GovMap expects the canonical order: street + house number, then locality.
+  // GovMap documents this function specifically for address-to-parcel lookup. It returns
+  // block and parcel in Values, avoiding a second spatial/radius query against the layer.
   const address = formatGovMapAddress(city, street, houseNumber);
-  const search = await withTimeout(sdk.search({
-    searchText: address,
-    language: "he",
-    maxResults: 8,
-    isAccurate: true,
-    apiKey: govMapApiToken,
+  const response = await withTimeout(sdk.searchAndLocate({
+    type: sdk.locateType.lotParcelToAddress,
+    address,
   }), 8_000, "lookup-timeout");
 
-  const normalizedStreet = normalizeAddress(street);
-  const normalizedCity = normalizeAddress(city);
-  const normalizedHouse = normalizeAddress(houseNumber);
-  const addressResults = (search.results ?? []).filter((result) => result.type === "address" && result.text && result.centroid);
-  const exactMatches = addressResults.filter((result) => normalizeAddress(result.text!) === normalizeAddress(address));
-  const addressMatches = exactMatches.length
-    ? exactMatches
-    : addressResults.filter((result) => {
-        const candidate = normalizeAddress(result.text!);
-        return candidate.includes(normalizedStreet) && candidate.includes(normalizedHouse) && candidate.includes(normalizedCity);
-      });
-  if (!addressMatches.length) throw new Error("address-not-found");
-  if (addressMatches.length > 1) throw new Error("ambiguous");
-
-  const centroid = addressMatches[0].centroid!.match(/^POINT\s*\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)$/i);
-  if (!centroid) throw new Error("address-not-found");
-
-  const spatial = await withTimeout(sdk.getLayerFeaturesByLocation({
-    geometry: `POINT(${centroid[1]} ${centroid[2]})`,
-    radius: 100,
-    layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
-  }, govMapApiToken), 8_000, "lookup-timeout");
-
-  const layerEntries = Object.entries(spatial.layers ?? {});
-  const parcelEntry = layerEntries.find(([name]) => name.toUpperCase().includes("PARCEL"))
-    ?? (layerEntries.length === 1 ? layerEntries[0] : undefined);
-  const features = parcelEntry?.[1] ?? [];
-  console.info("GovMap cadastral response", {
-    layerNames: layerEntries.map(([name]) => name),
-    featureCount: features.length,
-    attributeNames: Object.keys(features[0]?.attributes ?? {}),
-    fieldNames: (features[0]?.fields ?? []).map((field) => field.fieldName).filter(Boolean),
-  });
-  if (!features.length) throw new Error("parcel-not-found");
-
-  const parcels = features.map((feature) => ({
-    block: readParcelValue(feature, ["GUSH_NUM", "GUSH", "BLOCK"]),
-    parcel: readParcelValue(feature, ["PARCEL", "PARCEL_NUM"]),
+  if (response.errorCode !== undefined && response.errorCode !== 0) throw new Error("unavailable");
+  if (response.status !== undefined && response.status !== 0) {
+    if (response.status === 1 && response.data?.length) throw new Error("ambiguous");
+    throw new Error("address-not-found");
+  }
+  const rows = response.data ?? [];
+  const parcels = rows.map((row) => ({
+    block: String(row.Values?.[0] ?? "").trim(),
+    parcel: String(row.Values?.[1] ?? "").trim(),
   })).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
   const unique = [...new Map(parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const)).values()];
-  if (!unique.length) throw new Error("parcel-fields-missing");
+  if (!unique.length) throw new Error(rows.length ? "parcel-fields-missing" : "address-not-found");
   if (unique.length > 1) throw new Error("ambiguous");
   return unique[0];
 }
@@ -288,6 +275,9 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       : lookupError === "unavailable"
         ? "האיתור האוטומטי לא זמין כרגע. אתרו את הגוש והחלקה באתר הממשלתי והזינו אותם כאן כדי להמשיך."
         : null;
+  const govMapAddress = data.city.trim() && data.street.trim() && data.houseNumber.trim()
+    ? formatGovMapAddress(data.city, data.street, data.houseNumber)
+    : "";
   const parcelLookupMessage = lookupError === "parcel-not-found"
     ? "לא נמצאה התאמה לגוש ולחלקה. היכנסו לאתר הממשלתי לאיתור לפי כתובת, ואז הזינו כאן את המספרים."
     : lookupError === "parcel-fields-missing"

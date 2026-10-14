@@ -262,11 +262,19 @@
 .analysis-workflow { padding: 20px; }
 .workflow-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .workflow-status { padding: 6px 10px; border: 1px solid #d8e8e2; border-radius: 999px; color: #397d6d; background: #f5faf7; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.workflow-progress { margin: 0 0 15px; padding: 13px 15px; border: 1px solid #dce9e3; border-radius: 11px; background: #fff; }
+.workflow-progress-copy { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+.workflow-progress-copy b { color: #244846; font-size: 13px; }
+.workflow-progress-copy span { color: #718582; font-size: 11px; white-space: nowrap; }
+.workflow-progress-track { height: 6px; overflow: hidden; border-radius: 99px; background: #edf2ef; }
+.workflow-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #78b69d, #247765); transition: width .25s ease; }
 .workflow-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .workflow-step { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) 26px; align-items: start; gap: 10px; min-height: 150px; padding: 15px; border: 1px solid #e4ebea; border-radius: 11px; background: #fff; }
 .workflow-step.is-done { border-color: #cde5da; background: #fbfdfb; }
+.workflow-step.is-active { border-color: #7cb7a2; background: linear-gradient(145deg, #f3faf6, #fff 75%); box-shadow: 0 0 0 2px #dcefe5; }
 .workflow-step-number { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 10px; color: #427c72; background: #edf6f1; font-size: 11px; font-weight: 750; }
 .workflow-step b { color: #233e42; font-size: 13px; }
+.workflow-step.is-active b::after { content: "השלב הבא"; display: inline-block; margin-inline-start: 7px; padding: 3px 6px; border-radius: 99px; color: #236c5d; background: #e2f3e9; font-size: 9px; font-weight: 750; vertical-align: 1px; }
 .workflow-step p { margin: 6px 0 10px; color: #677b80; font-size: 12px; line-height: 1.55; }
 .workflow-sellers { display: block; margin: -3px 0 9px; color: #47776e; font-size: 11px; line-height: 1.5; }
 .workflow-action { min-height: 33px; padding: 7px 10px; border: 1px solid #d8e6e1; border-radius: 8px; color: #2f7066; background: #f7fbf9; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -426,6 +434,7 @@ html { scroll-behavior: smooth; }
   .workflow-launch { padding: 17px; }
   .analysis-workflow { padding: 15px; }
   .workflow-grid { grid-template-columns: 1fr; }
+  .workflow-progress-copy { align-items: flex-start; flex-direction: column; gap: 4px; }
   .workflow-step { min-height: 0; }
   .detail-top { flex-direction: column; }
   .detail-top h2 { font-size: 22px; }

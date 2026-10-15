@@ -116,6 +116,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     }
     if (body.status !== undefined) {
       if (typeof body.status !== "string" || !statuses.includes(body.status)) return jsonError("סטטוס לא תקין.", 400);
+      if (body.status === "מוכן לניתוח") {
+        const identifiers = await getDb().$client.prepare(`SELECT block, parcel FROM cases WHERE id = ?`).bind(id).first<{ block: string | null; parcel: string | null }>();
+        if (!identifiers?.block || !identifiers.parcel) return jsonError("יש להשלים גוש וחלקה לפני העברת התיק לניתוח.", 409);
+      }
       sets.push("status = ?"); values.push(body.status); notes.push(`סטטוס: ${body.status}`);
     }
     if (body.dueAt !== undefined) {

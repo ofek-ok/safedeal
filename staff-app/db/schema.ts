@@ -98,3 +98,14 @@ export const intakeAttempts = sqliteTable("intake_attempts", {
   ipHash: text("ip_hash").notNull(),
   createdAt: text("created_at").notNull(),
 }, (table) => [index("idx_intake_attempts_ip_created").on(table.ipHash, table.createdAt)]);
+
+export const financeTransactions = sqliteTable("finance_transactions", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  transactionDate: text("transaction_date").notNull(),
+  category: text("category").notNull(),
+  description: text("description").notNull(),
+  amountAgorot: integer("amount_agorot").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: text("created_at").notNull(),
+});

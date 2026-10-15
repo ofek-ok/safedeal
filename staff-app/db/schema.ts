@@ -109,3 +109,13 @@ export const financeTransactions = sqliteTable("finance_transactions", {
   createdBy: text("created_by").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const complianceTasks = sqliteTable("compliance_tasks", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("not_started"),
+  note: text("note").notNull().default(""),
+  updatedBy: text("updated_by").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});

@@ -90,7 +90,7 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
     const block = String(attributes.GUSH_NUM ?? attributes.gush_num ?? feature.Values?.[0] ?? "").trim();
     const parcel = String(attributes.PARCEL ?? attributes.parcel ?? feature.Values?.[1] ?? "").trim();
     return { block, parcel };
-  }).filter((item) => /^\\d+$/.test(item.block) && /^\\d+$/.test(item.parcel));
+  }).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
   const unique = [...new Map(parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const)).values()];
 
   if (!unique.length) throw new Error("address-not-found");

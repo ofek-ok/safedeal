@@ -108,7 +108,7 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
   const unique = [...new Map(parcels.map((item) => [item.block + '/' + item.parcel, item] as const)).values()];
   if (!unique.length) {
     const firstFeature = layer[0] as GovMapFeature | undefined;
-    console.warn('SafeDeal parcel layer schema', { layerNames: Object.keys(layerMap), featureKeys: firstFeature ? Object.keys(firstFeature) : [], attributeKeys: Object.keys(firstFeature?.attributes ?? firstFeature?.properties ?? {}), fieldNames: firstFeature?.fields?.map((field) => field.fieldName ?? field.name) ?? [] });
+    console.warn('SafeDeal parcel layer schema', JSON.stringify({ layerNames: Object.keys(layerMap), featureKeys: firstFeature ? Object.keys(firstFeature) : [], attributeKeys: Object.keys(firstFeature?.attributes ?? firstFeature?.properties ?? {}), fieldNames: firstFeature?.fields?.map((field) => field.fieldName ?? field.name) ?? [] }));
     throw new Error(layer.length ? 'parcel-fields-missing' : 'parcel-not-found');
   }
   if (unique.length > 1) throw new Error('ambiguous');

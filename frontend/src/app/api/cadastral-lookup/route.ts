@@ -1,3 +1,5 @@
+export const maxDuration = 30;
+
 const STAFF_API_URL = "https://safedeal-staff.vercel.app";
 
 export async function POST(request: Request) {

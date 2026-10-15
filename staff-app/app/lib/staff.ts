@@ -29,6 +29,8 @@ export async function getStaffIdentity(): Promise<StaffIdentity | null> {
   if (result.user_id !== user.userId) {
     await db.$client.prepare(`UPDATE staff_members SET user_id = ?, display_name = ? WHERE email = ? AND user_id = ?`)
       .bind(user.userId, user.fullName ?? result.display_name, result.email, result.user_id).run();
+    await db.$client.prepare(`UPDATE cases SET analyst_user_id = ? WHERE analyst_user_id = ? AND analyst_email = ?`)
+      .bind(user.userId, result.user_id, result.email).run();
   }
   return { userId: user.userId, email: result.email, displayName: result.display_name, role: result.role === "admin" ? "admin" : "member" };
 }

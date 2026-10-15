@@ -660,25 +660,25 @@ html { scroll-behavior: smooth; }
 .detail-top { padding-bottom: 19px; border-color: #e9edf3; }
 .detail-top h2 { color: #17233b; font-size: 25px; }
 .detail-top p { color: #59677c; font-size: 14px; }
-.case-panel-nav { top: 282px; gap: 8px; padding: 13px 0 15px; background: rgb(255 255 255 / 97%); }
+.case-panel-nav { top: 238px; gap: 8px; padding: 13px 0 15px; background: rgb(255 255 255 / 97%); }
 .case-panel-nav button { min-height: 42px; padding-inline: 16px; border-radius: 10px; color: #59677c; font-size: 13px; }
 .case-panel-nav button.active { border-color: #d6defa; color: #344eab; background: #eef2ff; }
 .contact-strip { gap: 14px; margin-block: 17px; }
 .contact-strip>div { min-height: 69px; padding: 14px 16px; border-color: #e8edf4; border-radius: 12px; background: #f9faff; }
 .contact-strip small { color: #748097; }
 .contact-strip b, .contact-strip a { color: #263753; }
-.property-context { position: sticky; top: 70px; z-index: 9; margin: 20px 0 22px; padding: 18px 21px; border: 1px solid #dfe5f1; border-radius: 16px; background: #f8f9fd; }
-.property-context-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
+.property-context { position: sticky; top: 70px; z-index: 9; margin: 12px 0 15px; padding: 11px 16px; border: 1px solid #dfe5f1; border-radius: 14px; background: #f8f9fd; }
+.property-context-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
 .property-context-heading h3 { margin: 3px 0 0; color: #17233b; font-size: 17px; }
 .property-copy-button { min-height: 40px; padding: 0 15px; border: 1px solid #d6def5; border-radius: 10px; color: #3c55b2; background: #fff; font-size: 12px; font-weight: 700; }
 .property-copy-button:hover { border-color: #9baae2; background: #f3f5ff; }
-.property-context-grid { display: grid; grid-template-columns: minmax(200px,2fr) repeat(3,minmax(90px,.72fr)); gap: 10px; }
-.property-context-grid>div { display: flex; min-width: 0; min-height: 72px; flex-direction: column; justify-content: center; gap: 5px; padding: 12px 15px; border: 1px solid #e7eaf1; border-radius: 11px; background: #fff; }
-.property-context-grid small { color: #77839a; font-size: 11px; }
-.property-context-grid b { color: #233450; font-size: 15px; overflow-wrap: anywhere; }
-.property-context-grid .property-address b { font-size: 17px; }
-.property-context-grid .property-owners { grid-column: 1 / -1; min-height: 60px; }
-.property-context-note { margin: 13px 0 0; color: #68758b; font-size: 12px; line-height: 1.55; }
+.property-context-grid { display: grid; grid-template-columns: minmax(200px,2fr) repeat(3,minmax(90px,.72fr)); gap: 7px; }
+.property-context-grid>div { display: flex; min-width: 0; min-height: 52px; flex-direction: column; justify-content: center; gap: 3px; padding: 8px 12px; border: 1px solid #e7eaf1; border-radius: 10px; background: #fff; }
+.property-context-grid small { color: #77839a; font-size: 10px; }
+.property-context-grid b { color: #233450; font-size: 13px; overflow-wrap: anywhere; }
+.property-context-grid .property-address b { font-size: 15px; }
+.property-context-grid .property-owners { grid-column: 1 / -1; min-height: 44px; }
+.property-context-note { margin: 6px 0 0; color: #68758b; font-size: 11px; line-height: 1.4; }
 .workflow-launch, .analysis-workflow { border-color: #e0e6ef; border-radius: 17px; background: #fff; box-shadow: 0 8px 28px rgb(28 42 67 / 4%); }
 .workflow-launch { padding: 26px 28px; }
 .workflow-launch h3, .workflow-heading h3 { color: #17233b; font-size: 20px; }
@@ -729,7 +729,7 @@ html { scroll-behavior: smooth; }
 @media (max-width: 700px) {
   .staff-content { padding: 24px 15px 50px; }
   .case-detail-new { padding: 16px; }
-  .case-panel-nav { top: 270px; margin-inline: -16px; padding-inline: 16px; }
+  .case-panel-nav { top: 245px; margin-inline: -16px; padding-inline: 16px; }
   .property-context { top: 58px; padding: 15px; }
   .property-context-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .property-context-grid .property-address, .property-context-grid .property-owners { grid-column: 1 / -1; }

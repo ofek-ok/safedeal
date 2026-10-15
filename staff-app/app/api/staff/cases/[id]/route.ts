@@ -100,6 +100,20 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const sets: string[] = [];
     const values: unknown[] = [];
     const notes: string[] = [];
+    const editablePropertyFields = [
+      { key: "block", column: "block", label: "גוש", maxLength: 12 },
+      { key: "parcel", column: "parcel", label: "חלקה", maxLength: 12 },
+      { key: "subParcel", column: "sub_parcel", label: "תת-חלקה", maxLength: 12 },
+    ] as const;
+    for (const field of editablePropertyFields) {
+      if (body[field.key] === undefined) continue;
+      if (body[field.key] !== null && typeof body[field.key] !== "string") return jsonError(`ערך ${field.label} אינו תקין.`, 400);
+      const value = typeof body[field.key] === "string" ? body[field.key].trim().slice(0, field.maxLength) : "";
+      if (value && !/^\\d+$/.test(value)) return jsonError(`יש להזין מספרים בלבד בשדה ${field.label}.`, 400);
+      sets.push(`${field.column} = ?`);
+      values.push(value || null);
+      notes.push(`${field.label}: ${value || "נמחק"}`);
+    }
     if (body.status !== undefined) {
       if (typeof body.status !== "string" || !statuses.includes(body.status)) return jsonError("סטטוס לא תקין.", 400);
       sets.push("status = ?"); values.push(body.status); notes.push(`סטטוס: ${body.status}`);

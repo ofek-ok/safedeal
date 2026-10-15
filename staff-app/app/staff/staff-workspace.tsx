@@ -10,6 +10,7 @@ type ChecklistKey = "reports_collected" | "data_reviewed" | "data_verified" | "a
 type Detail = { case: Record<string, unknown>; intakeData: IntakeData | null; documents: { id: string; filename: string; contentType: string; size: number; uploadedAt: string; documentType: string; source: string; collectedAt: string }[]; findings: { id: string; category: string; title: string; note: string; severity: string; source: string | null; confidence: number | null; state: string; reviewNote: string | null; reviewedBy: string | null }[]; activity: { id: string; actorName: string; action: string; detail: string; createdAt: string }[]; report: { id: string; version: number; createdAt: string } | null; checklist: Partial<Record<ChecklistKey, { completed: boolean; completedBy: string | null; completedAt: string | null }>> };
 type Member = { email: string; displayName: string; role: "admin" | "member"; active: number };
 type FinanceTransaction = { id: string; type: "income" | "expense"; date: string; category: string; description: string; amount: number; createdAt: string };
+type ComplianceTask = { id: string; title: string; description: string; status: "not_started" | "in_progress" | "needs_review" | "complete"; note: string; updatedBy: string; updatedAt: string };
 const statuses = ["חדש", "באיסוף מידע", "ממתין למסמכים", "מוכן לניתוח", "בניתוח", "בבדיקת אנליסט", "דוח מוכן", "שולח דוח", "דוח נשלח"];
 const documentTypes = ["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח מתדיינים / הליכים משפטיים", "הסכם / טיוטת חוזה", "תכנון והיתרים", "מסמכי מוכר / יזם", "מסמכי רשות מקומית", "מסמך פיננסי", "אחר"];
 const checklistItems: { key: ChecklistKey; label: string; automatic?: boolean }[] = [
@@ -57,7 +58,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [detail, setDetail] = useState<Detail | null>(null);
   const [team, setTeam] = useState<Member[]>([]);
   const [search, setSearch] = useState("");
-  const [section, setSection] = useState<"dashboard" | "cases" | "tools" | "team" | "finance">(initialStaff.role === "admin" ? "dashboard" : "cases");
+  const [section, setSection] = useState<"dashboard" | "cases" | "tools" | "team" | "finance" | "compliance">(initialStaff.role === "admin" ? "dashboard" : "cases");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileCaseOpen, setMobileCaseOpen] = useState(false);
   const [casePanel, setCasePanel] = useState<"workflow" | "intake" | "documents" | "findings" | "activity">("workflow");
@@ -69,6 +70,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [financeTransactions, setFinanceTransactions] = useState<FinanceTransaction[]>([]);
   const [financeSummary, setFinanceSummary] = useState({ income: 0, expenses: 0, balance: 0 });
   const [financeForm, setFinanceForm] = useState({ type: "income" as "income" | "expense", date: new Date().toISOString().slice(0, 10), category: "", description: "", amount: "" });
+  const [complianceTasks, setComplianceTasks] = useState<ComplianceTask[]>([]);
   const [findingForm, setFindingForm] = useState(false);
   const [finding, setFinding] = useState({ category: "רישום זכויות", title: "", note: "", severity: "בינונית", source: "" });
   const [editingFindingId, setEditingFindingId] = useState<string | null>(null);
@@ -100,6 +102,12 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
       setFinanceSummary(data.summary);
       setManagerError("");
     } catch (error) { setManagerError(error instanceof Error ? error.message : "לא הצלחנו לטעון את הנתונים הכספיים."); }
+  }, [staff.role]);
+
+  const loadCompliance = useCallback(async () => {
+    if (staff.role !== "admin") return;
+    try { setComplianceTasks((await request<{ tasks: ComplianceTask[] }>("/api/staff/compliance")).tasks); setManagerError(""); }
+    catch (error) { setManagerError(error instanceof Error ? error.message : "לא הצלחנו לטעון את משימות הציות."); }
   }, [staff.role]);
 
   const loadDetail = useCallback(async (id: string | null) => {
@@ -211,6 +219,13 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
     finally { setBusy(false); }
   };
 
+  const saveComplianceTask = async (task: ComplianceTask) => {
+    setBusy(true);
+    try { await request("/api/staff/compliance", { method: "PATCH", body: JSON.stringify({ id: task.id, status: task.status, note: task.note }) }); await loadCompliance(); setNotice("סטטוס משימת הציות נשמר."); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "לא הצלחנו לשמור את המשימה."); }
+    finally { setBusy(false); }
+  };
+
   const generateReport = async () => {
     if (!selectedId) return;
     const reportWindow = window.open("about:blank", "_blank");
@@ -307,7 +322,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   };
 
   const dueLabel = (value: string | null) => value ? new Intl.DateTimeFormat("he-IL", { dateStyle: "medium" }).format(new Date(value)) : "לא נקבע";
-  const sectionLabel = section === "dashboard" ? "לוח בקרה" : section === "cases" ? "ניהול תיקים" : section === "tools" ? "כלים חשובים" : section === "team" ? "ניהול צוות" : "הכנסות והוצאות";
+  const sectionLabel = section === "dashboard" ? "לוח בקרה" : section === "cases" ? "ניהול תיקים" : section === "tools" ? "כלים חשובים" : section === "team" ? "ניהול צוות" : section === "finance" ? "הכנסות והוצאות" : "ציות ופרטיות";
   const openCase = (id: string) => { setSelectedId(id); setCasePanel("workflow"); setWorkflowStepOverride(null); setSection("cases"); setMobileCaseOpen(true); };
   const navigateSection = (next: typeof section) => { setSection(next); setMobileNavOpen(false); if (next === "cases") setMobileCaseOpen(false); };
 
@@ -321,6 +336,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
         <button className={`side-link ${section === "cases" ? "active" : ""}`} aria-current={section === "cases" ? "page" : undefined} onClick={() => navigateSection("cases")}><LayoutDashboard size={18} />תיקים <span>{cases.length}</span></button>
         <button className={`side-link ${section === "tools" ? "active" : ""}`} aria-current={section === "tools" ? "page" : undefined} onClick={() => navigateSection("tools")}><Wrench size={18} />כלים חשובים</button>
         {staff.role === "admin" && <button className={`side-link ${section === "finance" ? "active" : ""}`} aria-current={section === "finance" ? "page" : undefined} onClick={() => { navigateSection("finance"); void loadFinance(); }}><Wallet size={18} />הכנסות והוצאות</button>}
+        {staff.role === "admin" && <button className={`side-link ${section === "compliance" ? "active" : ""}`} aria-current={section === "compliance" ? "page" : undefined} onClick={() => { navigateSection("compliance"); void loadCompliance(); }}><ShieldCheck size={18} />ציות ופרטיות</button>}
         {staff.role === "admin" && <button className={`side-link ${section === "team" ? "active" : ""}`} aria-current={section === "team" ? "page" : undefined} onClick={() => { navigateSection("team"); void loadTeam(); }}><Users size={18} />צוות</button>}
       </nav>
       <div className="sidebar-bottom"><div className="sidebar-security"><ShieldCheck size={17} /><span><b>גישה מאובטחת</b><small>רק צוות מורשה</small></span></div><div className="staff-profile"><div className="profile-avatar">{staff.displayName.slice(0, 1)}</div><span><b>{staff.displayName}</b><small>{staff.role === "admin" ? "Admin · מנהל מערכת" : "Member · אנליסט"}</small></span><a title="התנתקות" href="/signout-with-chatgpt?return_to=%2F"><LogOut size={16} /></a></div></div>
@@ -385,6 +401,13 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
             <article className="analyst-guide"><span className="guide-number">2</span><div><b>מחפשים כל בעל זכויות בנפרד</b><p>במרשם המשכונות יש לבצע חיפוש לכל בעל/ת זכויות לפי הפרטים מהנסח. שמור את תוצאת החיפוש וצרף לתיק, גם כשלא נמצאה התאמה.</p></div></article>
             <article className="analyst-guide"><span className="guide-number">3</span><div><b>מתעדים מקור ותאריך</b><p>לכל דוח או ממצא רשום מאיזה אתר נאסף ומתי. חיפוש בשם דומה לבדו אינו הוכחה שמדובר באותו אדם; אמת את ההתאמה מול פרטי הנסח.</p></div></article>
           </div></section>
+        </> : section === "compliance" && staff.role === "admin" ? <>
+          <div className="staff-heading"><div><div className="eyebrow">בקרות ארגוניות · Admin בלבד</div><h1>ציות ופרטיות</h1><p>מרכז משימות למידע אישי, אבטחת מידע, ספקים ושימוש ב-AI. יש לבדוק תחולה ויישום מול יועץ משפטי או ממונה פרטיות.</p></div><button className="outline-action" onClick={() => void loadCompliance()}><Activity size={16} />רענון</button></div>
+          <div className="compliance-callout"><ShieldCheck size={20} /><span><b>מפת מוכנות ראשונית</b><small>סימון משימה כהושלמה מתעד את עבודת החברה בלבד ואינו מהווה אישור משפטי או קביעה שהמערכת עומדת בכל דין.</small></span></div>
+          {managerError && <div className="notice error"><CircleAlert size={17} />{managerError}</div>}
+          <section className="compliance-layout"><div className="compliance-task-list">{complianceTasks.map((task) => <article className="compliance-task" key={task.id}><div className="compliance-task-heading"><span className={`compliance-status-dot ${task.status}`} /><div><b>{task.title}</b><p>{task.description}</p></div></div><div className="compliance-task-controls"><label>סטטוס<select value={task.status} onChange={(event) => setComplianceTasks((current) => current.map((item) => item.id === task.id ? { ...item, status: event.target.value as ComplianceTask["status"] } : item))}><option value="not_started">טרם התחיל</option><option value="in_progress">בתהליך</option><option value="needs_review">ממתין לאימות מקצועי</option><option value="complete">הושלם</option></select></label><label className="compliance-note">הערת מעקב<textarea rows={2} maxLength={2000} value={task.note} onChange={(event) => setComplianceTasks((current) => current.map((item) => item.id === task.id ? { ...item, note: event.target.value } : item))} placeholder="אחראי, מסמך, תאריך בדיקה או נקודה לאימות" /></label><button className="outline-action" disabled={busy} onClick={() => void saveComplianceTask(task)}>שמירת עדכון</button></div>{task.updatedBy && task.updatedAt && <small className="compliance-updated">עודכן על ידי {task.updatedBy} · {new Date(task.updatedAt).toLocaleDateString("he-IL")}</small>}</article>)}</div>
+            <aside className="compliance-resources"><b>מקורות רשמיים</b><small>לעיון ובדיקת תחולה</small><a href="https://www.gov.il/he/pages/13_amendment" target="_blank" rel="noopener noreferrer">תיקון 13 לחוק הגנת הפרטיות <ChevronLeft size={15} /></a><a href="https://www.gov.il/he/pages/data_security_guide" target="_blank" rel="noopener noreferrer">מדריך תקנות אבטחת מידע <ChevronLeft size={15} /></a><a href="https://www.gov.il/he/service/notice-obligation" target="_blank" rel="noopener noreferrer">חובת רישום או הודעה על מאגר <ChevronLeft size={15} /></a><a href="https://www.gov.il/he/service/report-of-data-breach" target="_blank" rel="noopener noreferrer">דיווח על אירוע אבטחה חמור <ChevronLeft size={15} /></a><a href="https://www.gov.il/he/pages/ai_privacy" target="_blank" rel="noopener noreferrer">פרטיות ובינה מלאכותית <ChevronLeft size={15} /></a></aside>
+          </section>
         </> : section === "finance" && staff.role === "admin" ? <>
           <div className="staff-heading"><div><div className="eyebrow">ניהול פנימי · Admin בלבד</div><h1>הכנסות והוצאות</h1><p>יומן ידני למעקב אחר תנועות העסק. אין כאן חיוב לקוחות או חיבור בנקאי.</p></div><button className="outline-action" onClick={() => void loadFinance()}><Activity size={16} />רענון</button></div>
           {managerError && <div className="notice error"><CircleAlert size={17} />{managerError}</div>}

@@ -13,11 +13,12 @@ type GovMapLookupResponse = {
   errorCode?: number;
   message?: string | null;
 };
+type GovMapSearchResult = { id?: string; text?: string; type?: string; centroid?: string; [key: string]: unknown };
+type GovMapSearchResponse = { results?: GovMapSearchResult[]; resultsCount?: number };
 type GovMapSdk = {
-  getLayerFeaturesByLocation?: (
-    params: { address: string; radius: number; layers: Array<{ name: string; fields: string[] }> },
-    apiToken: string,
-  ) => Promise<GovMapLookupResponse>;
+  search?: (params: { searchText: string; language: 'he'; maxResults: number; isAccurate: boolean; apiKey: string }) => Promise<GovMapSearchResponse>;
+  getSearchResultData?: (result: GovMapSearchResult, apiToken: string) => Promise<{ geom?: string }>;
+  getLayerFeaturesByLocation?: (params: { geometry: string; radius: number; layers: Array<{ name: string; fields: string[] }> }, apiToken: string) => Promise<GovMapLookupResponse>;
 };
 declare global { interface Window { govmap?: GovMapSdk } }
 const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN;
@@ -46,41 +47,61 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, code = "lookup-t
   });
 }
 function formatGovMapAddress(city: string, street: string, houseNumber: string) {
-  return `${street.trim()} ${houseNumber.trim()}, ${city.trim()}`;
+  const locality = city.trim().replace(/\s*-\s*יפו$/, '').trim();
+  return (street.trim() + ' ' + houseNumber.trim() + ' ' + locality).replace(/\s+/g, ' ').trim();
+}
+
+function normalizeGovMapAddress(value: string) {
+  return value.trim().replace(/[,-]/g, ' ').replace(/\s+/g, ' ').replace(/\s+יפו$/, '').trim();
 }
 
 async function findCadastralParcel(city: string, street: string, houseNumber: string): Promise<{ block: string; parcel: string }> {
-  if (!govMapApiToken) throw new Error("GOVMAP_TOKEN_MISSING");
+  if (!govMapApiToken) throw new Error('GOVMAP_TOKEN_MISSING');
   const sdk = await withTimeout(loadGovMapSdk(), 10_000);
-  if (!sdk.getLayerFeaturesByLocation) throw new Error("GOVMAP_SDK_METHOD_MISSING");
+  if (!sdk.search || !sdk.getSearchResultData || !sdk.getLayerFeaturesByLocation) throw new Error('GOVMAP_SDK_METHOD_MISSING');
 
-  // GovMap's address search works best with the same plain text used by the
-  // official address lookup site (without punctuation or the Tel Aviv-Yafo alias).
-  const locality = city.trim().replace(/\s*-\s*יפו$/, "").trim();
-  const address = `${street.trim()} ${houseNumber.trim()} ${locality}`;
+  // Geocode the exact street, house number and locality, then query the parcel layer at that address point.
+  const address = formatGovMapAddress(city, street, houseNumber);
+  const search = await withTimeout(sdk.search({
+    searchText: address,
+    language: 'he',
+    maxResults: 10,
+    isAccurate: true,
+    apiKey: govMapApiToken,
+  }), 10_000);
+  const exactAddresses = (search.results ?? []).filter((result) =>
+    result.type === 'address' && typeof result.text === 'string' &&
+    normalizeGovMapAddress(result.text) === normalizeGovMapAddress(address)
+  );
+  if (!exactAddresses.length) throw new Error('address-not-found');
+  if (exactAddresses.length > 1) throw new Error('ambiguous');
+
+  const details = await withTimeout(sdk.getSearchResultData(exactAddresses[0], govMapApiToken), 8_000);
+  const geometry = details.geom || exactAddresses[0].centroid;
+  if (typeof geometry !== 'string' || !geometry.trim()) throw new Error('address-geometry-missing');
+
   const response = await withTimeout(sdk.getLayerFeaturesByLocation({
-    address,
-    radius: 100,
-    layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
-  }, govMapApiToken), 12_000);
+    geometry,
+    radius: 0,
+    layers: [{ name: 'PARCEL_ALL', fields: ['GUSH_NUM', 'PARCEL'] }],
+  }, govMapApiToken), 10_000);
 
-  if (response.errorCode !== undefined && Number(response.errorCode) !== 0) throw new Error(`GOVMAP_API_ERROR_${response.errorCode}`);
-  if (response.status !== undefined && Number(response.status) !== 0) throw new Error(`GOVMAP_API_STATUS_${response.status}`);
+  if (response.errorCode !== undefined && Number(response.errorCode) !== 0) throw new Error('GOVMAP_API_ERROR_' + response.errorCode);
+  if (response.status !== undefined && Number(response.status) !== 0) throw new Error('GOVMAP_API_STATUS_' + response.status);
 
-  const layer = Object.entries(response.layers ?? response.data ?? {}).find(([name]) => name.toUpperCase() === "PARCEL_ALL")?.[1] ?? [];
+  const layer = Object.entries(response.layers ?? response.data ?? {}).find(([name]) => name.toUpperCase() === 'PARCEL_ALL')?.[1] ?? [];
   const parcels = layer.map((feature) => {
     const attrs = feature.attributes ?? {};
     return {
-      block: String(attrs.GUSH_NUM ?? attrs.gush_num ?? feature.Values?.[0] ?? "").trim(),
-      parcel: String(attrs.PARCEL ?? attrs.parcel ?? feature.Values?.[1] ?? "").trim(),
+      block: String(attrs.GUSH_NUM ?? attrs.gush_num ?? feature.Values?.[0] ?? '').trim(),
+      parcel: String(attrs.PARCEL ?? attrs.parcel ?? feature.Values?.[1] ?? '').trim(),
     };
   }).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
-  const unique = [...new Map(parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const)).values()];
-  if (!unique.length) throw new Error(layer.length ? "parcel-fields-missing" : "address-not-found");
-  if (unique.length > 1) throw new Error("ambiguous");
+  const unique = [...new Map(parcels.map((item) => [item.block + '/' + item.parcel, item] as const)).values()];
+  if (!unique.length) throw new Error(layer.length ? 'parcel-fields-missing' : 'parcel-not-found');
+  if (unique.length > 1) throw new Error('ambiguous');
   return unique[0];
 }
-
 interface Props {
   data: Step2PropertyId;
   onChange: (d: Step2PropertyId) => void;

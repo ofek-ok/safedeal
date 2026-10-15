@@ -597,3 +597,38 @@ html { scroll-behavior: smooth; }
 .compliance-resources>a:hover { color: #0d766e; }
 @media (max-width: 900px) { .compliance-layout { grid-template-columns: 1fr; } .compliance-resources { position: static; } }
 @media (max-width: 640px) { .compliance-task-controls { grid-template-columns: 1fr; } }
+
+
+/* Guided intake and client records */
+.workflow-step-content { min-width: 0; }
+.cadastral-entry { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 12px 0; }
+.cadastral-entry label { display: grid; gap: 5px; color: #536b69; font-size: 11px; font-weight: 700; }
+.cadastral-entry label small { display: inline; color: #80918e; font-weight: 500; }
+.cadastral-entry input { min-width: 0; height: 38px; padding: 0 10px; border: 1px solid #dbe5df; border-radius: 8px; background: #fff; color: #213e3c; font-size: 13px; }
+.cadastral-entry input:focus { outline: 2px solid #b8dbca; border-color: #70aa8d; }
+.workflow-source-link { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0 10px; color: #27705b; font-size: 12px; font-weight: 700; text-decoration: none; }
+.workflow-source-link:hover { text-decoration: underline; }
+.workflow-step-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.clients-directory { display: grid; gap: 12px; }
+.clients-directory-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; color: #536966; font-size: 13px; }
+.clients-directory-head span { color: #81918e; font-size: 12px; }
+.client-card { padding: 17px; border: 1px solid #e0e9e4; border-radius: 14px; background: #fff; box-shadow: 0 4px 18px rgb(26 54 43 / 4%); }
+.client-card-top { display: flex; align-items: center; gap: 10px; }
+.client-avatar { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; color: #286b56; background: #e9f4ed; font-size: 16px; font-weight: 800; }
+.client-card-name { display: grid; gap: 3px; }
+.client-card-name b { color: #203d39; font-size: 15px; }
+.client-card-name small { color: #82918d; font-size: 11px; }
+.client-contact { display: flex; flex-wrap: wrap; gap: 12px 22px; margin: 12px 0; color: #4d6d64; font-size: 12px; }
+.client-contact a { color: inherit; text-decoration: none; }
+.client-contact a:hover { text-decoration: underline; }
+.client-history { display: grid; }
+.client-history-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; min-height: 55px; border-top: 1px solid #edf1ee; }
+.client-history-row>span:first-child { display: grid; gap: 4px; min-width: 0; }
+.client-history-row>span:first-child b { overflow: hidden; color: #38534e; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.client-history-row>span:first-child small { color: #8a9995; font-size: 10px; }
+@media (max-width: 680px) {
+  .cadastral-entry { grid-template-columns: 1fr 1fr; }
+  .cadastral-entry label:last-child { grid-column: 1 / -1; }
+  .client-history-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; }
+  .client-history-row .text-action { grid-column: 1 / -1; justify-self: start; }
+}

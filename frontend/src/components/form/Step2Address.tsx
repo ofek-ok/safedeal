@@ -83,7 +83,7 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
   const response = await withTimeout(sdk.getLayerFeaturesByLocation({
     geometry,
     radius: 0,
-    layers: [{ name: 'PARCEL_ALL', fields: ['GUSH_NUM', 'PARCEL'] }],
+    layers: [{ name: 'PARCEL_ALL', fields: ['GUSH_NUM', 'PARCEL', 'gush_num', 'parcel'] }],
   }, govMapApiToken), 10_000);
 
   if (response.errorCode !== undefined && Number(response.errorCode) !== 0) throw new Error('GOVMAP_API_ERROR_' + response.errorCode);

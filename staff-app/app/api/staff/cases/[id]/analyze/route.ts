@@ -156,8 +156,20 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     const createdAt = new Date().toISOString();
     const summary = asText(analysis.summary, 2500);
     const findings = (analysis.findings as AnalysisFinding[]).slice(0, 50).filter((item) => asText(item.title, 180) && asText(item.note, 3000));
-    if (!findings.length && summary) {
-      findings.push({ category: "סיכום ניתוח מסמכים", title: "סיכום ניתוח AI", note: summary, severity: "בינונית", source: "מסמכי התיק", confidence: 40 });
+    const riskAssessment = analysis.riskAssessment && typeof analysis.riskAssessment === "object" && !Array.isArray(analysis.riskAssessment)
+      ? analysis.riskAssessment as Record<string, unknown> : null;
+    if (summary) {
+      const assessmentText = riskAssessment
+        ? `ציון משוקלל: ${typeof riskAssessment.score === "number" ? riskAssessment.score : "לא חושב"} · Coverage: ${typeof riskAssessment.coverage === "number" ? riskAssessment.coverage : "לא דווח"} · Override: ${asText(riskAssessment.override, 80) || "לא דווח"}`
+        : "";
+      const completenessWarning = riskAssessment ? asText(riskAssessment.modelCompletenessWarning, 500) : "";
+      const modelSummary = [
+        summary,
+        assessmentText,
+        completenessWarning ? `מגבלת מודל: ${completenessWarning}` : "",
+        "טיוטת AI לפי מודל SafeDeal · נדרשת בדיקת ואישור אנליסט לפני הפקת הדוח ללקוח."
+      ].filter(Boolean).join("\\n\\n");
+      findings.push({ category: "סיכום מודל SafeDeal", title: "סיכום ניתוח וסיכון", note: modelSummary, severity: "בינונית", source: "מודל SafeDeal 2026-10-12 · מסמכי התיק", confidence: 60 });
     }
     const statements = findings.map((item) => {
       const title = asText(item.title, 180);

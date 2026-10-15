@@ -177,25 +177,25 @@ export function MultiStepForm() {
         </div>
 
         {step < TOTAL && (
-          <div className="flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-10 border-t border-white/[0.08]">
+          <div className="form-step-actions flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-10 border-t border-white/[0.08]">
             <button
               type="button"
               onClick={back}
               disabled={step === 1}
-              className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+              className="form-step-back flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
             >
               <ArrowRight size={14} />
               חזרה
             </button>
 
-            <span className="text-[10px] uppercase tracking-widest text-slate-600 font-mono">
+            <span className="form-step-count text-[10px] uppercase tracking-widest text-slate-600 font-mono">
               0{step} / 0{TOTAL}
             </span>
 
             <button 
               type="button" 
               onClick={next} 
-              className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#00C896] hover:text-[#00C896]/80 transition-colors border border-[#00C896]/30 px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-sm bg-[#00C896]/5 hover:bg-[#00C896]/10"
+              className="form-step-next flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#00C896] hover:text-[#00C896]/80 transition-colors border border-[#00C896]/30 px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-sm bg-[#00C896]/5 hover:bg-[#00C896]/10"
             >
               המשך
               <ArrowLeft size={14} />

@@ -425,7 +425,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
               <div className="client-history">{client.cases.slice().sort((a,b) => b.createdAt.localeCompare(a.createdAt)).map((item) => <div className="client-history-row" key={item.id}><span><b>{item.assetType} · {item.street} {item.house}, {item.city}</b><small>{item.caseNumber} · {new Date(item.createdAt).toLocaleDateString("he-IL")}</small></span><span className={["status-tag", "state-" + statuses.indexOf(item.status)].join(" ")}>{item.status}</span><button className="text-action" onClick={() => openCase(item.id)}>פתיחת תיק <ChevronLeft size={14} /></button></div>)}</div>
             </article>) : <div className="inline-empty">לקוחות יופיעו כאן לאחר שליחת טופס במערכת הלקוחות.</div>}
           </section>
-        </> : section === "tools" ? < >
+        </> : section === "tools" ? <>
           <div className="staff-heading"><div><div className="eyebrow">מקורות עבודה מאומתים</div><h1>כלים חשובים</h1><p>קישורים למקורות הבדיקה ולמדריכים קצרים לעבודה אחידה בתיקים.</p></div></div>
           <section className="resource-section"><div className="section-title"><div><b>אתרים לפי שלב הבדיקה</b><small>פתח את המקור הרלוונטי בחלונית חדשה</small></div></div><div className="resource-grid">
             <a className="resource-card" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer"><span className="resource-index">02</span><span><b>הפקת נסח טאבו</b><small>משרד המשפטים · חיפוש לפי גוש וחלקה</small></span><ChevronLeft size={16} /></a>

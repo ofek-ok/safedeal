@@ -23,7 +23,7 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
     if (response.status === 404) throw new Error("address-not-found");
     if (response.status === 409) throw new Error("ambiguous");
     if (response.status === 504 || result?.code?.includes("TIMEOUT")) throw new Error("lookup-timeout");
-    throw new Error("unavailable");
+    throw new Error(result?.code || `lookup-http-${response.status}`);
   }
 
   const block = String(result?.block ?? "").trim();
@@ -140,6 +140,7 @@ export function Step2Address({ data, onChange, showErrors, hideHeading = false }
       } catch (error) {
         if (cancelled) return;
         const code = error instanceof Error ? error.message : "unavailable";
+        console.warn("SafeDeal cadastral lookup failed", code);
         const knownCodes = ["address-not-found", "parcel-not-found", "parcel-fields-missing", "ambiguous", "map-timeout", "lookup-timeout", "timeout"];
         setLookupError(knownCodes.includes(code) ? code as typeof lookupError : "unavailable");
       } finally {

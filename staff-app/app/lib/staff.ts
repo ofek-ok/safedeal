@@ -7,7 +7,7 @@ export type StaffIdentity = {
   userId: string;
   email: string;
   displayName: string;
-  role: "admin" | "analyst";
+  role: "admin" | "member";
 };
 
 export async function getStaffIdentity(): Promise<StaffIdentity | null> {
@@ -23,14 +23,14 @@ export async function getStaffIdentity(): Promise<StaffIdentity | null> {
   }
   const result = await db.$client.prepare(`SELECT user_id, email, display_name, role
     FROM staff_members WHERE (user_id = ? OR email = ?) AND active = 1 LIMIT 1`).bind(user.userId, user.email.toLowerCase()).first<{
-      user_id: string; email: string; display_name: string; role: "admin" | "analyst";
+      user_id: string; email: string; display_name: string; role: "admin" | "member" | "analyst";
     }>();
-  if (!result || (result.role !== "admin" && result.role !== "analyst")) return null;
+  if (!result || !["admin", "member", "analyst"].includes(result.role)) return null;
   if (result.user_id !== user.userId) {
     await db.$client.prepare(`UPDATE staff_members SET user_id = ?, display_name = ? WHERE email = ? AND user_id = ?`)
       .bind(user.userId, user.fullName ?? result.display_name, result.email, result.user_id).run();
   }
-  return { userId: user.userId, email: result.email, displayName: result.display_name, role: result.role };
+  return { userId: user.userId, email: result.email, displayName: result.display_name, role: result.role === "admin" ? "admin" : "member" };
 }
 
 export function jsonError(message: string, status: number) {

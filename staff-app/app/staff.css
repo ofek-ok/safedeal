@@ -660,14 +660,14 @@ html { scroll-behavior: smooth; }
 .detail-top { padding-bottom: 19px; border-color: #e9edf3; }
 .detail-top h2 { color: #17233b; font-size: 25px; }
 .detail-top p { color: #59677c; font-size: 14px; }
-.case-panel-nav { top: 66px; gap: 8px; padding: 13px 0 15px; background: rgb(255 255 255 / 97%); }
+.case-panel-nav { top: 282px; gap: 8px; padding: 13px 0 15px; background: rgb(255 255 255 / 97%); }
 .case-panel-nav button { min-height: 42px; padding-inline: 16px; border-radius: 10px; color: #59677c; font-size: 13px; }
 .case-panel-nav button.active { border-color: #d6defa; color: #344eab; background: #eef2ff; }
 .contact-strip { gap: 14px; margin-block: 17px; }
 .contact-strip>div { min-height: 69px; padding: 14px 16px; border-color: #e8edf4; border-radius: 12px; background: #f9faff; }
 .contact-strip small { color: #748097; }
 .contact-strip b, .contact-strip a { color: #263753; }
-.property-context { margin: 20px 0 22px; padding: 22px 24px; border: 1px solid #dfe5f1; border-radius: 16px; background: #f8f9fd; }
+.property-context { position: sticky; top: 70px; z-index: 9; margin: 20px 0 22px; padding: 18px 21px; border: 1px solid #dfe5f1; border-radius: 16px; background: #f8f9fd; }
 .property-context-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
 .property-context-heading h3 { margin: 3px 0 0; color: #17233b; font-size: 17px; }
 .property-copy-button { min-height: 40px; padding: 0 15px; border: 1px solid #d6def5; border-radius: 10px; color: #3c55b2; background: #fff; font-size: 12px; font-weight: 700; }
@@ -710,7 +710,7 @@ html { scroll-behavior: smooth; }
 .workflow-step.is-active b::after { margin-inline-start: 9px; padding: 4px 8px; color: #3d55ad; background: #eaf0ff; font-size: 10px; }
 .workflow-step p { margin: 10px 0 16px; color: #66738a; font-size: 14px; line-height: 1.7; }
 .workflow-sellers { margin: 0 0 13px; color: #586984; font-size: 13px; }
-.cadastral-entry { gap: 14px; margin: 18px 0; }
+.cadastral-entry { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 18px 0; }
 .cadastral-entry label { gap: 7px; color: #40516e; font-size: 13px; }
 .cadastral-entry input { min-height: 46px; padding: 10px 13px; border-color: #dce3ee; border-radius: 10px; color: #1f304c; background: #fff; }
 .workflow-source-link { color: #435bb5; }
@@ -729,8 +729,8 @@ html { scroll-behavior: smooth; }
 @media (max-width: 700px) {
   .staff-content { padding: 24px 15px 50px; }
   .case-detail-new { padding: 16px; }
-  .case-panel-nav { top: 58px; margin-inline: -16px; padding-inline: 16px; }
-  .property-context { padding: 17px; }
+  .case-panel-nav { top: 270px; margin-inline: -16px; padding-inline: 16px; }
+  .property-context { top: 58px; padding: 15px; }
   .property-context-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .property-context-grid .property-address, .property-context-grid .property-owners { grid-column: 1 / -1; }
   .property-context-heading { align-items: flex-start; flex-direction: column; }

@@ -5,31 +5,97 @@ import { Info, AlertCircle, Loader2 } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
 import { GovAutocomplete } from "./GovAutocomplete";
 
+type GovMapFeature = { attributes?: Record<string, unknown>; Values?: unknown[] };
+type GovMapLookupResponse = {
+  layers?: Record<string, GovMapFeature[]>;
+  data?: Record<string, GovMapFeature[]>;
+  status?: number;
+  errorCode?: number;
+  message?: string | null;
+};
+type GovMapSdk = {
+  getLayerFeaturesByLocation?: (
+    params: { address: string; radius: number; layers: Array<{ name: string; fields: string[] }> },
+    apiToken: string,
+  ) => Promise<GovMapLookupResponse>;
+};
+declare global { interface Window { govmap?: GovMapSdk } }
+
+const govMapApiToken = process.env.NEXT_PUBLIC_GOVMAP_API_TOKEN;
+let govMapSdkPromise: Promise<GovMapSdk> | null = null;
+
+function loadGovMapSdk(): Promise<GovMapSdk> {
+  if (typeof window === "undefined") return Promise.reject(new Error("unavailable"));
+  if (window.govmap?.getLayerFeaturesByLocation) return Promise.resolve(window.govmap);
+  if (!govMapSdkPromise) {
+    govMapSdkPromise = new Promise((resolve, reject) => {
+      let script = document.getElementById("safedeal-govmap-sdk") as HTMLScriptElement | null;
+      const cleanup = () => { script?.removeEventListener("load", onLoad); script?.removeEventListener("error", onError); };
+      const onLoad = () => {
+        cleanup();
+        if (window.govmap?.getLayerFeaturesByLocation) resolve(window.govmap);
+        else { govMapSdkPromise = null; reject(new Error("GOVMAP_SDK_METHOD_MISSING")); }
+      };
+      const onError = () => { cleanup(); govMapSdkPromise = null; reject(new Error("GOVMAP_SDK_LOAD_FAILED")); };
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "safedeal-govmap-sdk";
+        script.src = "https://www.govmap.gov.il/govmap/api/govmap.api.js";
+        script.async = true;
+      }
+      script.addEventListener("load", onLoad, { once: true });
+      script.addEventListener("error", onError, { once: true });
+      if (!script.isConnected) document.head.appendChild(script);
+    });
+  }
+  return govMapSdkPromise;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error("lookup-timeout")), timeoutMs);
+    promise.then(
+      (value) => { window.clearTimeout(timer); resolve(value); },
+      (error) => { window.clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
 function formatGovMapAddress(city: string, street: string, houseNumber: string) {
   return `${street.trim()} ${houseNumber.trim()}, ${city.trim()}`;
 }
 
 async function findCadastralParcel(city: string, street: string, houseNumber: string): Promise<{ block: string; parcel: string }> {
-  const response = await fetch("/api/cadastral-lookup", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ city: city.trim(), street: street.trim(), houseNumber: houseNumber.trim() }),
-    cache: "no-store",
-    signal: AbortSignal.timeout(28_000),
-  });
-  const result = await response.json().catch(() => null) as { block?: unknown; parcel?: unknown; code?: string; error?: string } | null;
+  if (!govMapApiToken) throw new Error("GOVMAP_TOKEN_MISSING");
+  const sdk = await withTimeout(loadGovMapSdk(), 10_000);
+  if (!sdk.getLayerFeaturesByLocation) throw new Error("GOVMAP_SDK_METHOD_MISSING");
 
-  if (!response.ok) {
-    if (response.status === 404) throw new Error("address-not-found");
-    if (response.status === 409) throw new Error("ambiguous");
-    if (response.status === 504 || result?.code?.includes("TIMEOUT")) throw new Error("lookup-timeout");
-    throw new Error(result?.code || `lookup-http-${response.status}`);
+  const response = await withTimeout(sdk.getLayerFeaturesByLocation({
+    address: formatGovMapAddress(city, street, houseNumber),
+    radius: 100,
+    layers: [{ name: "PARCEL_ALL", fields: ["GUSH_NUM", "PARCEL"] }],
+  }, govMapApiToken), 15_000);
+
+  if (response.errorCode !== undefined && Number(response.errorCode) !== 0) {
+    throw new Error(`GOVMAP_API_ERROR_${response.errorCode}`);
+  }
+  if (response.status !== undefined && Number(response.status) !== 0) {
+    throw new Error(`GOVMAP_API_STATUS_${response.status}`);
   }
 
-  const block = String(result?.block ?? "").trim();
-  const parcel = String(result?.parcel ?? "").trim();
-  if (!/^\\d+$/.test(block) || !/^\\d+$/.test(parcel)) throw new Error("unavailable");
-  return { block, parcel };
+  const parcelLayer = Object.entries(response.layers ?? response.data ?? {})
+    .find(([name]) => name.toUpperCase() === "PARCEL_ALL")?.[1] ?? [];
+  const parcels = parcelLayer.map((feature) => {
+    const attributes = feature.attributes ?? {};
+    const block = String(attributes.GUSH_NUM ?? attributes.gush_num ?? feature.Values?.[0] ?? "").trim();
+    const parcel = String(attributes.PARCEL ?? attributes.parcel ?? feature.Values?.[1] ?? "").trim();
+    return { block, parcel };
+  }).filter((item) => /^\\d+$/.test(item.block) && /^\\d+$/.test(item.parcel));
+  const unique = [...new Map(parcels.map((item) => [`${item.block}/${item.parcel}`, item] as const)).values()];
+
+  if (!unique.length) throw new Error("address-not-found");
+  if (unique.length > 1) throw new Error("ambiguous");
+  return unique[0];
 }
 
 interface Props {

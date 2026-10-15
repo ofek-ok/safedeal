@@ -2,6 +2,45 @@ import { getDb } from "../../../../../../db";
 import { caseIsVisible, getStaffIdentity, jsonError } from "../../../../../lib/staff";
 import { getFilesBucket } from "../../../../../lib/storage";
 
+const safeDealRiskModel = {
+  version: "2026-10-12",
+  scope: "מיון ראשוני של סיכוני נכס. אינו מחליף בדיקה משפטית, שמאית או הנדסית.",
+  tracks: {
+    "יד שנייה": [
+      { category: "זיהוי", weight: 0.03, check: "זיהוי נכס חד-ערכי", anchors: { "100": "נכס יחיד מזוהה", "75": "פער טכני", "50": "מספר התאמות", "25": "סתירה מהותית", "0": "לא ניתן לזהות" } },
+      { category: "זכויות", weight: 0.08, check: "התאמת המוכר לבעלים", anchors: { "100": "התאמה מלאה", "75": "פער טכני", "50": "התאמה חלקית", "25": "אין מלוא זכויות", "0": "אין התאמה" } },
+      { category: "זכויות", weight: 0.08, check: "עיקולים וצווים", anchors: { "100": "אין", "75": "היסטורי סגור", "50": "פתרון מתועד", "25": "פעיל ללא פתרון", "0": "מונע העברה" } },
+      { category: "זכויות", weight: 0.07, check: "הערות אזהרה וצד ג׳", anchors: { "100": "אין הערה סותרת", "75": "לא מגבילה", "50": "יש מנגנון מחיקה", "25": "ללא פתרון", "0": "עסקה סותרת" } },
+      { category: "משכונות", weight: 0.081, check: "משכון פעיל על הנכס/בעלים", anchors: { "100": "אין פעיל", "75": "בוטל", "50": "התאמה אפשרית", "25": "פעיל ללא זיקה ודאית", "0": "פעיל מאומת בעל זיקה" } },
+      { category: "רקע משפטי", weight: 0.072, check: "הליך פלילי מוכר", anchors: { "100": "אין רלוונטי", "75": "סגור ללא הרשעה", "50": "התאמה אפשרית", "25": "הליך בחמש השנים האחרונות ללא תוצאה ברורה", "0": "פתוח מאומת או הרשעה מאומתת בחמש השנים האחרונות" } },
+      { category: "רקע משפטי", weight: 0.048, check: "הליך אזרחי המשפיע על העסקה", anchors: { "100": "אין", "75": "סגור", "50": "פתוח לא רלוונטי", "25": "השפעה אפשרית", "0": "מאיים על זכויות/העברה" } },
+      { category: "שוק", weight: 0.1215, check: "פער מחיר מול שוק", anchors: { "100": "בטווח", "75": "עד 5% מעל", "50": "5%-10%", "25": "10%-20%", "0": "מעל 20%" } },
+      { category: "תכנון", weight: 0.06, check: "תוכניות וייעוד גלויים", anchors: { "100": "אין סתירה", "75": "תוכנית מוקדמת", "50": "השפעה אפשרית", "25": "השפעה מהותית", "0": "ייעוד סותר" } }
+    ],
+    "דירה חדשה מקבלן": [
+      { category: "זהות תאגיד", weight: 0.024, check: "התאמת ח״פ לישות המוכרת", anchors: { "100": "התאמה מלאה", "75": "שם היסטורי", "50": "פער טכני", "25": "פער מהותי", "0": "ישות אחרת" } },
+      { category: "מצב תאגידי", weight: 0.072, check: "פעילה וחברה מפרה", anchors: { "100": "פעילה ולא מפרה", "75": "פער דיווח", "50": "פעילה מפרה", "25": "לא פעילה/לא ברור", "0": "מחוקה/פירוק" } },
+      { category: "מצב תאגידי", weight: 0.04, check: "גיל החברה", anchors: { "100": "מעל 5 שנים", "75": "2-5 שנים", "50": "מתחת 2 עם ניסיון מאומת", "25": "מתחת 2 ללא ניסיון", "0": "חדשה וגם מפרה/לא פעילה" } },
+      { category: "שעבודים", weight: 0.1375, check: "בטוחה פעילה על יזם/קבלן/פרויקט", anchors: { "100": "אין רלוונטי", "75": "שגרתי עם החרגה", "50": "זיקה לא ברורה", "25": "זיקה אפשרית ללא פתרון", "0": "מסכנת זכויות/כספים" } },
+      { category: "רקע משפטי", weight: 0.072, check: "יותר מ-5 תביעות גדולות בשנה", anchors: { "100": "0-1", "75": "2-3", "50": "4-5", "25": "מעל 5 לא מאומת", "0": "מעל 5 מאומת" } },
+      { category: "רקע משפטי", weight: 0.056, check: "איחור/אי מסירה", anchors: { "100": "אין", "75": "יחיד סגור ללא קביעה", "50": "יחיד פתוח", "25": "דפוס תביעות", "0": "קביעה נגד החברה/דפוס מאומת" } },
+      { category: "רקע משפטי", weight: 0.032, check: "תיק פתוח מהותי", anchors: { "100": "אין", "75": "לא מהותי", "50": "מעקב", "25": "השפעה אפשרית", "0": "מאיים על פעילות/מסירה" } }
+    ]
+  },
+  additionalReviewRules: [
+    "מידע חסר הוא NOT_TESTED: מוצא מהמכנה ומפחית Coverage ו-Confidence; לעולם לא להפוך לחיובי/שלילי או ל-0/100.",
+    "ציון = ממוצע משוקלל של בדיקות שבוצעו בלבד; Coverage = סכום משקלי הבדיקות שבוצעו. דווח גם את היקף המשקלים שהמודל מכסה בפועל.",
+    "CRITICAL גובר על הממוצע ועשוי להפעיל STOP/HOLD או תקרת ציון לפי מטריצת הבדיקות.",
+    "התאמת אדם דורשת תעודת זהות; התאמת חברה דורשת ח״פ. שם בלבד הוא REVIEW, לא התאמה מאומתת.",
+    "תיק פתוח/חקירה/כתב אישום אינם הרשעה; תיק סגור ללא הרשעה אינו דגל אוטומטי. כל דגל משפטי מחייב בקרה אנושית.",
+    "משכון נכנס לניקוד רק כשהקשר לנכס ודאי או גבוה; שם בלבד או נכס אחר אינם מספיקים. למנוע ספירה כפולה של אותה בטוחה.",
+    "משכנתה ראשונה יחידה לבנק אינה חריגה בפני עצמה. זוג בעלים בדיוק, חלוקה 50/50, שם משפחה דומה וללא ירושה אינו מורכבות בעלות.",
+    "כללי סיכוני הרישום המעודכנים (עיקול פעיל, הפקעה, מגבלה, הערת מס, מורכבות בעלות, מוכר לא רשום, משכנתאות חריגות, משכונות וחברות) הם איתותים לבדיקה אנושית; אין להם משקל מספרי חדש בקובץ. אל תמציא להם משקל או השפעה על הציון.",
+    "המטריצה מכסה רק 0.6425 משקל ביד שנייה ו-0.4335 בקבלן, לעומת משקלי מסלולים שסכומם 1.0. חסרים כיסויי קטגוריות (כולל אזור/נגישות וחלק מבדיקות שוק ותכנון); לכן אין להציג את הציון כציון מלא או לדרג LOW/MEDIUM/HIGH בלי ספי סיווג מאושרים. הצג Coverage מוגבל ואזהרת מודל חלקי."
+  ],
+  outputRequirements: "החזר סיכום בעברית, רשימת ממצאים ממוספרת עם מקור/שם קובץ, ראיה קצרה, רמת חומרה 0-10, confidence, פעולה מומלצת וסטטוס Confirm/Edit/Reject/Investigate. דווח riskAssessment עם score (או null כשאין בסיס), coverage, override, modelCompletenessWarning, missingInformation. אין לקבוע ממצא משפטי/פלילי כעובדה ללא ראיה מפורשת במסמך. כל תוצאה היא טיוטה לבדיקה ואישור אנליסט."
+} as const;
+
 const maxAnalysisBytes = 12 * 1024 * 1024;
 const supportedTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 type AnalysisFinding = {
@@ -91,6 +130,7 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
       },
       intake: { location: intakeLocation, deal: intakeDeal },
       documents: documentMetadata,
+      safeDealRiskModel,
     };
     form.set("caseData", JSON.stringify(caseData));
 
@@ -108,7 +148,7 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
       body: form,
       signal: AbortSignal.timeout(90_000),
     });
-    const analysis = await response.json().catch(() => null) as { summary?: unknown; missingInformation?: unknown; findings?: unknown } | null;
+    const analysis = await response.json().catch(() => null) as { summary?: unknown; missingInformation?: unknown; findings?: unknown; riskAssessment?: unknown } | null;
     if (!response.ok || !analysis || !Array.isArray(analysis.findings)) {
       throw new Error("analysis service unavailable");
     }
@@ -143,7 +183,7 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     statements.push(db.$client.prepare(`INSERT INTO activity (id, case_id, actor_user_id, actor_name, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
       .bind(crypto.randomUUID(), id, staff.userId, staff.displayName, "הושלם ניתוח AI", activityText, createdAt));
     await db.$client.batch(statements);
-    return Response.json({ findingsCreated: findings.length, summary, missingInformation });
+    return Response.json({ findingsCreated: findings.length, summary, missingInformation, riskAssessment });
   } catch (error) {
     if (caseId) {
       await getDb().$client.prepare(`UPDATE cases SET status = 'מוכן לניתוח', updated_at = ? WHERE id = ? AND status = 'בניתוח'`)

@@ -494,3 +494,20 @@ html { scroll-behavior: smooth; }
   .workflow-step-nav button { min-width: 105px; flex-basis: 105px; }
   .analyst-checklist .checklist-list { grid-template-columns: 1fr; }
 }
+.workflow-link { display: inline-flex; align-items: center; margin-inline-end: 6px; text-decoration: none; }
+.resource-section { margin-top: 20px; }
+.resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.resource-card { display: flex; min-height: 84px; align-items: center; gap: 12px; padding: 15px; border: 1px solid #dfe9e4; border-radius: 12px; color: #365c5d; background: #fff; text-decoration: none; box-shadow: 0 5px 16px rgba(25,64,54,.04); transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+.resource-card:hover { transform: translateY(-1px); border-color: #9cc6b4; box-shadow: 0 8px 20px rgba(25,64,54,.08); }
+.resource-card>span:nth-child(2) { display: grid; min-width: 0; flex: 1; gap: 4px; }
+.resource-card b { color: #29494a; font-size: 14px; }
+.resource-card small { color: #6d8280; font-size: 12px; line-height: 1.45; }
+.resource-card>svg { flex: 0 0 auto; color: #468a78; }
+.resource-index { display: grid; min-width: 36px; height: 36px; padding: 0 5px; place-items: center; border-radius: 10px; color: #337764; background: #edf6f1; font-size: 11px; font-weight: 800; }
+.analyst-guides { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.analyst-guide { display: flex; align-items: flex-start; gap: 11px; padding: 16px; border: 1px solid #e1eae5; border-radius: 12px; background: #f9fbfa; }
+.guide-number { display: grid; width: 27px; height: 27px; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #277662; background: #e5f3eb; font-size: 12px; font-weight: 800; }
+.analyst-guide b { color: #315456; font-size: 13px; }
+.analyst-guide p { margin: 5px 0 0; color: #677e7d; font-size: 12px; line-height: 1.6; }
+@media (max-width: 800px) { .analyst-guides { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .resource-grid { grid-template-columns: 1fr; } }

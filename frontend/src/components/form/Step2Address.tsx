@@ -5,7 +5,7 @@ import { Info, AlertCircle, Loader2 } from "lucide-react";
 import type { Step2PropertyId } from "@/types/property";
 import { GovAutocomplete } from "./GovAutocomplete";
 
-type GovMapFeature = { attributes?: Record<string, unknown>; Values?: unknown[] };
+type GovMapFeature = { attributes?: Record<string, unknown>; properties?: Record<string, unknown>; fields?: Array<{ fieldName?: string; fieldValue?: unknown; name?: string; value?: unknown }>; Values?: unknown[]; values?: unknown[] };
 type GovMapLookupResponse = {
   layers?: Record<string, GovMapFeature[]>;
   data?: Record<string, GovMapFeature[]>;
@@ -89,16 +89,28 @@ async function findCadastralParcel(city: string, street: string, houseNumber: st
   if (response.errorCode !== undefined && Number(response.errorCode) !== 0) throw new Error('GOVMAP_API_ERROR_' + response.errorCode);
   if (response.status !== undefined && Number(response.status) !== 0) throw new Error('GOVMAP_API_STATUS_' + response.status);
 
-  const layer = Object.entries(response.layers ?? response.data ?? {}).find(([name]) => name.toUpperCase() === 'PARCEL_ALL')?.[1] ?? [];
+  const layerMap = response.layers ?? response.data ?? {};
+  const layer = Object.entries(layerMap).find(([name]) => name.toUpperCase() === 'PARCEL_ALL')?.[1] ?? [];
   const parcels = layer.map((feature) => {
-    const attrs = feature.attributes ?? {};
+    const attrs = feature.attributes ?? feature.properties ?? {};
+    const fields = Object.fromEntries((feature.fields ?? []).map((field) => [
+      String(field.fieldName ?? field.name ?? '').toUpperCase(), field.fieldValue ?? field.value,
+    ]));
+    const value = (name: string, index: number) => {
+      const key = Object.keys(attrs).find((candidate) => candidate.toUpperCase() === name);
+      return (key ? attrs[key] : undefined) ?? fields[name] ?? feature.Values?.[index] ?? feature.values?.[index];
+    };
     return {
-      block: String(attrs.GUSH_NUM ?? attrs.gush_num ?? feature.Values?.[0] ?? '').trim(),
-      parcel: String(attrs.PARCEL ?? attrs.parcel ?? feature.Values?.[1] ?? '').trim(),
+      block: String(value('GUSH_NUM', 0) ?? '').trim(),
+      parcel: String(value('PARCEL', 1) ?? '').trim(),
     };
   }).filter((item) => /^\d+$/.test(item.block) && /^\d+$/.test(item.parcel));
   const unique = [...new Map(parcels.map((item) => [item.block + '/' + item.parcel, item] as const)).values()];
-  if (!unique.length) throw new Error(layer.length ? 'parcel-fields-missing' : 'parcel-not-found');
+  if (!unique.length) {
+    const firstFeature = layer[0] as GovMapFeature | undefined;
+    console.warn('SafeDeal parcel layer schema', { layerNames: Object.keys(layerMap), featureKeys: firstFeature ? Object.keys(firstFeature) : [], attributeKeys: Object.keys(firstFeature?.attributes ?? firstFeature?.properties ?? {}), fieldNames: firstFeature?.fields?.map((field) => field.fieldName ?? field.name) ?? [] });
+    throw new Error(layer.length ? 'parcel-fields-missing' : 'parcel-not-found');
+  }
   if (unique.length > 1) throw new Error('ambiguous');
   return unique[0];
 }

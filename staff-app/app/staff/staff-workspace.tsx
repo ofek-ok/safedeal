@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, ArrowDownToLine, Building2, CalendarClock, Check, ChevronLeft, CircleAlert, FileText, Gauge, LayoutDashboard, LogOut, Menu, Pencil, Plus, Search, ShieldCheck, UploadCloud, Users, Wrench, X } from "lucide-react";
+import { Activity, ArrowDownToLine, Building2, CalendarClock, Check, ChevronLeft, CircleAlert, FileText, Gauge, LayoutDashboard, LogOut, Menu, Pencil, Plus, Search, ShieldCheck, UploadCloud, Users, Wallet, Wrench, X } from "lucide-react";
 
-type Staff = { userId: string; email: string; displayName: string; role: "admin" | "analyst" };
+type Staff = { userId: string; email: string; displayName: string; role: "admin" | "member" };
 type CaseRow = { id: string; caseNumber: string; clientName: string; clientEmail: string; clientPhone: string; assetType: string; city: string; street: string; house: string; price: string; status: string; analystUserId: string | null; analystEmail: string | null; dueAt: string | null; createdAt: string; findingCount: number; documentCount: number };
 type IntakeData = { personal?: Record<string, unknown>; location?: Record<string, unknown>; deal?: Record<string, unknown>; documents?: { name: string; contentType: string; size: number }[] };
 type ChecklistKey = "reports_collected" | "data_reviewed" | "data_verified" | "ai_findings_reviewed" | "report_generated" | "report_sent";
 type Detail = { case: Record<string, unknown>; intakeData: IntakeData | null; documents: { id: string; filename: string; contentType: string; size: number; uploadedAt: string; documentType: string; source: string; collectedAt: string }[]; findings: { id: string; category: string; title: string; note: string; severity: string; source: string | null; confidence: number | null; state: string; reviewNote: string | null; reviewedBy: string | null }[]; activity: { id: string; actorName: string; action: string; detail: string; createdAt: string }[]; report: { id: string; version: number; createdAt: string } | null; checklist: Partial<Record<ChecklistKey, { completed: boolean; completedBy: string | null; completedAt: string | null }>> };
-type Member = { email: string; displayName: string; role: string; active: number };
+type Member = { email: string; displayName: string; role: "admin" | "member"; active: number };
+type FinanceTransaction = { id: string; type: "income" | "expense"; date: string; category: string; description: string; amount: number; createdAt: string };
 const statuses = ["חדש", "באיסוף מידע", "ממתין למסמכים", "מוכן לניתוח", "בניתוח", "בבדיקת אנליסט", "דוח מוכן", "שולח דוח", "דוח נשלח"];
 const documentTypes = ["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח מתדיינים / הליכים משפטיים", "הסכם / טיוטת חוזה", "תכנון והיתרים", "מסמכי מוכר / יזם", "מסמכי רשות מקומית", "מסמך פיננסי", "אחר"];
 const checklistItems: { key: ChecklistKey; label: string; automatic?: boolean }[] = [
@@ -38,6 +39,10 @@ function intakeDisplayValue(key: string, value: unknown) {
   return value;
 }
 
+function financeMoney(value: number) {
+  return new Intl.NumberFormat("he-IL", { style: "currency", currency: "ILS", maximumFractionDigits: 2 }).format(value);
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, headers: { ...(init?.body ? { "Content-Type": "application/json" } : {}), ...init?.headers } });
   const data = await response.json().catch(() => ({})) as { error?: string };
@@ -52,7 +57,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [detail, setDetail] = useState<Detail | null>(null);
   const [team, setTeam] = useState<Member[]>([]);
   const [search, setSearch] = useState("");
-  const [section, setSection] = useState<"dashboard" | "cases" | "tools" | "team">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "cases" | "tools" | "team" | "finance">(initialStaff.role === "admin" ? "dashboard" : "cases");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileCaseOpen, setMobileCaseOpen] = useState(false);
   const [casePanel, setCasePanel] = useState<"workflow" | "intake" | "documents" | "findings" | "activity">("workflow");
@@ -61,6 +66,9 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [teamEmail, setTeamEmail] = useState("");
+  const [financeTransactions, setFinanceTransactions] = useState<FinanceTransaction[]>([]);
+  const [financeSummary, setFinanceSummary] = useState({ income: 0, expenses: 0, balance: 0 });
+  const [financeForm, setFinanceForm] = useState({ type: "income" as "income" | "expense", date: new Date().toISOString().slice(0, 10), category: "", description: "", amount: "" });
   const [findingForm, setFindingForm] = useState(false);
   const [finding, setFinding] = useState({ category: "רישום זכויות", title: "", note: "", severity: "בינונית", source: "" });
   const [editingFindingId, setEditingFindingId] = useState<string | null>(null);
@@ -82,6 +90,16 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const loadTeam = useCallback(async () => {
     if (staff.role !== "admin") return;
     try { setTeam((await request<{ team: Member[] }>("/api/staff/team")).team); } catch (error) { setManagerError(error instanceof Error ? error.message : "לא הצלחנו לטעון את הצוות."); }
+  }, [staff.role]);
+
+  const loadFinance = useCallback(async () => {
+    if (staff.role !== "admin") return;
+    try {
+      const data = await request<{ transactions: FinanceTransaction[]; summary: { income: number; expenses: number; balance: number } }>("/api/staff/finance");
+      setFinanceTransactions(data.transactions);
+      setFinanceSummary(data.summary);
+      setManagerError("");
+    } catch (error) { setManagerError(error instanceof Error ? error.message : "לא הצלחנו לטעון את הנתונים הכספיים."); }
   }, [staff.role]);
 
   const loadDetail = useCallback(async (id: string | null) => {
@@ -176,8 +194,20 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
 
   const addMember = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true);
-    try { await request("/api/staff/team", { method: "POST", body: JSON.stringify({ email: teamEmail, role: "analyst" }) }); setTeamEmail(""); await loadTeam(); setNotice("האנליסט נוסף. עם הכניסה הראשונה שלו, ההרשאה תיקושר לחשבון שלו."); }
-    catch (error) { setNotice(error instanceof Error ? error.message : "לא הצלחנו להוסיף את האנליסט."); }
+    try { await request("/api/staff/team", { method: "POST", body: JSON.stringify({ email: teamEmail, role: "member" }) }); setTeamEmail(""); await loadTeam(); setNotice("ה-Member נוסף. עם הכניסה הראשונה, ההרשאה תיקושר לחשבון שלו."); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "לא הצלחנו להוסיף את העובד."); }
+    finally { setBusy(false); }
+  };
+
+  const addFinanceTransaction = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      await request("/api/staff/finance", { method: "POST", body: JSON.stringify({ ...financeForm, amount: Number(financeForm.amount) }) });
+      setFinanceForm((current) => ({ ...current, category: "", description: "", amount: "" }));
+      await loadFinance();
+      setNotice("הרישום הכספי נשמר.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "לא הצלחנו לשמור את הרישום."); }
     finally { setBusy(false); }
   };
 
@@ -277,7 +307,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   };
 
   const dueLabel = (value: string | null) => value ? new Intl.DateTimeFormat("he-IL", { dateStyle: "medium" }).format(new Date(value)) : "לא נקבע";
-  const sectionLabel = section === "dashboard" ? "לוח בקרה" : section === "cases" ? "ניהול תיקים" : section === "tools" ? "כלים חשובים" : "ניהול צוות";
+  const sectionLabel = section === "dashboard" ? "לוח בקרה" : section === "cases" ? "ניהול תיקים" : section === "tools" ? "כלים חשובים" : section === "team" ? "ניהול צוות" : "הכנסות והוצאות";
   const openCase = (id: string) => { setSelectedId(id); setCasePanel("workflow"); setWorkflowStepOverride(null); setSection("cases"); setMobileCaseOpen(true); };
   const navigateSection = (next: typeof section) => { setSection(next); setMobileNavOpen(false); if (next === "cases") setMobileCaseOpen(false); };
 
@@ -287,12 +317,13 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
       <div className="staff-brand"><span className="staff-mark">SD</span><span><b>SafeDeal</b><small>ניהול בדיקות</small></span><button className="mobile-nav-close" type="button" aria-label="סגירת תפריט" onClick={() => setMobileNavOpen(false)}><X size={20} /></button></div>
       <div className="sidebar-caption">סביבת צוות</div>
       <nav className="staff-nav" aria-label="ניווט ראשי">
-        <button className={`side-link ${section === "dashboard" ? "active" : ""}`} aria-current={section === "dashboard" ? "page" : undefined} onClick={() => navigateSection("dashboard")}><Gauge size={18} />לוח בקרה</button>
+        {staff.role === "admin" && <button className={`side-link ${section === "dashboard" ? "active" : ""}`} aria-current={section === "dashboard" ? "page" : undefined} onClick={() => navigateSection("dashboard")}><Gauge size={18} />לוח בקרה</button>}
         <button className={`side-link ${section === "cases" ? "active" : ""}`} aria-current={section === "cases" ? "page" : undefined} onClick={() => navigateSection("cases")}><LayoutDashboard size={18} />תיקים <span>{cases.length}</span></button>
         <button className={`side-link ${section === "tools" ? "active" : ""}`} aria-current={section === "tools" ? "page" : undefined} onClick={() => navigateSection("tools")}><Wrench size={18} />כלים חשובים</button>
+        {staff.role === "admin" && <button className={`side-link ${section === "finance" ? "active" : ""}`} aria-current={section === "finance" ? "page" : undefined} onClick={() => { navigateSection("finance"); void loadFinance(); }}><Wallet size={18} />הכנסות והוצאות</button>}
         {staff.role === "admin" && <button className={`side-link ${section === "team" ? "active" : ""}`} aria-current={section === "team" ? "page" : undefined} onClick={() => { navigateSection("team"); void loadTeam(); }}><Users size={18} />צוות</button>}
       </nav>
-      <div className="sidebar-bottom"><div className="sidebar-security"><ShieldCheck size={17} /><span><b>גישה מאובטחת</b><small>רק צוות מורשה</small></span></div><div className="staff-profile"><div className="profile-avatar">{staff.displayName.slice(0, 1)}</div><span><b>{staff.displayName}</b><small>{staff.role === "admin" ? "מנהלת מערכת" : "אנליסט"}</small></span><a title="התנתקות" href="/signout-with-chatgpt?return_to=%2F"><LogOut size={16} /></a></div></div>
+      <div className="sidebar-bottom"><div className="sidebar-security"><ShieldCheck size={17} /><span><b>גישה מאובטחת</b><small>רק צוות מורשה</small></span></div><div className="staff-profile"><div className="profile-avatar">{staff.displayName.slice(0, 1)}</div><span><b>{staff.displayName}</b><small>{staff.role === "admin" ? "Admin · מנהל מערכת" : "Member · אנליסט"}</small></span><a title="התנתקות" href="/signout-with-chatgpt?return_to=%2F"><LogOut size={16} /></a></div></div>
     </aside>
     {mobileNavOpen && <button className="staff-nav-scrim" type="button" aria-label="סגירת תפריט" onClick={() => setMobileNavOpen(false)} />}
     <main className="staff-main" id="staff-content" tabIndex={-1}>
@@ -315,7 +346,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
               <div className="case-detail-new">{!selectedCase || !detail ? <div className="empty-detail"><Building2 size={26} /><b>{cases.length ? "בחרו תיק מהרשימה" : "התיק הראשון יופיע כאן"}</b><span>פרטי הלקוח, הנכס והבדיקה יוצגו באזור הזה.</span></div> : <>
               <button className="case-mobile-back" type="button" onClick={() => setMobileCaseOpen(false)}><ChevronLeft size={16} />חזרה לרשימת התיקים</button>
               <div className="detail-top"><div><span className="case-number">{selectedCase.caseNumber}</span><h2>{selectedCase.clientName}</h2><p>{selectedCase.assetType} · {selectedCase.street} {selectedCase.house}, {selectedCase.city}</p></div><span className={`status-tag state-${statuses.indexOf(selectedCase.status)}`}>{selectedCase.status}</span></div>
-              <div className="detail-controls"><label>סטטוס<select value={selectedCase.status} disabled={busy} onChange={(e) => void updateCase({ status: e.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select></label>{staff.role === "admin" && <label>אנליסט אחראי<select value={selectedCase.analystEmail ?? ""} disabled={busy} onChange={(e) => void updateCase({ analystEmail: e.target.value })}><option value="">לא משויך</option>{team.filter((member) => member.active && member.role === "analyst").map((member) => <option key={member.email} value={member.email}>{member.displayName}</option>)}</select></label>}{staff.role === "admin" && <label>תאריך יעד<input type="date" value={selectedCase.dueAt ? new Date(selectedCase.dueAt).toISOString().slice(0, 10) : ""} disabled={busy} onChange={(e) => void updateCase({ dueAt: e.target.value ? new Date(`${e.target.value}T23:59:00`).toISOString() : null })} /></label>}<div className="due-chip"><CalendarClock size={16} /><span><small>תאריך יעד</small><b>{dueLabel(selectedCase.dueAt)}</b></span></div></div>
+              <div className="detail-controls"><label>סטטוס<select value={selectedCase.status} disabled={busy} onChange={(e) => void updateCase({ status: e.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select></label>{staff.role === "admin" && <label>Member אחראי<select value={selectedCase.analystEmail ?? ""} disabled={busy} onChange={(e) => void updateCase({ analystEmail: e.target.value })}><option value="">לא משויך</option>{team.filter((member) => member.active && member.role === "member").map((member) => <option key={member.email} value={member.email}>{member.displayName}</option>)}</select></label>}{staff.role === "admin" && <label>תאריך יעד<input type="date" value={selectedCase.dueAt ? new Date(selectedCase.dueAt).toISOString().slice(0, 10) : ""} disabled={busy} onChange={(e) => void updateCase({ dueAt: e.target.value ? new Date(`${e.target.value}T23:59:00`).toISOString() : null })} /></label>}<div className="due-chip"><CalendarClock size={16} /><span><small>תאריך יעד</small><b>{dueLabel(selectedCase.dueAt)}</b></span></div></div>
               <div className="contact-strip"><div><small>דוא״ל לקוח</small><a href={`mailto:${selectedCase.clientEmail}`}>{selectedCase.clientEmail}</a></div><div><small>טלפון</small><a href={`tel:${selectedCase.clientPhone}`}>{selectedCase.clientPhone}</a></div><div><small>מחיר מבוקש</small><b>₪ {selectedCase.price || "לא צוין"}</b></div></div>
               <nav className="case-panel-nav" aria-label="אזורי התיק">{([{ id: "workflow", label: "תהליך" }, { id: "intake", label: "פרטי הבקשה" }, { id: "documents", label: `מסמכים (${detail.documents.length})` }, { id: "findings", label: `ממצאים ודוח (${detail.findings.length})` }, { id: "activity", label: "היסטוריה" }] as const).map((item) => <button type="button" key={item.id} className={casePanel === item.id ? "active" : ""} aria-current={casePanel === item.id ? "page" : undefined} onClick={() => setCasePanel(item.id)}>{item.label}</button>)}</nav>
               {casePanel === "workflow" && (selectedCase.status === "חדש" ? <section className="workflow-launch"><div><span className="workflow-kicker">התחלת טיפול</span><h3>התיק מוכן למעבר לאנליסט</h3><p>נעבור יחד על פרטי הבקשה, נאסוף את המסמכים ונכין את התיק לניתוח.</p></div><button className="button-primary" disabled={busy} onClick={() => void updateCase({ status: "באיסוף מידע" })}><Activity size={16} />תחילת תהליך אנליזה</button></section> : <section className="analysis-workflow" aria-label="מסלול אנליזה"><div className="workflow-heading"><div><span className="workflow-kicker">מסלול עבודה לתיק</span><h3>מתקדמים שלב אחר שלב</h3><p>השלבים והמסמכים נשמרים בתיק. הדוח נשלח ללקוח רק לאחר אישור אנליסט.</p></div><span className="workflow-status">{selectedCase.status}</span></div><div className="workflow-progress" aria-label={`הושלמו ${workflowCompletedCount} מתוך 6 שלבים`}><div className="workflow-progress-copy"><b>{workflowCurrentStep >= 0 ? `השלב הבא: ${workflowStepTitles[workflowCurrentStep]}` : "כל שלבי העבודה הושלמו"}</b><span>{workflowCompletedCount} מתוך 6 שלבים הושלמו</span></div><div className="workflow-progress-track"><i style={{ width: `${workflowCompletedCount / 6 * 100}%` }} /></div></div><div className="workflow-step-nav" aria-label="בחירת שלב בתהליך">{workflowStepTitles.map((title, index) => <button key={title} type="button" className={`${activeWorkflowStep === index ? "active" : ""} ${workflowDone[index] ? "done" : ""}`} aria-current={activeWorkflowStep === index ? "step" : undefined} onClick={() => setWorkflowStepOverride(index)}><span>{workflowDone[index] ? <Check size={13} /> : String(index + 1).padStart(2, "0")}</span><b>{title}</b></button>)}</div><div className="workflow-grid">
@@ -354,7 +385,13 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
             <article className="analyst-guide"><span className="guide-number">2</span><div><b>מחפשים כל בעל זכויות בנפרד</b><p>במרשם המשכונות יש לבצע חיפוש לכל בעל/ת זכויות לפי הפרטים מהנסח. שמור את תוצאת החיפוש וצרף לתיק, גם כשלא נמצאה התאמה.</p></div></article>
             <article className="analyst-guide"><span className="guide-number">3</span><div><b>מתעדים מקור ותאריך</b><p>לכל דוח או ממצא רשום מאיזה אתר נאסף ומתי. חיפוש בשם דומה לבדו אינו הוכחה שמדובר באותו אדם; אמת את ההתאמה מול פרטי הנסח.</p></div></article>
           </div></section>
-        </> : <section className="team-panel"><div className="staff-heading"><div><div className="eyebrow">הרשאות</div><h1>ניהול צוות</h1><p>רק עובדים שנוספו לכאן יוכלו להיכנס לתיקים.</p></div></div><form className="team-invite" onSubmit={addMember}><div><b>הוספת אנליסט</b><small>לאחר הוספתו, העובד ייכנס באמצעות החשבון שלו.</small></div><input type="email" placeholder="כתובת דוא״ל של העובד" value={teamEmail} onChange={(e) => setTeamEmail(e.target.value)} required /><button className="button-primary" disabled={busy}><Plus size={16} />הוספה לצוות</button></form><div className="team-list">{team.map((member) => <div className="team-row" key={member.email}><div className="profile-avatar">{member.displayName.slice(0, 1)}</div><span><b>{member.displayName}</b><small>{member.email}</small></span><span className="team-role">{member.role === "admin" ? "מנהלת מערכת" : "אנליסט"}</span><span className={member.active ? "member-active" : "member-inactive"}>{member.active ? "פעיל" : "לא פעיל"}</span></div>)}{!team.length && <div className="empty-state">רשימת הצוות ריקה.</div>}</div></section>}
+        </> : section === "finance" && staff.role === "admin" ? <>
+          <div className="staff-heading"><div><div className="eyebrow">ניהול פנימי · Admin בלבד</div><h1>הכנסות והוצאות</h1><p>יומן ידני למעקב אחר תנועות העסק. אין כאן חיוב לקוחות או חיבור בנקאי.</p></div><button className="outline-action" onClick={() => void loadFinance()}><Activity size={16} />רענון</button></div>
+          {managerError && <div className="notice error"><CircleAlert size={17} />{managerError}</div>}
+          <div className="staff-metrics finance-metrics"><article><span className="metric-label">הכנסות רשומות</span><b>{financeMoney(financeSummary.income)}</b><small>סך כל הרישומים במערכת</small></article><article><span className="metric-label">הוצאות רשומות</span><b>{financeMoney(financeSummary.expenses)}</b><small>סך כל הרישומים במערכת</small></article><article><span className="metric-label">יתרה חשבונאית</span><b>{financeMoney(financeSummary.balance)}</b><small>הכנסות פחות הוצאות</small></article></div>
+          <section className="finance-layout"><form className="finding-form finance-form" onSubmit={addFinanceTransaction}><div className="section-title"><div><b>הוספת תנועה</b><small>הזינו הכנסה או הוצאה לצורך מעקב</small></div></div><div className="form-grid"><label>סוג תנועה<select value={financeForm.type} onChange={(event) => setFinanceForm({ ...financeForm, type: event.target.value as "income" | "expense" })}><option value="income">הכנסה</option><option value="expense">הוצאה</option></select></label><label>תאריך<input type="date" value={financeForm.date} onChange={(event) => setFinanceForm({ ...financeForm, date: event.target.value })} required /></label><label>קטגוריה<input value={financeForm.category} onChange={(event) => setFinanceForm({ ...financeForm, category: event.target.value })} placeholder="לדוגמה: בדיקה, תוכנה, שיווק" maxLength={80} required /></label><label>סכום בש״ח<input type="number" min="0.01" max="10000000" step="0.01" value={financeForm.amount} onChange={(event) => setFinanceForm({ ...financeForm, amount: event.target.value })} required /></label><label className="span-two">תיאור<input value={financeForm.description} onChange={(event) => setFinanceForm({ ...financeForm, description: event.target.value })} maxLength={300} required /></label></div><div className="form-actions"><button className="button-primary" disabled={busy}><Plus size={16} />שמירת תנועה</button></div></form>
+          <section className="finance-transactions"><div className="section-title"><div><b>תנועות אחרונות</b><small>{financeTransactions.length} תנועות מוצגות</small></div></div>{financeTransactions.length ? <div className="finance-list">{financeTransactions.map((item) => <article className="finance-row" key={item.id}><span className={`finance-kind ${item.type}`}>{item.type === "income" ? "הכנסה" : "הוצאה"}</span><span className="finance-copy"><b>{item.description}</b><small>{item.category} · {new Date(`${item.date}T12:00:00`).toLocaleDateString("he-IL")}</small></span><b className={`finance-amount ${item.type}`}>{item.type === "income" ? "+" : "−"}{financeMoney(item.amount)}</b></article>)}</div> : <div className="inline-empty">עדיין לא נרשמו הכנסות או הוצאות.</div>}</section></section>
+        </> : <section className="team-panel"><div className="staff-heading"><div><div className="eyebrow">הרשאות</div><h1>ניהול צוות</h1><p>רק עובדים שנוספו לכאן יוכלו להיכנס לתיקים.</p></div></div><form className="team-invite" onSubmit={addMember}><div><b>הוספת Member</b><small>העובד ייכנס באמצעות החשבון שלו ויוכל לבצע את שלבי האנליזה.</small></div><input type="email" placeholder="כתובת דוא״ל של העובד" value={teamEmail} onChange={(e) => setTeamEmail(e.target.value)} required /><button className="button-primary" disabled={busy}><Plus size={16} />הוספה לצוות</button></form><div className="team-list">{team.map((member) => <div className="team-row" key={member.email}><div className="profile-avatar">{member.displayName.slice(0, 1)}</div><span><b>{member.displayName}</b><small>{member.email}</small></span><span className="team-role">{member.role === "admin" ? "Admin · מנהל מערכת" : "Member · אנליסט"}</span><span className={member.active ? "member-active" : "member-inactive"}>{member.active ? "פעיל" : "לא פעיל"}</span></div>)}{!team.length && <div className="empty-state">רשימת הצוות ריקה.</div>}</div></section>}
       </div>
     </main>
     {notice && <div className="staff-toast" role="status">{notice}<button onClick={() => setNotice("")} aria-label="סגירה"><X size={15} /></button></div>}

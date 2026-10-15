@@ -1,16 +1,16 @@
 /* SafeDeal staff workspace — calm, high-clarity analyst interface */
 :root {
-  --sd-ink: #1b3035;
-  --sd-muted: #667b80;
-  --sd-soft: #87989b;
-  --sd-line: #e2eae7;
-  --sd-canvas: #f4f7f5;
+  --sd-ink: #17233b;
+  --sd-muted: #59677c;
+  --sd-soft: #8995a8;
+  --sd-line: #e0e6ef;
+  --sd-canvas: #f4f6fa;
   --sd-paper: #fff;
-  --sd-teal: #126b60;
-  --sd-teal-dark: #0c514a;
-  --sd-teal-wash: #eaf5f0;
-  --sd-navy: #102b36;
-  --sd-shadow: 0 8px 24px rgb(27 48 53 / 5%);
+  --sd-teal: #4864c8;
+  --sd-teal-dark: #344eab;
+  --sd-teal-wash: #eef2ff;
+  --sd-navy: #17233b;
+  --sd-shadow: 0 14px 34px rgb(23 35 59 / 6%);
 }
 
 .staff-app,
@@ -631,4 +631,114 @@ html { scroll-behavior: smooth; }
   .cadastral-entry label:last-child { grid-column: 1 / -1; }
   .client-history-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; }
   .client-history-row .text-action { grid-column: 1 / -1; justify-self: start; }
+}
+
+
+/* SafeDeal analyst workspace refresh: calmer palette, clearer hierarchy, generous spacing. */
+.staff-app, .access-screen { color: #17233b; background: #f4f6fa; font-family: Arial, "Noto Sans Hebrew", sans-serif; }
+.staff-app button:focus-visible, .staff-app a:focus-visible, .staff-app input:focus-visible,
+.staff-app select:focus-visible, .staff-app textarea:focus-visible, .staff-main:focus-visible { outline-color: #5872d6; }
+.staff-sidebar { background: #17233b; box-shadow: 10px 0 34px rgb(23 35 59 / 8%); }
+.staff-mark, .brand-lockup>span { color: #17233b; background: #a9baff; }
+.side-link.active { background: #263b70; box-shadow: inset -3px 0 #9fb2ff; }
+.side-link.active svg { color: #bbc8ff; }
+.staff-profile .profile-avatar { color: #263b70; background: #e4eaff; }
+.staff-topbar { border-color: #e0e6ef; }
+.staff-content { padding-top: 38px; padding-bottom: 72px; }
+.staff-heading { margin-bottom: 30px; }
+.staff-heading h1 { color: #17233b; }
+.eyebrow, .workflow-kicker { color: #4c63b4; }
+.case-list-new, .case-detail-new, .detail-section, .case-summary-card, .dashboard-card { border-color: #e1e6ee; border-radius: 16px; box-shadow: 0 8px 28px rgb(28 42 67 / 5%); }
+.case-list-new, .case-detail-new { background: #fff; }
+.list-head { padding: 23px 22px 15px; }
+.list-head b, .section-title b { color: #17233b; }
+.list-count { color: #3e57b2; background: #eef2ff; border-radius: 10px; }
+.case-search { min-height: 48px; border-color: #dfe5ef; border-radius: 11px; }
+.case-row-new { padding: 17px 18px; border-color: #edf0f5; }
+.case-row-new.selected { background: #f1f4ff; box-shadow: inset -3px 0 #526bd0; }
+.case-detail-new { padding: 23px; }
+.detail-top { padding-bottom: 19px; border-color: #e9edf3; }
+.detail-top h2 { color: #17233b; font-size: 25px; }
+.detail-top p { color: #59677c; font-size: 14px; }
+.case-panel-nav { top: 66px; gap: 8px; padding: 13px 0 15px; background: rgb(255 255 255 / 97%); }
+.case-panel-nav button { min-height: 42px; padding-inline: 16px; border-radius: 10px; color: #59677c; font-size: 13px; }
+.case-panel-nav button.active { border-color: #d6defa; color: #344eab; background: #eef2ff; }
+.contact-strip { gap: 14px; margin-block: 17px; }
+.contact-strip>div { min-height: 69px; padding: 14px 16px; border-color: #e8edf4; border-radius: 12px; background: #f9faff; }
+.contact-strip small { color: #748097; }
+.contact-strip b, .contact-strip a { color: #263753; }
+.property-context { margin: 20px 0 22px; padding: 22px 24px; border: 1px solid #dfe5f1; border-radius: 16px; background: #f8f9fd; }
+.property-context-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
+.property-context-heading h3 { margin: 3px 0 0; color: #17233b; font-size: 17px; }
+.property-copy-button { min-height: 40px; padding: 0 15px; border: 1px solid #d6def5; border-radius: 10px; color: #3c55b2; background: #fff; font-size: 12px; font-weight: 700; }
+.property-copy-button:hover { border-color: #9baae2; background: #f3f5ff; }
+.property-context-grid { display: grid; grid-template-columns: minmax(200px,2fr) repeat(3,minmax(90px,.72fr)); gap: 10px; }
+.property-context-grid>div { display: flex; min-width: 0; min-height: 72px; flex-direction: column; justify-content: center; gap: 5px; padding: 12px 15px; border: 1px solid #e7eaf1; border-radius: 11px; background: #fff; }
+.property-context-grid small { color: #77839a; font-size: 11px; }
+.property-context-grid b { color: #233450; font-size: 15px; overflow-wrap: anywhere; }
+.property-context-grid .property-address b { font-size: 17px; }
+.property-context-grid .property-owners { grid-column: 1 / -1; min-height: 60px; }
+.property-context-note { margin: 13px 0 0; color: #68758b; font-size: 12px; line-height: 1.55; }
+.workflow-launch, .analysis-workflow { border-color: #e0e6ef; border-radius: 17px; background: #fff; box-shadow: 0 8px 28px rgb(28 42 67 / 4%); }
+.workflow-launch { padding: 26px 28px; }
+.workflow-launch h3, .workflow-heading h3 { color: #17233b; font-size: 20px; }
+.workflow-launch p, .workflow-heading p { color: #68758b; font-size: 14px; }
+.analysis-workflow { padding: 26px; }
+.workflow-heading { margin-bottom: 20px; }
+.workflow-status { padding: 8px 13px; border-color: #e0e6ef; color: #465978; background: #f7f8fb; font-size: 12px; }
+.workflow-progress { margin-bottom: 20px; padding: 16px 18px; border-color: #e4e9f1; border-radius: 12px; background: #fafbfe; }
+.workflow-progress-copy { margin-bottom: 12px; }
+.workflow-progress-copy b { color: #263753; font-size: 14px; }
+.workflow-progress-copy span { color: #76829a; font-size: 12px; }
+.workflow-progress-track { height: 7px; background: #e8ecf4; }
+.workflow-progress-track i { background: linear-gradient(90deg,#91a5f5,#4d66cb); }
+.workflow-layout { display: grid; grid-template-columns: minmax(220px,.72fr) minmax(0,1.8fr); align-items: start; gap: 18px; }
+.workflow-step-nav { display: grid; gap: 7px; margin: 0; padding: 0; overflow: visible; }
+.workflow-step-nav button { position: relative; min-width: 0; min-height: 66px; flex: initial; gap: 10px; padding: 11px 12px; border-color: #e5e9f0; border-radius: 12px; background: #fff; }
+.workflow-step-nav button.active { border-color: #aebcf0; color: #314a9e; background: #f2f4ff; box-shadow: 0 0 0 2px #e5eaff; }
+.workflow-step-nav button.done:not(.active) { color: #486659; }
+.workflow-step-nav button>span { width: 30px; height: 30px; border-radius: 9px; color: #53658c; background: #f0f2f7; font-size: 11px; }
+.workflow-step-nav button.done>span { color: #31735c; background: #e8f4ec; }
+.workflow-step-nav button b { flex: 1; color: inherit; font-size: 12px; }
+.workflow-step-nav button small { color: #7c879c; font-size: 10px; white-space: nowrap; }
+.workflow-stage { min-width: 0; }
+.workflow-grid { display: block; }
+.workflow-step { min-height: 220px; grid-template-columns: 42px minmax(0,1fr) 28px; gap: 15px; padding: 24px; border-color: #e3e8f0; border-radius: 15px; }
+.workflow-step-number { width: 38px; height: 38px; border-radius: 11px; color: #445dbc; background: #eef2ff; font-size: 12px; }
+.workflow-step b { color: #1c2d49; font-size: 16px; }
+.workflow-step.is-active { border-color: #bdc9f4; background: #fbfbff; box-shadow: 0 0 0 2px #edf0ff; }
+.workflow-step.is-active b::after { margin-inline-start: 9px; padding: 4px 8px; color: #3d55ad; background: #eaf0ff; font-size: 10px; }
+.workflow-step p { margin: 10px 0 16px; color: #66738a; font-size: 14px; line-height: 1.7; }
+.workflow-sellers { margin: 0 0 13px; color: #586984; font-size: 13px; }
+.cadastral-entry { gap: 14px; margin: 18px 0; }
+.cadastral-entry label { gap: 7px; color: #40516e; font-size: 13px; }
+.cadastral-entry input { min-height: 46px; padding: 10px 13px; border-color: #dce3ee; border-radius: 10px; color: #1f304c; background: #fff; }
+.workflow-source-link { color: #435bb5; }
+.workflow-action { min-height: 40px; padding: 9px 14px; border-color: #dbe2ef; border-radius: 10px; color: #405797; background: #f7f8fc; font-size: 13px; }
+.workflow-action:hover:not(:disabled) { border-color: #aebbe9; background: #f0f3ff; }
+.workflow-action.strong, .workflow-action.strong:hover:not(:disabled) { border-color: #405bc1; color: #fff; background: #405bc1; }
+.workflow-step-actions { gap: 10px; margin-top: 17px; }
+.analyst-checklist { margin-top: 18px; border-color: #e1e6ee; border-radius: 14px; }
+.analyst-checklist summary { padding-block: 6px; }
+.inline-empty { border-radius: 12px; background: #f7f8fb; }
+@media (max-width: 980px) {
+  .workflow-layout { grid-template-columns: minmax(190px,.7fr) minmax(0,1.5fr); gap: 12px; }
+  .workflow-step-nav button { flex-wrap: wrap; }
+  .workflow-step-nav button small { margin-inline-start: 40px; }
+}
+@media (max-width: 700px) {
+  .staff-content { padding: 24px 15px 50px; }
+  .case-detail-new { padding: 16px; }
+  .case-panel-nav { top: 58px; margin-inline: -16px; padding-inline: 16px; }
+  .property-context { padding: 17px; }
+  .property-context-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .property-context-grid .property-address, .property-context-grid .property-owners { grid-column: 1 / -1; }
+  .property-context-heading { align-items: flex-start; flex-direction: column; }
+  .workflow-layout { grid-template-columns: 1fr; }
+  .workflow-step-nav { display: flex; overflow-x: auto; padding-bottom: 7px; }
+  .workflow-step-nav button { min-width: 150px; min-height: 74px; flex: 0 0 150px; align-content: center; }
+  .workflow-step-nav button small { margin: 0; }
+  .workflow-step { grid-template-columns: 34px minmax(0,1fr); padding: 19px; }
+  .workflow-step>.workflow-check { display: none; }
+  .workflow-heading { flex-direction: column; }
 }

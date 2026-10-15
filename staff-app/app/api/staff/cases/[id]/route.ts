@@ -105,18 +105,18 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       sets.push("status = ?"); values.push(body.status); notes.push(`סטטוס: ${body.status}`);
     }
     if (body.dueAt !== undefined) {
-      if (staff.role !== "admin") return jsonError("רק מנהל יכול לשנות יעד לתיק.", 403);
+      if (staff.role !== "admin") return jsonError("רק Admin יכול לשנות יעד לתיק.", 403);
       const dueAt = typeof body.dueAt === "string" && body.dueAt ? body.dueAt : null;
       if (dueAt && Number.isNaN(Date.parse(dueAt))) return jsonError("תאריך יעד לא תקין.", 400);
       sets.push("due_at = ?"); values.push(dueAt); notes.push("תאריך היעד עודכן");
     }
     if (body.analystEmail !== undefined) {
-      if (staff.role !== "admin") return jsonError("רק מנהל יכול לשייך אנליסט.", 403);
+      if (staff.role !== "admin") return jsonError("רק Admin יכול לשייך Member.", 403);
       const email = typeof body.analystEmail === "string" ? body.analystEmail.toLowerCase().trim() : "";
       let member: { user_id: string; email: string } | null = null;
       if (email) {
-        member = await getDb().$client.prepare(`SELECT user_id, email FROM staff_members WHERE email = ? AND role = 'analyst' AND active = 1`).bind(email).first<{ user_id: string; email: string }>();
-        if (!member) return jsonError("העובד לא נמצא ברשימת האנליסטים הפעילים.", 400);
+        member = await getDb().$client.prepare(`SELECT user_id, email FROM staff_members WHERE email = ? AND role IN ('member', 'analyst') AND active = 1`).bind(email).first<{ user_id: string; email: string }>();
+        if (!member) return jsonError("העובד לא נמצא ברשימת ה-Member הפעילים.", 400);
       }
       sets.push("analyst_user_id = ?", "analyst_email = ?"); values.push(member?.user_id ?? null, member?.email ?? null); notes.push(member ? `שויך ל-${member.email}` : "שיוך האנליסט הוסר");
     }

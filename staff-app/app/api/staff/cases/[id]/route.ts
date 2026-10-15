@@ -107,8 +107,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     ] as const;
     for (const field of editablePropertyFields) {
       if (body[field.key] === undefined) continue;
-      if (body[field.key] !== null && typeof body[field.key] !== "string") return jsonError(`ערך ${field.label} אינו תקין.`, 400);
-      const value = typeof body[field.key] === "string" ? body[field.key].trim().slice(0, field.maxLength) : "";
+      const rawValue = body[field.key];
+      if (rawValue !== null && typeof rawValue !== "string") return jsonError(`ערך ${field.label} אינו תקין.`, 400);
+      const value = typeof rawValue === "string" ? rawValue.trim().slice(0, field.maxLength) : "";
       if (value && !/^\d+$/.test(value)) return jsonError(`יש להזין מספרים בלבד בשדה ${field.label}.`, 400);
       sets.push(`${field.column} = ?`);
       values.push(value || null);

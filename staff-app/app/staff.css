@@ -1191,3 +1191,15 @@ html { scroll-behavior: smooth; }
   .staff-content:not(.staff-content-cases) { padding: 22px 15px 40px; }
   .staff-topbar { height: 58px; padding-inline: 14px; }
 }
+
+/* Keep the analyst's next action above the fold; secondary contact data stays in request details. */
+.case-workspace-new.case-focus-mode .analysis-workflow { grid-template-columns: minmax(0,1fr) 300px; }
+.case-workspace-new.case-focus-mode .workflow-heading { display: none; }
+.case-workspace-new.case-focus-mode .workflow-progress { padding-top: 3px; }
+.case-workspace-new.case-focus-mode .workflow-progress-copy { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.case-workspace-new.case-focus-mode .analyst-checklist { grid-row: 2; }
+@media (max-width: 900px) {
+  .case-workspace-new.case-focus-mode .workflow-heading { display: none; }
+  .case-workspace-new.case-focus-mode .workflow-progress { grid-column: 1; }
+  .case-workspace-new.case-focus-mode .analyst-checklist { grid-row: auto; }
+}

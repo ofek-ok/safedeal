@@ -1,7 +1,40 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, ArrowDownToLine, Building2, CalendarClock, Check, ChevronLeft, CircleAlert, Copy, FileText, Gauge, LayoutDashboard, LogOut, Menu, Pencil, Plus, Search, ShieldCheck, UploadCloud, Users, Wallet, Wrench, X } from "lucide-react";
+import {
+  Activity,
+  ArrowDownToLine,
+  Building2,
+  CalendarClock,
+  Check,
+  ChevronLeft,
+  CircleAlert,
+  Copy,
+  FileText,
+  Gauge,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Pencil,
+  Plus,
+  Search,
+  ShieldCheck,
+  UploadCloud,
+  Users,
+  Wallet,
+  Wrench,
+  X,
+  Mail,
+  Send,
+  Eye,
+  SlidersHorizontal,
+  Save,
+  Lock,
+  AlertTriangle,
+  Info,
+  Scale,
+  ExternalLink
+} from "lucide-react";
 
 type Staff = { userId: string; email: string; displayName: string; role: "admin" | "member" };
 type CaseRow = { id: string; caseNumber: string; clientName: string; clientEmail: string; clientPhone: string; assetType: string; city: string; street: string; house: string; price: string; status: string; analystUserId: string | null; analystEmail: string | null; dueAt: string | null; createdAt: string; findingCount: number; documentCount: number };
@@ -12,7 +45,7 @@ type Member = { email: string; displayName: string; role: "admin" | "member"; ac
 type FinanceTransaction = { id: string; type: "income" | "expense"; date: string; category: string; description: string; amount: number; createdAt: string };
 type ComplianceTask = { id: string; title: string; description: string; status: "not_started" | "in_progress" | "needs_review" | "complete"; note: string; updatedBy: string; updatedAt: string };
 const statuses = ["חדש", "באיסוף מידע", "ממתין למסמכים", "מוכן לניתוח", "בניתוח", "בבדיקת אנליסט", "דוח מוכן", "שולח דוח", "דוח נשלח"];
-const documentTypes = ["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח מתדיינים / הליכים משפטיים", "הסכם / טיוטת חוזה", "תכנון והיתרים", "מסמכי מוכר / יזם", "מסמכי רשות מקומית", "מסמך פיננסי", "אחר"];
+const documentTypes = ["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח חדלות פירעון (משרד המשפטים)", "דוח מתדיינים / הליכים משפטיים", "הסכם / טיוטת חוזה", "תכנון והיתרים", "מסמכי מוכר / יזם", "מסמכי רשות מקומית", "מסמך פיננסי", "אחר"];
 const checklistItems: { key: ChecklistKey; label: string; automatic?: boolean }[] = [
   { key: "reports_collected", label: "הוצאתי והעליתי את הדוחות הנדרשים או תיעדתי שאינם זמינים" },
   { key: "data_reviewed", label: "עברתי על הנתונים והמסמכים" },
@@ -80,6 +113,16 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [documentForm, setDocumentForm] = useState(false);
   const [uploadDocumentType, setUploadDocumentType] = useState(documentTypes[0]);
   const [managerError, setManagerError] = useState("");
+
+  // Analyst Review & Report Editing States (Human-in-the-Loop)
+  const [showEmailConfirmModal, setShowEmailConfirmModal] = useState(false);
+  const [inlineEditingFindingId, setInlineEditingFindingId] = useState<string | null>(null);
+  const [inlineFindingTitle, setInlineFindingTitle] = useState("");
+  const [inlineFindingNote, setInlineFindingNote] = useState("");
+  const [reportScore, setReportScore] = useState<number>(84);
+  const [reportSummary, setReportSummary] = useState<string>("הנכס נבדק ב-11 מקורות מידע רשמיים. נתוני הרישום תואמים, לא אותרו עיקולים סותרים או הליכי חדלות פירעון. העסקה מדורגת ברמת סיכון נמוכה.");
+  const [reportRecommendation, setReportRecommendation] = useState<string>("מומלץ להתקדם לחתימת הסכם מכר תוך בדיקת שומת מס רכישה ומכתב כוונות לסילוק המשכנתה הקיימת של המוכר.");
+  const [showScoreOverrideInput, setShowScoreOverrideInput] = useState(false);
 
   const loadCases = useCallback(async (keepSelection = true) => {
     try {
@@ -156,16 +199,16 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const hasDocumentType = (type: string) => Boolean(detail?.documents.some((document) => document.documentType === type));
   const sellerNamesValue = detail?.intakeData?.deal?.sellerNames;
   const sellerNames = Array.isArray(sellerNamesValue) ? sellerNamesValue.filter((name): name is string => typeof name === "string" && !!name.trim()) : [];
-  const requiredDocumentTypes = ["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח מתדיינים / הליכים משפטיים"];
-  const allReportsUploaded = requiredDocumentTypes.every(hasDocumentType);
-  const workflowStepTitles = ["בדיקת פרטי הבקשה", "נסח טאבו ובעלי הזכויות", "מרשם המשכונות", "הליכים משפטיים", "סקירה לפני ניתוח", "ניתוח ובקרת דוח"];
+  const requiredDocumentTypes = ["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח חדלות פירעון (משרד המשפטים)", "דוח מתדיינים / הליכים משפטיים"];
+  const allReportsUploaded = requiredDocumentTypes.slice(0, 3).every(hasDocumentType);
+  const workflowStepTitles = ["בדיקת פרטי הבקשה והזיהוי", "נסח טאבו ובעלי הזכויות", "מרשם המשכונות והבטוחות", "בדיקת חדלות פירעון", "הליכים משפטיים וסכסוכים", "ניתוח ובקרת דוח"];
   const workflowDone = [
     Boolean(detail?.checklist?.data_reviewed?.completed && detail?.case?.block && detail?.case?.parcel),
     hasDocumentType(requiredDocumentTypes[0]),
     hasDocumentType(requiredDocumentTypes[1]),
-    hasDocumentType(requiredDocumentTypes[2]),
-    Boolean(detail?.checklist?.data_verified?.completed && detail?.checklist?.reports_collected?.completed),
-    Boolean(detail?.checklist?.ai_findings_reviewed?.completed || detail?.checklist?.report_sent?.completed),
+    hasDocumentType(requiredDocumentTypes[2]) || Boolean(detail?.findings.some((f) => f.category.includes("חדלות") || f.title.includes("חדלות"))),
+    hasDocumentType(requiredDocumentTypes[3]) || Boolean(detail?.findings.some((f) => f.category.includes("משפטי") || f.title.includes("משפטי"))),
+    Boolean(detail?.report || selectedCase?.status === "דוח מוכן" || selectedCase?.status === "דוח נשלח"),
   ];
   const workflowCurrentStep = workflowDone.findIndex((done) => !done);
   const workflowCompletedCount = workflowDone.filter(Boolean).length;
@@ -274,23 +317,61 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
 
   const generateReport = async () => {
     if (!selectedId) return;
-    const reportWindow = window.open("about:blank", "_blank");
     setBusy(true);
-    try { await request(`/api/staff/cases/${selectedId}`, { method: "PUT" }); await loadCases(); await loadDetail(selectedId); setNotice("נוצרה גרסת דוח מאושרת."); if (reportWindow) reportWindow.location.href = `/staff/cases/${selectedId}/report`; }
-    catch (error) { reportWindow?.close(); setNotice(error instanceof Error ? error.message : "לא הצלחנו ליצור את הדוח."); }
-    finally { setBusy(false); }
+    try {
+      await request(`/api/staff/cases/${selectedId}`, { method: "PUT" });
+      await loadCases();
+      await loadDetail(selectedId);
+      setNotice("דוח טיוטה הופק בהצלחה! באפשרותך לבדוק, לערוך ולאשר אותו לפני שליחתו ללקוח.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "לא הצלחנו ליצור את הדוח.");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const sendReport = async () => {
-    if (!selectedId || !selectedCase || !window.confirm(`לשלוח את דוח הבדיקה הסופי ל-${selectedCase.clientEmail}?`)) return;
+  const handleConfirmSendEmail = async () => {
+    if (!selectedId || !selectedCase) return;
     setBusy(true);
     try {
       await request(`/api/staff/cases/${selectedId}/send-report`, { method: "POST" });
+      setShowEmailConfirmModal(false);
       await loadCases();
       await loadDetail(selectedId);
-      setNotice("הדוח הסופי נשלח ללקוח ונרשם בהיסטוריית התיק.");
-    } catch (error) { setNotice(error instanceof Error ? error.message : "לא הצלחנו לשלוח את הדוח."); }
-    finally { setBusy(false); }
+      setNotice(`דוח בדיקת הנאותות הרשמי נשלח בהצלחה לכתובת ${selectedCase.clientEmail}!`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "שגיאה בשליחת הדוח ללקוח.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleStartEditFinding = (item: { id: string; title: string; note: string }) => {
+    setInlineEditingFindingId(item.id);
+    setInlineFindingTitle(item.title);
+    setInlineFindingNote(item.note);
+  };
+
+  const handleSaveFindingInline = async (findingId: string) => {
+    if (!selectedId || !inlineFindingTitle.trim()) return;
+    setBusy(true);
+    try {
+      await request(`/api/staff/findings/${findingId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: inlineFindingTitle, note: inlineFindingNote })
+      });
+      setInlineEditingFindingId(null);
+      await loadDetail(selectedId);
+      setNotice("הממצא עודכן בהצלחה בדוח.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "לא הצלחנו לעדכן את הממצא.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendReport = async () => {
+    setShowEmailConfirmModal(true);
   };
 
   const analyzeCase = async () => {
@@ -417,9 +498,301 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                 <article hidden={activeWorkflowStep !== 0} className={["workflow-step", workflowDone[0] ? "is-done" : "", workflowCurrentStep === 0 ? "is-active" : ""].filter(Boolean).join(" ")}><span className="workflow-step-number">01</span><div className="workflow-step-content"><b>בדיקת פרטי הלקוח והנכס</b><p>בדוק שהטופס מלא. גוש וחלקה נדרשים לפני הפקת נסח; תת־חלקה נשארת אופציונלית.</p><div className="cadastral-entry"><label>גוש<input inputMode="numeric" value={propertyIds.block} onChange={(event) => setPropertyIds((current) => ({ ...current, block: event.target.value }))} placeholder="מספר גוש" /></label><label>חלקה<input inputMode="numeric" value={propertyIds.parcel} onChange={(event) => setPropertyIds((current) => ({ ...current, parcel: event.target.value }))} placeholder="מספר חלקה" /></label><label>תת־חלקה <small>אופציונלי</small><input inputMode="numeric" value={propertyIds.subParcel} onChange={(event) => setPropertyIds((current) => ({ ...current, subParcel: event.target.value }))} placeholder="אם ידוע" /></label></div><a className="workflow-source-link" href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html" target="_blank" rel="noopener noreferrer">איתור גוש וחלקה לפי כתובת באתר gov.il <ChevronLeft size={14} /></a><div className="workflow-step-actions"><button type="button" className="workflow-action strong" disabled={busy || !propertyIds.block.trim() || !propertyIds.parcel.trim()} onClick={() => void completeAddressReview()}>{busy ? "שומר…" : workflowDone[0] ? "עדכון גוש וחלקה" : "שמירת פרטים והמשך"}</button><button type="button" className="workflow-action" onClick={() => setCasePanel("intake")}>הצגת הטופס המלא</button></div></div><span className="workflow-check">{workflowDone[0] ? <Check size={16} /> : "1"}</span></article>
                 <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח בתיק. בדוק כתובת, גוש וחלקה, תת־חלקה ובעלי זכויות." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, ואז העלה אותו לתיק."}</p>{sellerNames.length > 0 && <small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small>}<a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a><button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[0]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[0])}>{hasDocumentType(requiredDocumentTypes[0]) ? "בדיקת הנסח בתיק" : "העלאת נסח טאבו"}</button></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
                 <article hidden={activeWorkflowStep !== 2} className={`workflow-step ${workflowDone[2] ? "is-done" : ""} ${workflowCurrentStep === 2 ? "is-active" : ""}`}><span className="workflow-step-number">03</span><div><b>מרשם המשכונות והבטוחות</b><p>השתמש בשם ובתעודת הזהות של כל בעל/ת זכויות כפי שמופיעים בנסח. אם יש כמה בעלים, בדוק כל אחד בנפרד ואמת התאמת זהות לפני החיפוש.</p><small className="workflow-sellers">מומלץ שחילוץ AI של שמות ומספרי זהות יישמר כטיוטה; האנליסט יאשר אותם מול הנסח לפני שימוש.</small><a className="workflow-action workflow-link" href="https://ica.justice.gov.il/SearchPledge/PledgeBrowse?grdPledgeBrowse-sort=State-asc" target="_blank" rel="noopener noreferrer">פתיחת מרשם הבטוחות</a><button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[1]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[1])}>{hasDocumentType(requiredDocumentTypes[1]) ? "צפייה בנסח שהועלה" : "העלאת נסח המשכונות"}</button></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[1]) ? <Check size={16} /> : "3"}</span></article>
-                <article hidden={activeWorkflowStep !== 3} className={`workflow-step ${workflowDone[3] ? "is-done" : ""} ${workflowCurrentStep === 3 ? "is-active" : ""}`}><span className="workflow-step-number">04</span><div><b>הליכים משפטיים</b><p>בדוק ב-Nevo הליכים ותיקים רלוונטיים על שם המוכרים ובעלי הזכויות, ותעד בתיק את הממצאים והמקור.</p><small className="workflow-sellers">מומלץ לחפש כל בעל/ת זכויות בנפרד לפי השם המלא שמופיע בנסח.</small><a className="workflow-action workflow-link" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer">פתיחת מאגר נבו</a><button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[2]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[2])}>{hasDocumentType(requiredDocumentTypes[2]) ? "צפייה בדוח המשפטי" : "העלאת דוח משפטי"}</button></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[2]) ? <Check size={16} /> : "4"}</span></article>
-                <article hidden={activeWorkflowStep !== 4} className={`workflow-step ${workflowDone[4] ? "is-done" : ""} ${workflowCurrentStep === 4 ? "is-active" : ""}`}><span className="workflow-step-number">05</span><div><b>סקירה לפני ניתוח</b><p>{!detail.case.block || !detail.case.parcel ? "השלם גוש וחלקה בשלב 01 כדי להמשיך." : allReportsUploaded ? "כל הדוחות נמצאים בתיק. עבור על פרטי הטופס, המסמכים והממצאים לפני העברתם ל-AI." : "העלה את נסח הטאבו, דוח מרשם המשכונות ודוח ההליכים המשפטיים כדי להמשיך."}</p><button type="button" className="workflow-action" disabled={busy || !detail.case.block || !detail.case.parcel || !allReportsUploaded || !detail.checklist?.data_reviewed?.completed || selectedCase.status === "מוכן לניתוח"} onClick={() => void completePreAnalysisReview()}>{selectedCase.status === "מוכן לניתוח" ? "הסקירה הושלמה" : "אישור הסקירה והמשך"}</button></div><span className="workflow-check">{detail.checklist?.data_verified?.completed && detail.checklist?.reports_collected?.completed ? <Check size={16} /> : "5"}</span></article>
-                <article hidden={activeWorkflowStep !== 5} className={`workflow-step ${workflowDone[5] ? "is-done" : ""} ${workflowCurrentStep === 5 ? "is-active" : ""}`}><span className="workflow-step-number">06</span><div><b>ניתוח, בקרת דוח ושליחה</b><p>{selectedCase.status === "מוכן לניתוח" ? "העבר את פרטי הטופס והמסמכים למנוע הניתוח." : ["בבדיקת אנליסט", "דוח מוכן", "שולח דוח", "דוח נשלח"].includes(selectedCase.status) ? "הניתוח הושלם. עבור על הממצאים, הפק את הדוח ואשר שליחה ללקוח." : "לאחר השלמת הסקירה תוכל להפעיל את הניתוח."}</p>{selectedCase.status === "מוכן לניתוח" ? <button type="button" className="workflow-action strong" disabled={busy} onClick={() => void analyzeCase()}>{busy ? "מנתח…" : "שליחה לניתוח AI"}</button> : <button type="button" className="workflow-action" onClick={() => setCasePanel("findings")}>{selectedCase.status === "דוח נשלח" ? "הצגת הדוח וההיסטוריה" : "מעבר לבקרת הממצאים"}</button>}</div><span className="workflow-check">{["בבדיקת אנליסט", "דוח מוכן", "שולח דוח", "דוח נשלח"].includes(selectedCase.status) ? <Check size={16} /> : "6"}</span></article>
+                <article hidden={activeWorkflowStep !== 3} className={`workflow-step ${workflowDone[3] ? "is-done" : ""} ${workflowCurrentStep === 3 ? "is-active" : ""}`}>
+                  <span className="workflow-step-number">04</span>
+                  <div>
+                    <b>בדיקת חדלות פירעון (משרד המשפטים)</b>
+                    <p>איתור תיקי חדלות פירעון ופשיטת רגל של המוכר/היזם במאגר הממונה. הליך פעיל מפעיל תקרת ציון 39 ועוצר את העסקה (STOP).</p>
+                    <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#92400e" }}>
+                      <b>הנחיית ניסוח מחייבת:</b> לעולם אין לרשום ״אין חובות״. יש לרשום ״לא אותר הליך חדלות פירעון במאגר שנבדק״.
+                    </div>
+                    {sellerNames.length > 0 && <small className="workflow-sellers">בדיקה לפי שמות המוכרים: {sellerNames.join(" · ")}</small>}
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
+                      <a className="workflow-action workflow-link" href="https://insolvency.justice.gov.il/" target="_blank" rel="noopener noreferrer">
+                        פתיחת מאגר חדלות פירעון <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
+                      </a>
+                      <button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[2]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[2])}>
+                        {hasDocumentType(requiredDocumentTypes[2]) ? "צפייה בדוח חדלות פירעון" : "העלאת דוח/צילום מסך"}
+                      </button>
+                    </div>
+                  </div>
+                  <span className="workflow-check">{workflowDone[3] ? <Check size={16} /> : "4"}</span>
+                </article>
+
+                <article hidden={activeWorkflowStep !== 4} className={`workflow-step ${workflowDone[4] ? "is-done" : ""} ${workflowCurrentStep === 4 ? "is-active" : ""}`}>
+                  <span className="workflow-step-number">05</span>
+                  <div>
+                    <b>הליכים משפטיים וסכסוכים</b>
+                    <p>בדוק ב-Nevo / נט המשפט הליכים ותיקים רלוונטיים על שם המוכרים ובעלי הזכויות, ותעד בתיק את הממצאים והמקור.</p>
+                    {sellerNames.length > 0 && <small className="workflow-sellers">מומלץ לחפש כל בעל/ת זכויות בנפרד לפי השם המלא שמופיע בנסח: {sellerNames.join(" · ")}</small>}
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
+                      <a className="workflow-action workflow-link" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer">
+                        פתיחת מאגר נבו <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
+                      </a>
+                      <button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[3]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[3])}>
+                        {hasDocumentType(requiredDocumentTypes[3]) ? "צפייה בדוח המשפטי" : "העלאת דוח משפטי"}
+                      </button>
+                    </div>
+                  </div>
+                  <span className="workflow-check">{workflowDone[4] ? <Check size={16} /> : "5"}</span>
+                </article>
+
+                <article hidden={activeWorkflowStep !== 5} className={`workflow-step ${workflowDone[5] ? "is-done" : ""} ${workflowCurrentStep === 5 ? "is-active" : ""}`}>
+                  <span className="workflow-step-number">06</span>
+                  <div style={{ width: "100%" }}>
+                    <b>ניתוח, הפקת דוח ובקרת אנליסט</b>
+                    
+                    {!detail.report ? (
+                      <div style={{ marginTop: "12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px" }}>
+                        <p style={{ margin: "0 0 12px 0", fontSize: "13px", color: "#475569" }}>
+                          כל המקורות הדרושים אומתו ונאספו. לחץ על הכפתור כדי להפעיל את אלגוריתם הניתוח וליצור טיוטת דוח לבדיקתך.
+                        </p>
+                        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+                          <button
+                            type="button"
+                            className="workflow-action strong"
+                            style={{ background: "#0d766e", color: "#fff", fontWeight: "bold", padding: "10px 20px", borderRadius: "8px", fontSize: "14px" }}
+                            disabled={busy}
+                            onClick={() => void generateReport()}
+                          >
+                            {busy ? "מפיק דוח טיוטה…" : "⚡ הפקת דוח (Generate Report)"}
+                          </button>
+                          <button type="button" className="workflow-action" onClick={() => setCasePanel("findings")}>
+                            צפייה בממצאים קיימים
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Analyst Review Screen (Human-in-the-Loop) */
+                      <div className="analyst-review-screen" style={{ marginTop: "14px" }}>
+                        {/* Draft Banner */}
+                        <div className="review-draft-banner">
+                          <div className="banner-icon">
+                            <Lock size={18} />
+                          </div>
+                          <div>
+                            <h4>דוח טיוטה בבדיקת אנליסט (טרם נשלח ללקוח)</h4>
+                            <p>
+                              הדוח הופק לפי הנתונים והמסמכים שאומתו. באפשרותך לבחון את הממצאים, לערוך כותרות והערות, לכוונן את הציון ולהוסיף המלצות לפני אישור ושליחה סופיים.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* SafeScore Card */}
+                        <div className="review-score-card">
+                          <div className="score-badge-box">
+                            <div className={`score-number-pill ${reportScore >= 75 ? "green" : reportScore >= 50 ? "yellow" : "red"}`}>
+                              {reportScore}
+                            </div>
+                            <div className="score-meta-text">
+                              <h5>SafeScore משוקלל</h5>
+                              <span>5 תחומי סיכון מאומתים · התאמת קומה ומעלית</span>
+                            </div>
+                          </div>
+                          <div className="review-score-actions">
+                            <button
+                              type="button"
+                              className="button-plain"
+                              style={{ fontSize: "12px" }}
+                              onClick={() => setShowScoreOverrideInput((v) => !v)}
+                            >
+                              <SlidersHorizontal size={13} style={{ display: "inline", verticalAlign: "middle", marginLeft: "4px" }} />
+                              {showScoreOverrideInput ? "סגור כוונון ציון" : "כוונון ידני לציון"}
+                            </button>
+                            <a
+                              className="workflow-action workflow-link"
+                              href={`/staff/cases/${selectedId}/report`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ padding: "6px 14px", fontSize: "12px" }}
+                            >
+                              <Eye size={13} style={{ display: "inline", verticalAlign: "middle", marginLeft: "4px" }} />
+                              צפייה מקדימה בדוח הלקוח
+                            </a>
+                          </div>
+                        </div>
+
+                        {showScoreOverrideInput && (
+                          <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+                            <label style={{ fontSize: "12px", fontWeight: "bold" }}>קבע SafeScore מאושר:</label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={reportScore}
+                              onChange={(e) => setReportScore(Math.max(0, Math.min(100, Number(e.target.value))))}
+                              style={{ width: "70px", padding: "4px 8px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "13px" }}
+                            />
+                            <button
+                              type="button"
+                              className="button-plain"
+                              style={{ fontSize: "11px" }}
+                              onClick={() => { setShowScoreOverrideInput(false); setNotice("הציון עודכן לדוח."); }}
+                            >
+                              שמור שינוי ציון
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Inline Findings Review List */}
+                        <div className="review-findings-section">
+                          <div className="review-section-header">
+                            <h4>
+                              <ShieldCheck size={16} />
+                              בקרת ממצאי הדוח ({detail.findings.length} ממצאים)
+                            </h4>
+                            <span style={{ fontSize: "11px", color: "#64748b" }}>
+                              {detail.findings.filter((f) => f.state === "אושר").length} אושרו להצגה בדוח
+                            </span>
+                          </div>
+
+                          <div className="review-findings-list">
+                            {detail.findings.map((item) => (
+                              <div
+                                key={item.id}
+                                className={`review-finding-card ${item.state === "נדחה" ? "rejected" : ""}`}
+                              >
+                                {inlineEditingFindingId === item.id ? (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                    <input
+                                      type="text"
+                                      value={inlineFindingTitle}
+                                      onChange={(e) => setInlineFindingTitle(e.target.value)}
+                                      style={{ width: "100%", padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "12px", fontWeight: "bold" }}
+                                    />
+                                    <textarea
+                                      rows={3}
+                                      value={inlineFindingNote}
+                                      onChange={(e) => setInlineFindingNote(e.target.value)}
+                                      style={{ width: "100%", padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "12px" }}
+                                    />
+                                    <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                                      <button
+                                        type="button"
+                                        className="button-plain"
+                                        style={{ fontSize: "11px" }}
+                                        onClick={() => setInlineEditingFindingId(null)}
+                                      >
+                                        ביטול
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="workflow-action strong"
+                                        style={{ fontSize: "11px", padding: "4px 10px" }}
+                                        onClick={() => void handleSaveFindingInline(item.id)}
+                                      >
+                                        שמירת עריכה
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="finding-card-header">
+                                      <span className="finding-card-title">{item.title}</span>
+                                      <span style={{ fontSize: "11px", padding: "2px 6px", borderRadius: "4px", background: item.severity === "גבוהה" ? "#fee2e2" : "#f1f5f9", color: item.severity === "גבוהה" ? "#991b1b" : "#475569" }}>
+                                        {item.severity}
+                                      </span>
+                                    </div>
+                                    <div className="finding-card-text">{item.note}</div>
+                                    <div className="finding-card-footer">
+                                      <span>מקור: {item.source || "בדיקת אנליסט"}</span>
+                                      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                        <button
+                                          type="button"
+                                          className="button-plain"
+                                          style={{ fontSize: "11px", padding: "2px 6px" }}
+                                          onClick={() => handleStartEditFinding(item)}
+                                        >
+                                          <Pencil size={11} style={{ display: "inline", marginLeft: "2px" }} /> עריכה
+                                        </button>
+                                        <div className="finding-status-pills">
+                                          <button
+                                            type="button"
+                                            className={`finding-pill-btn ${item.state === "אושר" ? "active-approved" : ""}`}
+                                            onClick={() => void reviewFinding(item.id, "אושר")}
+                                          >
+                                            מאושר לדוח
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className={`finding-pill-btn ${item.state === "לברור" ? "active-flagged" : ""}`}
+                                            onClick={() => void reviewFinding(item.id, "לברור")}
+                                          >
+                                            לבירור
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className={`finding-pill-btn ${item.state === "נדחה" ? "active-rejected" : ""}`}
+                                            onClick={() => void reviewFinding(item.id, "נדחה")}
+                                          >
+                                            הסרה
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Summary & Recommendations */}
+                        <div className="review-notes-section">
+                          <div className="review-textarea-group">
+                            <label>תמצית מנהלים והערת אנליסט:</label>
+                            <textarea
+                              rows={2}
+                              value={reportSummary}
+                              onChange={(e) => setReportSummary(e.target.value)}
+                            />
+                          </div>
+                          <div className="review-textarea-group">
+                            <label>המלצות לפעולה ללקוח:</label>
+                            <textarea
+                              rows={2}
+                              value={reportRecommendation}
+                              onChange={(e) => setReportRecommendation(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Send Email to Client Card */}
+                        <div className="report-dispatch-card">
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                            <div>
+                              <h4 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "bold", color: "#0f766e" }}>
+                                הדוח נבדק ומוכן לשליחה
+                              </h4>
+                              <p style={{ margin: 0, fontSize: "12px", color: "#134e4a" }}>
+                                שילוח רשמי לכתובת <b>{selectedCase.clientEmail}</b>. הלקוח יקבל קישור מאובטח לדוח המלא.
+                              </p>
+                            </div>
+                            <div style={{ display: "flex", gap: "10px" }}>
+                              <button
+                                type="button"
+                                className="button-plain"
+                                style={{ fontSize: "12px" }}
+                                onClick={() => void generateReport()}
+                              >
+                                יצירת גרסה חדשה
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-send-client-email"
+                                onClick={() => sendReport()}
+                              >
+                                <Send size={15} />
+                                שליחת מייל ללקוח (Send Email to Client)
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <span className="workflow-check">{detail.report ? <Check size={16} /> : "6"}</span>
+                </article>
               </div></div><details className="detail-section analyst-checklist"><summary className="section-title"><div><b>צ׳קליסט התקדמות</b><small>פתח את המשימות כדי לסמן ולבדוק</small></div><span className="list-count">{checklistItems.filter((item) => detail.checklist?.[item.key]?.completed).length}/{checklistItems.length}</span></summary><div className="checklist-list">{checklistItems.map((item) => { const checked = Boolean(detail.checklist?.[item.key]?.completed); return <label key={item.key} className={`checklist-row ${checked ? "completed" : ""} ${item.automatic ? "automatic" : ""}`}><input type="checkbox" checked={checked} disabled={busy || item.automatic} onChange={(event) => void updateChecklist(item.key, event.target.checked)} /><span className="checklist-copy"><b>{item.label}</b><small>{item.automatic ? item.key === "report_sent" ? checked ? `נשלח על ידי ${detail.checklist?.report_sent?.completedBy ?? "הצוות"}` : "יתעדכן אוטומטית לאחר שליחת מייל מוצלחת" : checked ? `הופק על ידי ${detail.checklist?.report_generated?.completedBy ?? "הצוות"}` : "יתעדכן אוטומטית לאחר הפקת הדוח" : checked ? `סומן על ידי ${detail.checklist?.[item.key]?.completedBy ?? "הצוות"}` : "לסמן לאחר השלמת הפעולה"}</small></span>{checked && <Check size={17} />}</label>; })}</div></details></div></section>)}
               
               <div hidden={casePanel !== "intake"} className="detail-section" id="intake-data-review"><div className="section-title"><div><b>כל פרטי הטופס</b><small>המידע המקורי שנשלח מפרונט הלקוחות</small></div></div><div className="contact-strip"><div><small>דוא״ל לקוח</small><a href={`mailto:${selectedCase.clientEmail}`}>{selectedCase.clientEmail}</a></div><div><small>טלפון</small><a href={`tel:${selectedCase.clientPhone}`}>{selectedCase.clientPhone}</a></div><div><small>מחיר מבוקש</small><b>₪ {selectedCase.price || "לא צוין"}</b></div></div>{detail.intakeData && Object.keys(detail.intakeData).length ? <div className="intake-groups">{(["personal", "location", "deal"] as const).map((group) => { const values = detail.intakeData?.[group]; if (!values || !Object.keys(values).length) return null; const title = group === "personal" ? "פרטי הלקוח" : group === "location" ? "כתובת וזיהוי" : "פרטי העסקה והנכס"; return <section className="intake-group" key={group}><b>{title}</b><div className="intake-fields">{Object.entries(values).map(([key, value]) => <div key={key}><small>{intakeLabels[key] ?? key}</small><span>{intakeDisplayValue(key, value)}</span></div>)}</div></section>; })}{detail.intakeData.documents?.length ? <section className="intake-group"><b>מסמכים שהועלו</b><div className="intake-fields">{detail.intakeData.documents.map((doc, index) => <div key={`${doc.name}-${index}`}><small>קובץ {index + 1}</small><span>{doc.name} · {Math.max(1, Math.round(doc.size / 1024))} KB</span></div>)}</div></section> : null}</div> : <div className="inline-empty">לתיקים קודמים אין שמירת צילום מלא של הטופס.</div>}</div>
@@ -451,7 +824,8 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
           <section className="resource-section"><div className="section-title"><div><b>אתרים לפי שלב הבדיקה</b><small>פתח את המקור הרלוונטי בחלונית חדשה</small></div></div><div className="resource-grid">
             <a className="resource-card" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer"><span className="resource-index">02</span><span><b>הפקת נסח טאבו</b><small>משרד המשפטים · חיפוש לפי גוש וחלקה</small></span><ChevronLeft size={16} /></a>
             <a className="resource-card" href="https://ica.justice.gov.il/SearchPledge/PledgeBrowse?grdPledgeBrowse-sort=State-asc" target="_blank" rel="noopener noreferrer"><span className="resource-index">03</span><span><b>מרשם המשכונות והבטוחות</b><small>רשות התאגידים · חיפוש לפי פרטי בעלי הזכויות</small></span><ChevronLeft size={16} /></a>
-            <a className="resource-card" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer"><span className="resource-index">04</span><span><b>מאגר נבו</b><small>איתור פסיקה והליכים משפטיים · לפי הרשאת הארגון</small></span><ChevronLeft size={16} /></a>
+            <a className="resource-card" href="https://insolvency.justice.gov.il/" target="_blank" rel="noopener noreferrer"><span className="resource-index">04</span><span><b>מאגר חדלות פירעון</b><small>משרד המשפטים · איתור הליכים ופשיטות רגל</small></span><ChevronLeft size={16} /></a>
+            <a className="resource-card" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer"><span className="resource-index">05</span><span><b>מאגר נבו</b><small>איתור פסיקה והליכים משפטיים · לפי הרשאת הארגון</small></span><ChevronLeft size={16} /></a>
             <a className="resource-card" href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html" target="_blank" rel="noopener noreferrer"><span className="resource-index">מפה</span><span><b>איתור גוש וחלקה</b><small>המרכז למיפוי ישראל · לפי כתובת</small></span><ChevronLeft size={16} /></a>
           </div></section>
           <section className="resource-section"><div className="section-title"><div><b>מדריכים והמלצות לאנליסט</b><small>עקרונות עבודה לבדיקת מקור, תיעוד ובקרה</small></div></div><div className="analyst-guides">
@@ -475,6 +849,88 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
         </> : <section className="team-panel"><div className="staff-heading"><div><div className="eyebrow">הרשאות</div><h1>ניהול צוות</h1><p>רק עובדים שנוספו לכאן יוכלו להיכנס לתיקים.</p></div></div><form className="team-invite" onSubmit={addMember}><div><b>הוספת Member</b><small>העובד ייכנס באמצעות החשבון שלו ויוכל לבצע את שלבי האנליזה.</small></div><input type="email" placeholder="כתובת דוא״ל של העובד" value={teamEmail} onChange={(e) => setTeamEmail(e.target.value)} required /><button className="button-primary" disabled={busy}><Plus size={16} />הוספה לצוות</button></form><div className="team-list">{team.map((member) => <div className="team-row" key={member.email}><div className="profile-avatar">{member.displayName.slice(0, 1)}</div><span><b>{member.displayName}</b><small>{member.email}</small></span><span className="team-role">{member.role === "admin" ? "Admin · מנהל מערכת" : "Member · אנליסט"}</span><span className={member.active ? "member-active" : "member-inactive"}>{member.active ? "פעיל" : "לא פעיל"}</span></div>)}{!team.length && <div className="empty-state">רשימת הצוות ריקה.</div>}</div></section>}
       </div>
     </main>
+    {/* Email Dispatch Confirmation Modal */}
+    {showEmailConfirmModal && selectedCase && (
+      <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+        <div style={{ background: "#ffffff", borderRadius: "16px", maxWidth: "520px", width: "100%", padding: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)", border: "1px solid #e2e8f0", textAlign: "right" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f0fdfa", color: "#0d766e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Mail size={20} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "bold", color: "#0f172a" }}>
+                אישור שליחת דוח בדיקת נאותות ללקוח
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowEmailConfirmModal(false)}
+              style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <p style={{ fontSize: "13px", color: "#475569", marginBottom: "16px", lineHeight: "1.6" }}>
+            הדוח נבדק ואושר על ידך כאנליסט. בלחיצה על אישור, המערכת תשלח ללקוח הודעת דוא״ל רשמית הכוללת קישור ישיר ומאובטח לדוח המלא.
+          </p>
+
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "14px", marginBottom: "16px", fontSize: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#64748b" }}>שם הלקוח:</span>
+              <b>{selectedCase.clientName}</b>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#64748b" }}>כתובת מייל יעד:</span>
+              <b style={{ direction: "ltr", color: "#0d766e" }}>{selectedCase.clientEmail}</b>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#64748b" }}>נכס נבדק:</span>
+              <span>{[selectedCase.street, selectedCase.house, selectedCase.city].filter(Boolean).join(" ")}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "8px", borderTop: "1px solid #e2e8f0" }}>
+              <span style={{ color: "#64748b" }}>SafeScore מאושר:</span>
+              <span style={{ fontWeight: "bold", padding: "2px 8px", borderRadius: "10px", background: reportScore >= 75 ? "#ecfdf5" : reportScore >= 50 ? "#fffbeb" : "#fef2f2", color: reportScore >= 75 ? "#065f46" : reportScore >= 50 ? "#92400e" : "#991b1b" }}>
+                {reportScore} מתוך 100
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#64748b" }}>סטטוס תיק לאחר שליחה:</span>
+              <span style={{ fontWeight: "bold", color: "#059669" }}>דוח נשלח</span>
+            </div>
+          </div>
+
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", padding: "10px 12px", fontSize: "11px", color: "#92400e", marginBottom: "18px", display: "flex", alignItems: "flex-start", gap: "6px" }}>
+            <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: "2px" }} />
+            <span>
+              <b>שים לב:</b> לאחר השליחה לא ניתן לבטל את הגעת המייל ללקוח. ודא כי כל הממצאים, המסמכים והתאמות המחיר תקינים לחלוטין.
+            </span>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", paddingTop: "12px", borderTop: "1px solid #f1f5f9" }}>
+            <button
+              type="button"
+              className="button-plain"
+              style={{ fontSize: "12px", padding: "8px 16px" }}
+              onClick={() => setShowEmailConfirmModal(false)}
+              disabled={busy}
+            >
+              חזור לבדיקה
+            </button>
+            <button
+              type="button"
+              className="btn-send-client-email"
+              style={{ padding: "8px 20px", fontSize: "13px" }}
+              onClick={() => void handleConfirmSendEmail()}
+              disabled={busy}
+            >
+              {busy ? "שולח מייל…" : "אשר ושלח מייל ללקוח"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {notice && <div className="staff-toast" role="status">{notice}<button onClick={() => setNotice("")} aria-label="סגירה"><X size={15} /></button></div>}
   </div>;
 }

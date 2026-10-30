@@ -1203,3 +1203,316 @@ html { scroll-behavior: smooth; }
   .case-workspace-new.case-focus-mode .workflow-progress { grid-column: 1; }
   .case-workspace-new.case-focus-mode .analyst-checklist { grid-row: auto; }
 }
+───────────────────────────────────────────────────────────── */
+.analyst-review-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.review-draft-banner {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #92400e;
+}
+
+.review-draft-banner .banner-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: #b45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.review-draft-banner h4 {
+  margin: 0 0 2px 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #78350f;
+}
+
+.review-draft-banner p {
+  margin: 0;
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.45;
+}
+
+.review-score-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.score-badge-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.score-number-pill {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.score-number-pill.green {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1.5px solid #a7f3d0;
+}
+
+.score-number-pill.yellow {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1.5px solid #fde68a;
+}
+
+.score-number-pill.red {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1.5px solid #fecaca;
+}
+
+.score-meta-text h5 {
+  margin: 0 0 2px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.score-meta-text span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.review-score-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Findings Review Section */
+.review-findings-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.review-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.review-section-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-findings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-finding-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  transition: all 0.15s ease;
+}
+
+.review-finding-card:hover {
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
+
+.review-finding-card.rejected {
+  opacity: 0.55;
+  background: #f1f5f9;
+}
+
+.finding-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.finding-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.finding-card-text {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.finding-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 11px;
+  color: #64748b;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.finding-status-pills {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.finding-pill-btn {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.finding-pill-btn:hover {
+  background: #f1f5f9;
+}
+
+.finding-pill-btn.active-approved {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
+  font-weight: 700;
+}
+
+.finding-pill-btn.active-flagged {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #b45309;
+  font-weight: 700;
+}
+
+.finding-pill-btn.active-rejected {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+/* Analyst Custom Notes */
+.review-notes-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-textarea-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.review-textarea-group textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #1e293b;
+  background: #f8fafc;
+  resize: vertical;
+}
+
+.review-textarea-group textarea:focus {
+  outline: none;
+  border-color: #0d766e;
+  background: #ffffff;
+}
+
+/* Dispatch Card */
+.report-dispatch-card {
+  background: linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 100%);
+  border: 1.5px solid #5eead4;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 14px rgba(13, 118, 110, 0.06);
+}
+
+.btn-send-client-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: #0d766e;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(13, 118, 110, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-send-client-email:hover {
+  background: #0f5853;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(13, 118, 110, 0.35);
+}
+
+.btn-send-client-email:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}

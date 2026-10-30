@@ -1203,6 +1203,8 @@ html { scroll-behavior: smooth; }
   .case-workspace-new.case-focus-mode .workflow-progress { grid-column: 1; }
   .case-workspace-new.case-focus-mode .analyst-checklist { grid-row: auto; }
 }
+/* ─────────────────────────────────────────────────────────────
+   Analyst Review Screen & Report Email Dispatching (Human-in-the-Loop)
 ───────────────────────────────────────────────────────────── */
 .analyst-review-screen {
   display: flex;

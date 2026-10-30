@@ -164,6 +164,11 @@ export interface ReportData {
   missingDataWarnings?: string[];
 }
 
+export interface SellerDetails {
+  name: string;
+  idNumber: string;
+}
+
 export interface Step3DealDetails {
   dealType: DealType | "";
   askingPrice: string;   // raw numeric string (formatted for display)
@@ -188,6 +193,7 @@ export interface Step3DealDetails {
   // ── Smart Optional Fields ──
   sellerName?: string;
   sellerIdNumber?: string;
+  sellers?: SellerDetails[];
   isRented?: boolean;
   hasAdditions?: boolean;
   developerName?: string;
@@ -256,6 +262,7 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     monthlyRent: "",
     sellerName: "",
     sellerIdNumber: "",
+    sellers: [{ name: "", idNumber: "" }],
     isRented: false,
     hasAdditions: false,
     developerName: "",

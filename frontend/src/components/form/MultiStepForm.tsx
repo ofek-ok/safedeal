@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, ArrowLeft, ExternalLink, FileText, Clock, Lock, BarChart3 } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { StepIndicator } from "./StepIndicator";
 import { Step1PropertyType } from "./Step1PropertyType";
-import { Step2Address } from "./Step2Address";
+import { Step1PropertyAddress } from "./Step1PropertyAddress";
 import { Step3Details } from "./Step3Details";
 import { Step4Checkout } from "./Step4Checkout";
 import { SafeDealLogo } from "@/components/SafeDealLogo";
@@ -17,15 +16,21 @@ export function MultiStepForm() {
   const [formData, setFormData] = useState<WizardFormData>(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted]       = useState(false);
-  const [jobId, setJobId]               = useState<string | null>(null);
+  const [intakeCaseNumber, setIntakeCaseNumber] = useState<string | null>(null);
   const [showErrors, setShowErrors]     = useState(false);
 
   const TOTAL = 4;
 
   const next = () => {
-    if (step === 2 && !formData.step2.city.trim()) {
-      setShowErrors(true);
-      return;
+    if (step === 1) {
+      const address = formData.step2;
+      const hasAddress = address.city.trim() && address.street.trim() && address.houseNumber.trim();
+      const sellers = formData.step3.sellers ?? [];
+      const hasNamedSeller = sellers.length > 0 && sellers.every((seller) => seller.name.trim());
+      if (!hasAddress || !hasNamedSeller) {
+        setShowErrors(true);
+        return;
+      }
     }
     setShowErrors(false);
     if (step < TOTAL) setStep((s) => s + 1);
@@ -33,78 +38,29 @@ export function MultiStepForm() {
   const back = () => { if (step > 1)    setStep((s) => s - 1); };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-      if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
-      
-      let savedTabuName = formData.step4.tabuFile?.name ?? null;
+      const staffApiUrl = (process.env.NEXT_PUBLIC_SAFEDEAL_STAFF_API_URL ?? "https://safedeal-staff.vercel.app").replace(/\/+$/, "");
+      const intakeForm = new FormData();
+      intakeForm.append("intake", JSON.stringify({
+        personal: formData.step1,
+        location: formData.step2,
+        deal: formData.step3,
+      }));
+      if (formData.step4.tabuFile) intakeForm.append("files", formData.step4.tabuFile);
 
-      // 1. Create case in Staff portal
-      const staffRes = await fetch("/api/staff/cases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientName: formData.step1.fullName,
-          clientEmail: formData.step1.email,
-          clientPhone: formData.step1.phone,
-          personal: formData.step1,
-          location: formData.step2,
-          deal: formData.step3,
-          documentsList: formData.step4.tabuFile ? [{
-            name: formData.step4.tabuFile.name,
-            size: formData.step4.tabuFile.size,
-            type: formData.step4.tabuFile.type,
-          }] : [],
-        }),
-      });
-
-      const staffData = await staffRes.json().catch(() => ({}));
-      const generatedCaseId = staffData.caseNumber || staffData.id || `SD-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-      // 2. Upload file if it exists and attach to case
-      if (formData.step4.tabuFile && staffData.id) {
-        const uploadData = new FormData();
-        uploadData.append("file", formData.step4.tabuFile);
-        uploadData.append("documentType", "נסח טאבו / אישור זכויות");
-        uploadData.append("source", "הועלה על ידי הלקוח בטופס");
-
-        try {
-          await fetch(`/api/staff/cases/${staffData.id}/documents`, {
-            method: "POST",
-            body: uploadData,
-          });
-        } catch (e) {
-          console.warn("Staff document upload error:", e);
-        }
+      const intakeResponse = await fetch(`${staffApiUrl}/api/intake`, { method: "POST", body: intakeForm });
+      const intakeResult = await intakeResponse.json().catch(() => ({})) as { caseNumber?: string; error?: string };
+      if (!intakeResponse.ok || !intakeResult.caseNumber) {
+        throw new Error(intakeResult.error ?? "לא הצלחנו לשלוח את הבקשה. הפרטים נשארו בטופס — נסו שוב.");
       }
 
-      // 3. Initiate backend pipeline if reachable
-      try {
-        fetch(`${apiUrl}/api/v1/properties/analyze`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            personal: {
-              ...formData.step1,
-              email: formData.step1.email || undefined,
-            },
-            location: formData.step2,
-            deal: formData.step3,
-            documents: {
-              tabuFileName: savedTabuName,
-            },
-          }),
-        }).catch((e) => console.log("Backend pipeline queued or offline:", e));
-      } catch (e) {
-        // Non-blocking background call
-      }
-
-      setJobId(generatedCaseId);
+      setIntakeCaseNumber(intakeResult.caseNumber);
       setSubmitted(true);
     } catch (err) {
       console.error("Submission error", err);
-      alert("שגיאה בהגשת הטופס. אנא נסו שוב.");
+      alert(err instanceof Error ? err.message : "לא הצלחנו לשלוח את הבקשה. הפרטים נשארו בטופס — נסו שוב.");
     } finally {
       setIsSubmitting(false);
     }
@@ -115,16 +71,16 @@ export function MultiStepForm() {
       <div className="flex flex-col items-center text-center py-16 px-4 animate-fade-in-up">
         <div className="mb-10 p-6 rounded-full border border-[#00C896]/30 bg-[#00C896]/5 relative">
           <div className="absolute inset-0 rounded-full border border-[#00C896]/10 scale-125 animate-pulse" />
-          <SafeDealLogo size="md" iconOnly />
+          <CheckCircle2 size={30} className="text-[#00C896]" aria-hidden="true" />
         </div>
 
         <div className="mb-12">
           <div className="w-8 h-[1px] bg-[#00C896] mx-auto mb-6"></div>
           <h2 className="text-3xl md:text-4xl text-white mb-6" style={{ fontFamily: "var(--font-serif)" }}>
-            הבדיקה שלכם התקבלה בהצלחה
+            קיבלנו את הבקשה שלכם
           </h2>
           <p className="text-slate-400 text-sm tracking-wider leading-relaxed max-w-md mx-auto">
-            הדוח המשוקלל עבור{" "}
+            אנחנו עובדים על בדיקת הנכס{" "}
             {formData.step2.street ? (
               <span className="text-white">
                 {formData.step2.street} {formData.step2.houseNumber},{" "}
@@ -133,40 +89,18 @@ export function MultiStepForm() {
             ) : (
               <span className="text-white">הנכס המבוקש</span>
             )}{" "}
-            נוצר בהצלחה מ-8 מקורות מידע. נשלח אותו למייל שהזנתם ברגע שיהיה מוכן.
+            הצוות קיבל את כל הפרטים והמסמכים. הדוח יישלח אליכם בתוך כ־24 שעות.
           </p>
           <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-6">
-            מספר בקשה:{" "}
-            <span className="text-[#00C896] font-mono text-xs">#{jobId}</span>
+            מספר פנייה:{" "}
+            <span className="text-[#00C896] font-mono text-xs">{intakeCaseNumber}</span>
           </p>
-        </div>
-
-        <Link
-          href={`/report/${jobId}`}
-          className="group flex items-center justify-center gap-3 py-4 px-10 border border-[#00C896] bg-[#00C896]/10 hover:bg-[#00C896]/20 text-[#00C896] transition-all duration-300 w-full sm:w-auto uppercase tracking-widest text-xs mb-12"
-        >
-          <FileText size={14} />
-          <span>הצג דוח מלא</span>
-          <ExternalLink size={14} className="group-hover:translate-x-[-2px] group-hover:-translate-y-[2px] transition-transform" />
-        </Link>
-
-        <div className="grid grid-cols-3 gap-3 sm:gap-8 p-4 sm:p-8 border-y border-white/[0.06] w-full max-w-lg mb-12">
-          {[
-            { num: "100K+", label: "עסקאות מנותחות" },
-            { num: "~5",    label: "דקות לדוח"  },
-            { num: "8",     label: "מקורות מידע"     },
-          ].map(({ num, label }) => (
-            <div key={label} className="text-center flex flex-col gap-2">
-              <p className="text-2xl text-[#00C896]" style={{ fontFamily: "var(--font-serif)" }}>{num}</p>
-              <p className="text-[9px] uppercase tracking-widest text-slate-500">{label}</p>
-            </div>
-          ))}
         </div>
 
         <button
           onClick={() => {
             setSubmitted(false); setStep(1);
-            setFormData(INITIAL_FORM_DATA); setJobId(null);
+            setFormData(INITIAL_FORM_DATA); setIntakeCaseNumber(null);
           }}
           className="text-[10px] uppercase tracking-widest text-slate-400 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1"
         >
@@ -194,7 +128,7 @@ export function MultiStepForm() {
           כמה פרטים על הנכס - ואנחנו מתחילים לבדוק
         </h1>
         <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-          ללא שדות חובה — מלאו את מה שנוח לכם וקבלו דוח תוך דקות.
+          מלאו את הפרטים שברשותכם ונשלח לכם את הדוח בתוך כ־24 שעות.
         </p>
       </div>
 
@@ -202,17 +136,27 @@ export function MultiStepForm() {
       <div className="w-full rounded-2xl border border-white/14 bg-[#0A1628]/85 backdrop-blur-2xl p-4 sm:p-6 md:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
         <div className="min-h-[260px] sm:min-h-[360px]">
           {step === 1 && (
+            <Step1PropertyAddress
+              address={formData.step2}
+              sellers={formData.step3.sellers ?? []}
+              onAddressChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
+              onSellersChange={(sellers) => setFormData((f) => ({
+                ...f,
+                step3: {
+                  ...f.step3,
+                  sellers,
+                  sellerName: sellers[0]?.name ?? "",
+                  sellerIdNumber: sellers[0]?.idNumber ?? "",
+                },
+              }))}
+              showErrors={showErrors}
+            />
+          )}
+          {step === 2 && (
             <Step1PropertyType
               data={{ dealType: formData.step3.dealType }}
               onChange={(dealType) => setFormData((f) => ({ ...f, step3: { ...f.step3, dealType } }))}
               onAutoAdvance={next}
-            />
-          )}
-          {step === 2 && (
-            <Step2Address
-              data={formData.step2}
-              onChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
-              showErrors={showErrors}
             />
           )}
           {step === 3 && (
@@ -233,25 +177,25 @@ export function MultiStepForm() {
         </div>
 
         {step < TOTAL && (
-          <div className="flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-10 border-t border-white/[0.08]">
+          <div className="form-step-actions flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-10 border-t border-white/[0.08]">
             <button
               type="button"
               onClick={back}
               disabled={step === 1}
-              className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+              className="form-step-back flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
             >
               <ArrowRight size={14} />
               חזרה
             </button>
 
-            <span className="text-[10px] uppercase tracking-widest text-slate-600 font-mono">
+            <span className="form-step-count text-[10px] uppercase tracking-widest text-slate-600 font-mono">
               0{step} / 0{TOTAL}
             </span>
 
             <button 
               type="button" 
               onClick={next} 
-              className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#00C896] hover:text-[#00C896]/80 transition-colors border border-[#00C896]/30 px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-sm bg-[#00C896]/5 hover:bg-[#00C896]/10"
+              className="form-step-next flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#00C896] hover:text-[#00C896]/80 transition-colors border border-[#00C896]/30 px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-sm bg-[#00C896]/5 hover:bg-[#00C896]/10"
             >
               המשך
               <ArrowLeft size={14} />

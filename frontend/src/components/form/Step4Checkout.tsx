@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, Lock } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import type { WizardFormData } from "@/types/property";
 import { DEAL_TYPE_LABELS } from "@/types/property";
 
@@ -29,7 +29,7 @@ export function Step4Checkout({ data, isSubmitting, onSubmit, onChange }: Props)
           שלב 04
         </span>
         <h2 className="text-xl sm:text-2xl font-normal text-white mb-1 sm:mb-3" style={{ fontFamily: "var(--font-serif)" }}>
-          סיכום הזמנה ותשלום
+          אישור ושליחת הבקשה
         </h2>
       </div>
 
@@ -58,11 +58,9 @@ export function Step4Checkout({ data, isSubmitting, onSubmit, onChange }: Props)
         </div>
       </div>
 
-      {/* Price */}
-      <div className="text-center py-2 sm:py-6">
-        <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1 sm:mb-2">מחיר הדוח</p>
-        <p className="text-3xl sm:text-5xl font-bold text-[#00C896] mb-1 sm:mb-2" style={{ fontFamily: "var(--font-serif)" }}>₪230</p>
-        <p className="text-[11px] sm:text-xs text-slate-500">כולל מע״מ</p>
+      <div className="rounded-xl border border-[#00C896]/20 bg-[#00C896]/5 p-4 sm:p-5 text-center">
+        <p className="text-sm sm:text-base text-white mb-1">הצוות שלנו בודק את פרטי הנכס והמסמכים</p>
+        <p className="text-xs sm:text-sm text-slate-400">הדוח יישלח אליכם בתוך כ־24 שעות מקבלת הבקשה.</p>
       </div>
 
       {/* Terms */}
@@ -112,7 +110,7 @@ export function Step4Checkout({ data, isSubmitting, onSubmit, onChange }: Props)
         disabled={isSubmitting || !data.step1.agreeToTerms}
         className="w-full py-3.5 sm:py-4 px-6 flex items-center justify-center gap-3 bg-[#00C896] hover:bg-[#00C896]/90 text-navy-950 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-base sm:text-lg"
       >
-        {isSubmitting ? "מעבד תשלום..." : <>{"מעבר לתשלום מאובטח"} <Lock size={16} /></>}
+        {isSubmitting ? "שולח את הבקשה..." : "שליחת הבקשה לבדיקה"}
       </button>
 
       {/* Security note */}

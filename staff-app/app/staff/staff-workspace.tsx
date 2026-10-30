@@ -768,7 +768,29 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                                 שילוח רשמי לכתובת <b>{selectedCase.clientEmail}</b>. הלקוח יקבל קישור מאובטח לדוח המלא.
                               </p>
                             </div>
-                            <div style={{ display: "flex", gap: "10px" }}>
+                            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                              <a
+                                href={`/staff/cases/${selectedId}/report`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="button-plain"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  fontSize: "12.5px",
+                                  fontWeight: "700",
+                                  background: "#0f172a",
+                                  color: "#38bdf8",
+                                  border: "1.5px solid #38bdf8",
+                                  padding: "8px 14px",
+                                  borderRadius: "8px",
+                                  textDecoration: "none",
+                                }}
+                              >
+                                <ExternalLink size={14} />
+                                פתיחת דוח מעוצב מלא (Executive Report)
+                              </a>
                               <button
                                 type="button"
                                 className="button-plain"

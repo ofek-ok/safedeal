@@ -1,38 +1,165 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { getDb } from "../../../../../db";
 import { caseIsVisible, getStaffIdentity } from "../../../../lib/staff";
 import { requireChatGPTUser } from "../../../../chatgpt-auth";
-import PrintButton from "../../../print-button";
+import { SafeDealLogo } from "@/components/SafeDealLogo";
+import { ReportActionBar } from "@/components/report/ReportActionBar";
+import { ExecutiveHeader } from "@/components/report/ExecutiveHeader";
+import { PropertyDetailsCard } from "@/components/report/PropertyDetailsCard";
+import { SafeScoreCard } from "@/components/report/SafeScoreCard";
+import { Top5KeyFindings } from "@/components/report/Top5KeyFindings";
+import { QuickRiskMap } from "@/components/report/QuickRiskMap";
+import { ScoreBreakdownBars } from "@/components/report/ScoreBreakdownBars";
+import { ActionableContextCard } from "@/components/report/ActionableContextCard";
+import { RecommendedActionBanner } from "@/components/report/RecommendedActionBanner";
+import { ValuationCard } from "@/components/report/ValuationCard";
+import { MadlanInsightsCard } from "@/components/report/MadlanInsightsCard";
+import { DataHubPillars } from "@/components/report/DataHubPillars";
+import { OperativeNextSteps } from "@/components/report/OperativeNextSteps";
+import { synthesizeFullReport } from "@/lib/report-synthesizer";
 
 export const dynamic = "force-dynamic";
-
-type ReportSnapshot = {
-  case: Record<string, unknown>;
-  findings: { category: string; title: string; note: string; severity: string; source: string | null; state: string; reviewNote: string | null; reviewedBy: string | null }[];
-  documents: { filename: string; contentType: string; size: number; uploadedAt: string }[];
-  generatedBy: string;
-  generatedAt: string;
-  version: number;
-};
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await requireChatGPTUser(`/staff/cases/${id}/report`);
   const staff = await getStaffIdentity();
-  if (!staff || !await caseIsVisible(staff, id)) notFound();
-  const row = await getDb().$client.prepare(`SELECT snapshot FROM reports WHERE case_id = ? ORDER BY version DESC LIMIT 1`).bind(id).first<{ snapshot: string }>();
-  if (!row) notFound();
-  const report = JSON.parse(row.snapshot) as ReportSnapshot;
-  const c = report.case;
-  const address = [c.street, c.house, c.city].filter(Boolean).join(" ");
-  return <main className="report-page" dir="rtl">
-    <nav className="report-actions"><a href="/staff">חזרה לתיקי העבודה</a><PrintButton /></nav>
-    <article className="report-sheet"><header className="report-header"><div className="report-brand"><span>SD</span><b>SafeDeal</b></div><div className="report-version">דוח בדיקת נכס · גרסה {report.version}</div></header>
-      <div className="report-heading"><div><span>מספר תיק {String(c.case_number ?? "")}</span><h1>דוח בדיקת נאותות</h1><p>תמונת מצב של פרטי הנכס והממצאים שנבדקו על ידי צוות SafeDeal.</p></div><div className="report-status">נבדק על ידי אנליסט</div></div>
-      <section className="report-block"><h2>פרטי הנכס</h2><div className="report-fields"><div><small>כתובת</small><b>{address || "לא צוין"}</b></div><div><small>סוג נכס</small><b>{String(c.asset_type ?? "לא צוין")}</b></div><div><small>מחיר מבוקש</small><b>{c.price ? `₪ ${String(c.price)}` : "לא צוין"}</b></div><div><small>שטח</small><b>{c.area ? `${String(c.area)} מ״ר` : "לא צוין"}</b></div><div><small>חדרים</small><b>{String(c.rooms ?? "לא צוין")}</b></div><div><small>תאריך הפקה</small><b>{new Date(report.generatedAt).toLocaleDateString("he-IL")}</b></div></div></section>
-      <section className="report-block"><div className="report-section-head"><h2>ממצאים שנבדקו</h2><span>{report.findings.length} ממצאים</span></div>{report.findings.length ? report.findings.map((finding, index) => <article className="report-finding" key={`${finding.title}-${index}`}><div><span className={`report-severity ${finding.severity === "גבוהה" ? "high" : finding.severity === "נמוכה" ? "low" : "medium"}`}>{finding.severity}</span><small>{finding.category}</small></div><h3>{finding.title}</h3><p>{finding.note}</p>{finding.source && <small className="report-source">מקור: {finding.source}</small>}{finding.reviewNote && <p className="report-review">הערת בקרה: {finding.reviewNote}</p>}</article>) : <div className="report-no-findings">לא תועדו ממצאים בתיק בעת הפקת הדוח.</div>}</section>
-      <section className="report-block"><h2>מסמכים שהתקבלו</h2>{report.documents.length ? <ul className="report-doc-list">{report.documents.map((doc, index) => <li key={`${doc.filename}-${index}`}>{doc.filename}</li>)}</ul> : <p className="report-muted">לא צורפו מסמכים לבקשה.</p>}</section>
-      <footer className="report-footer"><p>הדוח מרכז את המידע והמסמכים שהועברו לצוות ואת ממצאי הבדיקה כפי שאושרו במועד הפקתו. יש לאמת מידע מול הגורמים והמקורות הרשמיים הרלוונטיים לפני קבלת החלטה בעסקה.</p><div><span>הופק על ידי {report.generatedBy}</span><span>SafeDeal · בדיקת נאותות לנכס</span></div></footer>
-    </article>
-  </main>;
+  if (!staff || !(await caseIsVisible(staff, id))) notFound();
+
+  const db = getDb();
+  const [reportRow, caseRow, findingsRows, docsRows] = await Promise.all([
+    db.$client
+      .prepare(`SELECT snapshot, version, created_at FROM reports WHERE case_id = ? ORDER BY version DESC LIMIT 1`)
+      .bind(id)
+      .first<{ snapshot: string; version: number; created_at: string }>(),
+    db.$client
+      .prepare(`SELECT * FROM cases WHERE id = ?`)
+      .bind(id)
+      .first<Record<string, any>>(),
+    db.$client
+      .prepare(`SELECT category, title, note, severity, source, state, review_note AS reviewNote FROM findings WHERE case_id = ? ORDER BY created_at DESC`)
+      .bind(id)
+      .all<any>(),
+    db.$client
+      .prepare(`SELECT filename, content_type AS contentType, size, uploaded_at AS uploadedAt FROM documents WHERE case_id = ?`)
+      .bind(id)
+      .all<any>(),
+  ]);
+
+  if (!caseRow && !reportRow) notFound();
+
+  let snapshotData: any = null;
+  if (reportRow?.snapshot) {
+    try {
+      snapshotData = JSON.parse(reportRow.snapshot);
+    } catch {
+      snapshotData = null;
+    }
+  }
+
+  const activeCase = snapshotData?.case || caseRow || {};
+  const activeFindings = snapshotData?.findings || findingsRows.results || [];
+  const activeDocs = snapshotData?.documents || docsRows.results || [];
+  const activeVersion = reportRow?.version ?? 1;
+  const activeGeneratedAt = reportRow?.created_at ?? snapshotData?.generatedAt ?? new Date().toISOString();
+  const activeGeneratedBy = snapshotData?.generatedBy ?? staff?.displayName ?? "אנליסט SafeDeal";
+
+  const r = synthesizeFullReport({
+    caseRow: activeCase,
+    findings: activeFindings,
+    documents: activeDocs,
+    version: activeVersion,
+    generatedAt: activeGeneratedAt,
+    generatedBy: activeGeneratedBy,
+  });
+
+  return (
+    <main className="relative min-h-screen z-10 flex flex-col items-center px-4 sm:px-6 py-10 pb-28 max-w-5xl mx-auto space-y-10 text-right bg-[#060E1C] text-slate-100" dir="rtl">
+      {/* Top Header Navigation */}
+      <header className="w-full flex items-center justify-between print:hidden">
+        <Link
+          href="/staff"
+          className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-xs sm:text-sm font-bold"
+        >
+          <ArrowRight size={15} />
+          חזרה למערכת האנליסטים
+        </Link>
+        <SafeDealLogo size="sm" />
+      </header>
+
+      {/* Action Bar (Download PDF / Send Email) */}
+      <ReportActionBar backLink="/staff" backLabel="חזרה לתיקי עבודה" />
+
+      {/* ── PAGE 1: EXECUTIVE DECISION PAGE ─────────────────────────────────── */}
+      <div className="w-full space-y-8 print:space-y-4 animate-fade-in-up">
+        <ExecutiveHeader
+          dealType={r.dealType}
+          reportNumber={r.reportNumber}
+          generatedDate={new Date(r.generatedAt).toLocaleDateString("he-IL")}
+          address={r.property.address}
+          projectName={r.property.projectName}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
+          <PropertyDetailsCard details={r.property} />
+          <SafeScoreCard
+            score={r.safeScore}
+            riskText={r.riskText}
+            recommendationText={r.recommendationText}
+            dealType={r.dealType}
+            coveragePercent={r.coveragePercent}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
+          <Top5KeyFindings findings={r.top5Findings} />
+          <QuickRiskMap categories={r.quickRiskMap} />
+        </div>
+
+        {r.valuation && <ValuationCard valuation={r.valuation} />}
+
+        {r.madlanInsights && <MadlanInsightsCard insights={r.madlanInsights} />}
+      </div>
+
+      <div className="w-full h-[1px] bg-white/10 my-8 print:my-0 print:border-none print:page-break-before" />
+
+      {/* ── PAGE 2: DETAILED BREAKDOWN & ACTION PLAN ────────────────────────── */}
+      <div className="w-full space-y-8 print:space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 items-stretch">
+          <ScoreBreakdownBars items={r.scoreBreakdown} />
+          <ActionableContextCard
+            title={r.actionableSection?.title}
+            items={r.actionableSection?.items}
+          />
+        </div>
+
+        <RecommendedActionBanner
+          text={r.bottomLine?.text}
+          score={r.bottomLine?.score || r.safeScore}
+        />
+
+        {/* 4 Pillars with 11 Sources & Insolvency check */}
+        <DataHubPillars />
+
+        {/* Operative Checklist */}
+        <OperativeNextSteps />
+      </div>
+
+      {/* Footer */}
+      <footer className="w-full text-center py-10 border-t border-white/10 text-xs text-slate-400 space-y-3 print:hidden font-medium">
+        <div className="flex items-center justify-center gap-2">
+          <ShieldCheck size={16} className="text-teal-400" />
+          <span className="tracking-wider text-slate-200 font-bold">
+            SafeDeal PropTech Israel · Real Estate Risk Intelligence
+          </span>
+        </div>
+        <p className="max-w-xl mx-auto leading-relaxed text-slate-400">
+          דוח רשמי גרסה {activeVersion} · הופק על ידי {activeGeneratedBy} · נבדק ואושר במערכת האנליסטים.
+          הדוח מיועד לסיוע בקבלת החלטות ואינו מהווה תחליף לייעוץ משפטי או שמאות מקרקעין.
+        </p>
+      </footer>
+    </main>
+  );
 }

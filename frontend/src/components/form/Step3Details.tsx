@@ -204,7 +204,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
         askingPrice:  !data.step3.askingPrice    ? "מחיר הוא שדה חובה"  : undefined,
         propertyArea: !data.step3.propertyArea   ? "שטח הוא שדה חובה"   : undefined,
         roomsCount:   !data.step3.roomsCount     ? "יש לבחור מס׳ חדרים" : undefined,
-        floorNumber:  !data.step3.floorNumber    ? "קומה היא שדה חובה"  : undefined,
+        floorNumber:  !data.step3.floorNumber    ? "יש להזין קומה או לסמן 'לא ידוע'"  : undefined,
         fullName:     !data.step1.fullName.trim() ? "שם מלא הוא שדה חובה" : undefined,
         email:        !data.step1.email.trim()    ? undefined : !isValidEmail(data.step1.email) ? "כתובת הדוא״ל אינה תקינה" : undefined,
       }
@@ -366,25 +366,114 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
             )}
           </div>
 
-          {/* Floor */}
-          <div className="space-y-3">
-            <label htmlFor="floorNumber" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">קומה *</label>
-            <input
-              id="floorNumber"
-              type="number"
-              min={0}
-              max={80}
-              value={data.step3.floorNumber}
-              onChange={(e) => setStep3("floorNumber", e.target.value)}
-              placeholder="4"
-              className="w-32 bg-transparent border-b border-white/[0.15] py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#00C896] transition-colors duration-300"
-              style={{ ...(errors.floorNumber ? { borderColor: "rgba(248,113,113,0.6)" } : {}) }}
-            />
-            {errors.floorNumber && (
-              <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400">
-                <AlertCircle size={12} /> {errors.floorNumber}
+          {/* Floor & Total Floors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
+            {/* Floor Number */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label htmlFor="floorNumber" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+                  קומת הדירה *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isUnknown = data.step3.floorNumber === "לא ידוע" || data.step3.floorNumber === "unknown";
+                    setStep3("floorNumber", isUnknown ? "" : "לא ידוע");
+                  }}
+                  className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all duration-200 ${
+                    data.step3.floorNumber === "לא ידוע" || data.step3.floorNumber === "unknown"
+                      ? "border-[#00C896] bg-[#00C896]/15 text-[#00C896] font-semibold"
+                      : "border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+                  }`}
+                >
+                  לא ידוע
+                </button>
+              </div>
+
+              {data.step3.floorNumber === "לא ידוע" || data.step3.floorNumber === "unknown" ? (
+                <div className="py-3 text-sm text-[#00C896] font-medium border-b border-white/[0.15] flex items-center justify-between">
+                  <span>קומה לא ידועה (ללא קנס סיכון)</span>
+                  <button
+                    type="button"
+                    onClick={() => setStep3("floorNumber", "")}
+                    className="text-xs text-slate-400 hover:text-white underline"
+                  >
+                    הזן מספר
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    id="floorNumber"
+                    type="number"
+                    min={0}
+                    max={80}
+                    value={data.step3.floorNumber}
+                    onChange={(e) => setStep3("floorNumber", e.target.value)}
+                    placeholder="לדוגמה: 4 (0 לקרקע)"
+                    className="w-full bg-transparent border-b border-white/[0.15] py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#00C896] transition-colors duration-300"
+                    style={{ ...(errors.floorNumber ? { borderColor: "rgba(248,113,113,0.6)" } : {}) }}
+                  />
+                </div>
+              )}
+              {errors.floorNumber && (
+                <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400">
+                  <AlertCircle size={12} /> {errors.floorNumber}
+                </p>
+              )}
+            </div>
+
+            {/* Total Floors in Building */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label htmlFor="totalFloors" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+                  מספר קומות בבניין <span className="text-slate-500 font-normal">(אופציונלי)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isUnknown = data.step3.totalFloors === "לא ידוע" || data.step3.totalFloors === "unknown";
+                    setStep3("totalFloors", isUnknown ? "" : "לא ידוע");
+                  }}
+                  className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all duration-200 ${
+                    data.step3.totalFloors === "לא ידוע" || data.step3.totalFloors === "unknown"
+                      ? "border-[#00C896] bg-[#00C896]/15 text-[#00C896] font-semibold"
+                      : "border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+                  }`}
+                >
+                  לא ידוע
+                </button>
+              </div>
+
+              {data.step3.totalFloors === "לא ידוע" || data.step3.totalFloors === "unknown" ? (
+                <div className="py-3 text-sm text-[#00C896] font-medium border-b border-white/[0.15] flex items-center justify-between">
+                  <span>מספר קומות לא ידוע</span>
+                  <button
+                    type="button"
+                    onClick={() => setStep3("totalFloors", "")}
+                    className="text-xs text-slate-400 hover:text-white underline"
+                  >
+                    הזן מספר
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    id="totalFloors"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={data.step3.totalFloors || ""}
+                    onChange={(e) => setStep3("totalFloors", e.target.value)}
+                    placeholder="לדוגמה: 8"
+                    className="w-full bg-transparent border-b border-white/[0.15] py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#00C896] transition-colors duration-300"
+                  />
+                </div>
+              )}
+              <p className="text-[10px] text-slate-500">
+                מאפשר לחשב מיקום יחסי בבניין ולהתאים את מחיר השוק בדיוק מרבי
               </p>
-            )}
+            </div>
           </div>
 
           {/* Amenities */}

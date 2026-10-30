@@ -138,6 +138,7 @@ export class AiSynthesisService {
       aggregatedData,
       askingPriceNum,
       estimatedValue,
+      payload?.details,
     );
 
     const score = scoringResult.safeScore;

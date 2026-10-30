@@ -40,60 +40,71 @@ export function MultiStepForm() {
       
       let savedTabuName = formData.step4.tabuFile?.name ?? null;
 
-      // 1. Upload file if it exists
-      if (formData.step4.tabuFile) {
-        const uploadData = new FormData();
-        uploadData.append("file", formData.step4.tabuFile);
-        
-        try {
-          const upRes = await fetch(`${apiUrl}/api/v1/properties/upload-doc`, {
-            method: "POST",
-            body: uploadData,
-          });
-          if (upRes.ok) {
-            const upJson = await upRes.json();
-            savedTabuName = upJson.filename; // Use the unique server-generated name
-          } else {
-            console.error("Upload failed with status", upRes.status);
-            alert(`Upload failed: ${upRes.status}`);
-          }
-        } catch (e) {
-          console.error("File upload failed", e);
-          alert("File upload connection error");
-        }
-      }
-
-      // 2. Start analysis
-      const res = await fetch(`${apiUrl}/api/v1/properties/analyze`, {
+      // 1. Create case in Staff portal
+      const staffRes = await fetch("/api/staff/cases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          personal:  {
-            ...formData.step1,
-            email: formData.step1.email || undefined,
-          },
-          location:  formData.step2,
-          deal:      formData.step3,
-          documents: {
-            tabuFileName: savedTabuName,
-          },
+          clientName: formData.step1.fullName,
+          clientEmail: formData.step1.email,
+          clientPhone: formData.step1.phone,
+          personal: formData.step1,
+          location: formData.step2,
+          deal: formData.step3,
+          documentsList: formData.step4.tabuFile ? [{
+            name: formData.step4.tabuFile.name,
+            size: formData.step4.tabuFile.size,
+            type: formData.step4.tabuFile.type,
+          }] : [],
         }),
       });
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Analysis failed:", res.status, errorText);
-        alert(`Analysis API failed: ${res.status}\nCheck console for details.\nURL: ${apiUrl}/api/v1/properties/analyze`);
-        setIsSubmitting(false);
-        return;
+
+      const staffData = await staffRes.json().catch(() => ({}));
+      const generatedCaseId = staffData.caseNumber || staffData.id || `SD-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+      // 2. Upload file if it exists and attach to case
+      if (formData.step4.tabuFile && staffData.id) {
+        const uploadData = new FormData();
+        uploadData.append("file", formData.step4.tabuFile);
+        uploadData.append("documentType", "נסח טאבו / אישור זכויות");
+        uploadData.append("source", "הועלה על ידי הלקוח בטופס");
+
+        try {
+          await fetch(`/api/staff/cases/${staffData.id}/documents`, {
+            method: "POST",
+            body: uploadData,
+          });
+        } catch (e) {
+          console.warn("Staff document upload error:", e);
+        }
       }
-      
-      const json = await res.json();
-      setJobId(json.jobId);
+
+      // 3. Initiate backend pipeline if reachable
+      try {
+        fetch(`${apiUrl}/api/v1/properties/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            personal: {
+              ...formData.step1,
+              email: formData.step1.email || undefined,
+            },
+            location: formData.step2,
+            deal: formData.step3,
+            documents: {
+              tabuFileName: savedTabuName,
+            },
+          }),
+        }).catch((e) => console.log("Backend pipeline queued or offline:", e));
+      } catch (e) {
+        // Non-blocking background call
+      }
+
+      setJobId(generatedCaseId);
       setSubmitted(true);
     } catch (err) {
       console.error("Submission error", err);
-      alert("Submission connection error");
+      alert("שגיאה בהגשת הטופס. אנא נסו שוב.");
     } finally {
       setIsSubmitting(false);
     }

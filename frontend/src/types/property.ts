@@ -170,6 +170,7 @@ export interface Step3DealDetails {
   propertyArea: string;  // m²
   roomsCount: string;
   floorNumber: string;
+  totalFloors?: string;  // מספר קומות בבניין (אופציונלי או "לא ידוע")
   condition: PropertyCondition | "";
   hasParking?: boolean;
   hasUndergroundParking: boolean;  // חניון תת קרקעי
@@ -238,6 +239,7 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     propertyArea: "",
     roomsCount: "",
     floorNumber: "",
+    totalFloors: "",
     condition: "",
     hasParking: false,
     hasUndergroundParking: false,

@@ -5,7 +5,12 @@ import Link from "next/link";
 import { Download, Mail, PlusCircle } from "lucide-react";
 import { EmailModal } from "./EmailModal";
 
-export function ReportActionBar() {
+interface ReportActionBarProps {
+  backLink?: string;
+  backLabel?: string;
+}
+
+export function ReportActionBar({ backLink = "/analyze", backLabel = "בדיקת נכס נוסף" }: ReportActionBarProps) {
   const [isEmailOpen, setIsEmailOpen] = useState(false);
 
   const handlePrintPDF = () => {
@@ -17,7 +22,7 @@ export function ReportActionBar() {
   return (
     <>
       <div className="sticky top-4 z-40 w-full mx-auto print:hidden">
-        <div className="bg-navy-900/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border border-white/15 shadow-2xl">
+        <div className="bg-[#0A1628]/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border border-white/15 shadow-2xl">
           {/* Action buttons */}
           <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap w-full sm:w-auto">
             {/* Download PDF */}
@@ -39,13 +44,13 @@ export function ReportActionBar() {
             </button>
           </div>
 
-          {/* New Analysis Link */}
+          {/* Back Link */}
           <Link
-            href="/analyze"
+            href={backLink}
             className="py-3 px-4 sm:px-5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 border border-teal-500/40 text-teal-300 hover:bg-teal-500/15 hover:border-teal-500/60 rounded-xl w-full sm:w-auto"
           >
             <PlusCircle size={16} />
-            <span>בדיקת נכס נוסף</span>
+            <span>{backLabel}</span>
           </Link>
         </div>
       </div>

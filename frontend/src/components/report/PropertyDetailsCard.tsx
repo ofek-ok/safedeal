@@ -12,6 +12,8 @@ interface PropertyDetailsProps {
     areaSqm: string;
     balconySqm?: string;
     floor: string;
+    totalFloors?: string;
+    hasElevator?: boolean;
     parkingStorage?: string;
     askingPrice: string;
     yearBuilt?: string;
@@ -20,6 +22,15 @@ interface PropertyDetailsProps {
 
 export function PropertyDetailsCard({ details }: PropertyDetailsProps) {
   const isDeveloper = !!(details.projectName || details.developerName);
+
+  const floorDisplay = () => {
+    const f = details.floor;
+    if (!f || f === "unknown" || f === "לא ידוע") return "לא ידוע / לא צוין";
+    if (details.totalFloors && details.totalFloors !== "unknown" && details.totalFloors !== "לא ידוע") {
+      return `קומה ${f} מתוך ${details.totalFloors}`;
+    }
+    return f.includes("קומה") ? f : `קומה ${f}`;
+  };
 
   const rows = [
     ...(isDeveloper
@@ -30,7 +41,15 @@ export function PropertyDetailsCard({ details }: PropertyDetailsProps) {
       : []),
     { label: "כתובת", value: details.address, source: "GovMap המרכז למיפוי ישראל", url: "https://govmap.gov.il/" },
     { label: "סוג נכס", value: details.propertyType, source: "פנקסי מקרקעין (טאבו)", url: "https://www.gov.il/he/departments/land_registration_and_settlement_rights/" },
-    { label: "קומה", value: details.floor, source: "פנקסי מקרקעין (טאבו)", url: "https://www.gov.il/he/departments/land_registration_and_settlement_rights/" },
+    { label: "קומה", value: floorDisplay(), source: "פנקסי מקרקעין (טאבו)", url: "https://www.gov.il/he/departments/land_registration_and_settlement_rights/" },
+    ...(details.hasElevator !== undefined
+      ? [{
+          label: "מעלית",
+          value: details.hasElevator ? "יש מעלית בבניין" : "ללא מעלית",
+          source: "תקנון בית משותף / תיק בניין",
+          url: "https://www.gov.il/he/departments/land_registration_and_settlement_rights/",
+        }]
+      : []),
     {
       label: "שטח",
       value: details.balconySqm

@@ -2,6 +2,62 @@
 @import "tw-animate-css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
 
+@theme {
+  --color-navy-950: #060E1C;
+  --color-navy-900: #0A1628;
+  --color-navy-800: #0D2037;
+  --color-navy-700: #112849;
+  --color-navy-600: #173560;
+  --color-navy-500: #1E4478;
+  --color-teal-300: #5EEAD4;
+  --color-teal-400: #2DD4BF;
+  --color-teal-500: #00C896;
+  --color-teal-600: #00B085;
+  --font-serif: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+}
+
+.sd-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #00C896 0%, #2DD4BF 100%);
+  color: #060E1C;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  font-family: Arial, "Noto Sans Hebrew", sans-serif;
+  border: none;
+  border-radius: 0.875rem;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  box-shadow: 0 6px 24px rgba(0, 200, 150, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+.sd-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(0, 200, 150, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  filter: brightness(1.08);
+}
+.sd-btn-primary:active {
+  transform: translateY(0.5px) scale(0.985);
+  box-shadow: 0 3px 12px rgba(0, 200, 150, 0.25);
+  filter: brightness(0.96);
+}
+.sd-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+
 html, body { min-height: 100%; }
 body { margin: 0; }
 .customer-frame { display: block; border: 0; width: 100%; height: 100dvh; background: #071323; }
@@ -18,3 +74,39 @@ body { margin: 0; }
 @media(max-width:960px){.sidebar{width:228px;flex-basis:228px;padding-left:11px;padding-right:11px}.content-area{padding:25px 20px 55px}.topbar{padding:0 20px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-grid,.bottom-grid{grid-template-columns:1fr}.timeline-panel{order:2}.insight-card{min-height:180px}.case-workspace{grid-template-columns:1fr}.case-list-panel{order:2}.case-detail-panel{order:1}.client-feature{grid-template-columns:1fr 0.8fr}.client-feature-copy{padding:20px}.visual-building{left:12%}}
 @media(max-width:700px){.sidebar{position:fixed;top:0;bottom:0;right:0;height:100dvh;min-height:0;width:min(290px,84vw);transform:translateX(110%);transition:transform .22s ease;box-shadow:none}.sidebar.sidebar-open{transform:translateX(0);box-shadow:-15px 0 45px #17373a21}.mobile-close{display:grid}.mobile-menu{display:grid}.mobile-scrim{display:block;position:fixed;inset:0;background:#122a2c61;border:0;z-index:15}.topbar{height:58px;padding:0 14px}.topbar-actions{gap:8px}.topbar-user{display:none}.content-area{padding:20px 14px 58px}.page-heading{align-items:flex-start;gap:12px}.page-heading h1,.client-welcome h1{font-size:23px}.page-heading p,.client-welcome p{font-size:10px;line-height:1.6;max-width:320px}.page-heading>.primary-button,.client-welcome>.primary-button{height:34px;padding:0 9px;font-size:9px;white-space:nowrap}.metric-grid{gap:9px}.metric-card{min-height:125px;padding:12px}.metric-icon{width:30px;height:30px;margin-bottom:10px}.metric-trend{top:14px;left:10px;font-size:8px}.metric-title{font-size:10px}.metric-value{font-size:21px}.metric-card small{font-size:8px}.panel-heading{padding:14px 13px 11px}.panel-heading h2{font-size:12px}.panel-heading p{font-size:9px}.table-wrap{margin:0}.cases-panel table{min-width:600px}.case-detail-panel{padding:0 12px 12px}.detail-header h2{font-size:15px}.detail-status-row{gap:7px;flex-wrap:wrap}.detail-due{margin-right:0}.detail-tabs{gap:15px}.detail-section-head p{max-width:230px;line-height:1.5}.finding-card{padding:9px}.finding-card>p{line-height:1.65}.finding-top{gap:6px}.confidence{font-size:7px}.report-action{flex-wrap:wrap}.report-action>div:nth-child(2){min-width:calc(100% - 48px)}.report-button{margin-right:auto}.list-toolbar{padding:9px}.search-box{height:34px}.search-box kbd{display:none}.filter-button{font-size:8px;padding:0 6px}.case-list-item{padding:11px 9px;gap:7px}.case-list-meta .status-pill{font-size:8px;padding:0 5px}.case-list-copy b{font-size:9px}.case-list-property{font-size:8px}.breadcrumbs{font-size:10px}.demo-chip{font-size:8px;padding:5px 7px}.client-welcome{align-items:flex-start}.client-feature{grid-template-columns:1fr}.client-feature-copy{padding:17px}.client-feature h2{font-size:18px}.client-visual{min-height:180px}.visual-building{height:155px;width:155px;left:20%}.visual-pin{top:15%;left:31%;width:42px;height:42px}.client-step-grid{grid-template-columns:repeat(2,1fr)}.client-step{padding:10px;grid-template-columns:24px 1fr}.step-number{width:23px;height:23px}.client-step b{font-size:9px}.client-step small{font-size:7px;line-height:1.4}.client-lower{grid-template-columns:1fr}.client-docs .panel-heading{align-items:flex-start;gap:7px}.document-row{margin:0 12px}.doc-status{font-size:7px}.client-callout{padding:14px}.modal-backdrop{padding:10px}.new-case-modal{padding:18px 16px 14px}.toast{right:10px;left:10px;bottom:52px;justify-content:center}.demo-note{bottom:9px;left:9px;font-size:7px;padding:5px 8px}}
 @media(max-width:390px){.metric-grid{gap:7px}.metric-card{padding:10px}.metric-title{font-size:9px}.metric-trend{padding:3px 5px}.topbar-actions{gap:4px}.finding-actions{flex-wrap:wrap}.step{font-size:7px}.client-welcome>.primary-button{font-size:8px;padding:0 7px}.outline-button{padding:7px;font-size:8px}}
+
+/* ── High-Efficiency PDF Print Optimization (Executive Deck) ── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  body {
+    background-color: #060E1C !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .grid > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+

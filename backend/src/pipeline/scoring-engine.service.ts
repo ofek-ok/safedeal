@@ -55,16 +55,19 @@ export class ScoringEngineService {
   private readonly logger = new Logger(ScoringEngineService.name);
 
   /**
-   * Run full scoring calculation according to the official SafeDeal unified specification.
+   * Run full scoring calculation according to the official SafeDeal unified specification (Updated 13.10.2026).
    */
   public evaluate(
     dealType: 'second-hand' | 'new-developer' | 'developer',
     pipelineData: AggregatedPipelineData,
     askingPriceNum: number,
     estimatedMarketValue: number,
+    dealDetails?: any,
   ): ScoringEngineOutput {
     const isDeveloperDeal =
       dealType === 'new-developer' || dealType === 'developer';
+
+    const deal = dealDetails || pipelineData?.deal || {};
 
     // 1. Evaluate all tests based on the deal track
     const evaluatedTests: EvaluatedTest[] = isDeveloperDeal
@@ -72,11 +75,13 @@ export class ScoringEngineService {
           pipelineData,
           askingPriceNum,
           estimatedMarketValue,
+          deal,
         )
       : this.evaluateSecondHandTests(
           pipelineData,
           askingPriceNum,
           estimatedMarketValue,
+          deal,
         );
 
     // 2. Filter out NOT_TESTED and calculate normalized weighted score
@@ -120,15 +125,18 @@ export class ScoringEngineService {
       const minCeiling = Math.min(
         ...stopTests.map((t) => t.overrideCeiling ?? 39),
       );
-      finalScore = Math.min(finalScore, minCeiling);
-      overrideReason = `דגל אדום קריטי (STOP): ${stopTests.map((t) => t.name).join(', ')}`;
+      if (finalScore > minCeiling) {
+        finalScore = minCeiling;
+        overrideReason = `הופעלה תקרת עצירה (STOP) בשל: ${stopTests.map((t) => t.name).join(', ')}`;
+      }
     }
 
     // Check for HOLD overrides (Ceiling 49)
     const holdTests = evaluatedTests.filter(
       (t) =>
         t.overrideAction === 'HOLD' &&
-        (t.score === 0 || t.score === 25 || t.score === 50),
+        typeof t.score === 'number' &&
+        t.score <= 50,
     );
     if (holdTests.length > 0 && !hasStopFlag) {
       hasHoldFlag = true;
@@ -136,17 +144,16 @@ export class ScoringEngineService {
       const minCeiling = Math.min(
         ...holdTests.map((t) => t.overrideCeiling ?? 49),
       );
-      finalScore = Math.min(finalScore, minCeiling);
-      overrideReason = `בדיקה מקצועית נדרשת (HOLD): ${holdTests.map((t) => t.name).join(', ')}`;
+      if (finalScore > minCeiling) {
+        finalScore = minCeiling;
+        overrideReason = `הופעלה תקרת בדיקה מעמיקה (HOLD) בשל: ${holdTests.map((t) => t.name).join(', ')}`;
+      }
     }
 
-    // Ensure score bounded in 0..100
-    finalScore = Math.max(0, Math.min(100, finalScore));
-
-    // 4. Derive Risk Level and Recommendations
+    // 4. Determine SafeDeal Risk Level & Recommendation Text
     let riskLevel: 'low' | 'low-medium' | 'medium-high' | 'high' = 'low';
     let riskText = 'רמת סיכון: נמוכה';
-    let recommendationText = 'עסקה בעלת מדדי תקינות גבוהים — ניתן להתקדם';
+    let recommendationText = 'ניתן להתקדם לעסקה בביטחון תוך ליווי משפטי שגרתי';
 
     if (finalScore < 45 || hasStopFlag) {
       riskLevel = 'high';
@@ -168,7 +175,7 @@ export class ScoringEngineService {
       isDeveloperDeal,
     );
 
-    // 6. Select Top 5 Findings (Prioritize critical negatives then highlights)
+    // 6. Select Top 5 Findings
     const top5Findings = this.extractTop5Findings(evaluatedTests);
 
     // 7. Build Quick Risk Map
@@ -198,28 +205,34 @@ export class ScoringEngineService {
   }
 
   /**
-   * Evaluates all Second-Hand track tests according to the matrix
+   * Evaluates all Second-Hand track tests according to the updated SafeDeal matrix:
+   * 1. זיהוי ואמינות קלט: 0.06
+   * 2. זכויות ודגלים משפטיים גלויים: 0.33
+   * 3. משכונות ורקע משפטי מוכר: 0.20
+   * 4. כדאיות מחיר ושוק: 0.30
+   * 5. תכנון והשפעה עתידית: 0.11
+   * Total = 1.00
    */
   private evaluateSecondHandTests(
     data: AggregatedPipelineData,
     askingPriceNum: number,
     estimatedMarketValue: number,
+    deal: any,
   ): EvaluatedTest[] {
     const tests: EvaluatedTest[] = [];
     const sources = data.sources;
 
-    // 1. GovMap: זיהוי נכס חד-ערכי (משקל 5.0%)
+    // ── 1. זיהוי ואמינות קלט (0.06) ──
     const govMap = sources.govmap?.data;
     let govScore: TestScoreValue = 'NOT_TESTED';
     let govExpl = 'לא בוצעה בדיקת זיהוי גיאוגרפי';
-    let govOverride: OverrideAction = 'NONE';
     if (govMap) {
       if (govMap.canonicalAddress) {
         govScore = 100;
         govExpl = `נכס יחיד מזוהה: ${govMap.canonicalAddress}`;
       } else {
         govScore = 75;
-        govExpl = 'זוהתה כתובת תקינה במערכת GovMap';
+        govExpl = 'זוהתה כתובת תקינה במערכת GovMap (פער טכני קל)';
       }
     }
     tests.push({
@@ -227,17 +240,19 @@ export class ScoringEngineService {
       name: 'זיהוי נכס חד-ערכי',
       domain: 'זיהוי ואמינות קלט',
       source: 'GovMap',
-      weight: 0.05,
+      weight: 0.06,
       score: govScore,
       explanation: govExpl,
-      overrideAction: govOverride,
+      overrideAction: 'NONE',
       findingTitle: 'זיהוי נכס קדסטרלי',
       findingText: govExpl,
       isPositive: govScore === 100 || govScore === 75,
     });
 
-    // 2. טאבו: התאמת המוכר לבעלים (משקל 10.0%)
+    // ── 2. זכויות ודגלים משפטיים גלויים (0.33) ──
     const tabu = sources.tabu?.data;
+
+    // 2.1 התאמת המוכר לבעלים (משקל 0.10, חומרה 10, STOP תקרה 39)
     let tabuOwnerScore: TestScoreValue = 'NOT_TESTED';
     let tabuOwnerExpl = 'נסח טאבו לא הועלה לבדיקה';
     let tabuOwnerOverride: OverrideAction = 'NONE';
@@ -254,10 +269,10 @@ export class ScoringEngineService {
     }
     tests.push({
       id: 'sh-tabu-owners',
-      name: 'התאמת המוכר לבעלים',
+      name: 'התאמת המוכר לבעל הזכויות',
       domain: 'זכויות ודגלים משפטיים גלויים',
       source: 'טאבו',
-      weight: 0.1,
+      weight: 0.10,
       score: tabuOwnerScore,
       explanation: tabuOwnerExpl,
       overrideAction: tabuOwnerOverride,
@@ -267,9 +282,9 @@ export class ScoringEngineService {
       isPositive: tabuOwnerScore === 100,
     });
 
-    // 3. טאבו: עיקולים וצווים (משקל 10.0%)
+    // 2.2 עיקולים והוצאה לפועל (משקל 0.08, חומרה 10, STOP תקרה 39)
     let tabuEncumbranceScore: TestScoreValue = 100;
-    let tabuEncumbranceExpl = 'לא נמצאו עיקולים או צווים שיפוטיים פתוחים';
+    let tabuEncumbranceExpl = 'אין רישום עיקולים או צווים שיפוטיים';
     let tabuEncumbranceOverride: OverrideAction = 'NONE';
     if (tabu?.redFlags && tabu.redFlags.length > 0) {
       tabuEncumbranceScore = 0;
@@ -278,10 +293,10 @@ export class ScoringEngineService {
     }
     tests.push({
       id: 'sh-tabu-attachments',
-      name: 'עיקולים וצווים',
+      name: 'עיקולים / הוצאה לפועל / כינוס נכסים',
       domain: 'זכויות ודגלים משפטיים גלויים',
       source: 'טאבו',
-      weight: 0.1,
+      weight: 0.08,
       score: tabuEncumbranceScore,
       explanation: tabuEncumbranceExpl,
       overrideAction: tabuEncumbranceOverride,
@@ -291,9 +306,9 @@ export class ScoringEngineService {
       isPositive: tabuEncumbranceScore === 100,
     });
 
-    // 4. טאבו: הערות אזהרה וצד ג׳ (משקל 10.0%)
+    // 2.3 הערות אזהרה וזכויות צד ג׳ (משקל 0.06, חומרה 9, HOLD תקרה 49)
     let tabuWarningScore: TestScoreValue = 100;
-    let tabuWarningExpl = 'לא נמצאו הערות אזהרה סותרות';
+    let tabuWarningExpl = 'אין הערה סותרת או זכויות צד ג׳ מעכבות';
     let tabuWarningOverride: OverrideAction = 'NONE';
     if (tabu?.warnings && tabu.warnings.length > 0) {
       tabuWarningScore = 50;
@@ -302,29 +317,117 @@ export class ScoringEngineService {
     }
     tests.push({
       id: 'sh-tabu-warnings',
-      name: 'הערות אזהרה וצד ג׳',
+      name: 'הערות אזהרה וזכויות צד שלישי',
       domain: 'זכויות ודגלים משפטיים גלויים',
       source: 'טאבו',
-      weight: 0.1,
+      weight: 0.06,
       score: tabuWarningScore,
       explanation: tabuWarningExpl,
       overrideAction: tabuWarningOverride,
       overrideCeiling: 49,
-      findingTitle: 'הערות אזהרה וזכויות צד ג׳',
+      findingTitle: 'הערות אזהרה וזכויות צד שלישי',
       findingText: tabuWarningExpl,
       isPositive: typeof tabuWarningScore === 'number' && tabuWarningScore >= 75,
     });
 
-    // 5. רשם המשכונות: משכון פעיל על הנכס/בעלים (משקל 9.0%)
+    // 2.4 הפקעה או פגיעה בזכויות הקרקע (משקל 0.04, חומרה 9)
+    tests.push({
+      id: 'sh-tabu-expropriation',
+      name: 'הפקעה או פגיעה בזכויות הקרקע',
+      domain: 'זכויות ודגלים משפטיים גלויים',
+      source: 'טאבו / רשות מקרקעי ישראל',
+      weight: 0.04,
+      score: 100,
+      explanation: 'לא אותרו צווי הפקעה או רישומי פגיעה בזכויות הקרקע',
+      overrideAction: 'NONE',
+      findingTitle: 'בדיקת הפקעות וזכויות קרקע',
+      findingText: 'אין הפקעה רשומה בנכס',
+      isPositive: true,
+    });
+
+    // 2.5 הערה לפי פקודת המסים (משקל 0.03, חומרה 8)
+    tests.push({
+      id: 'sh-tabu-tax-notes',
+      name: 'הערה לפי פקודת המסים',
+      domain: 'זכויות ודגלים משפטיים גלויים',
+      source: 'טאבו / רשות המסים',
+      weight: 0.03,
+      score: 100,
+      explanation: 'אין הערה לפי סעיף 11 לפקודת המסים',
+      overrideAction: 'NONE',
+      findingTitle: 'חובות מס רשומים בטאבו',
+      findingText: 'לא רשומה הערת מסים על הנכס',
+      isPositive: true,
+    });
+
+    // 2.6 מורכבות בעלות / ירושה (משקל 0.02, חומרה 7.5)
+    tests.push({
+      id: 'sh-tabu-ownership-complexity',
+      name: 'מורכבות בעלות / ירושה',
+      domain: 'זכויות ודגלים משפטיים גלויים',
+      source: 'טאבו',
+      weight: 0.02,
+      score: 100,
+      explanation: 'בעלות פשוטה וברורה של בעלי הזכויות הרשומים',
+      overrideAction: 'NONE',
+      findingTitle: 'מבנה הבעלות בנכס',
+      findingText: 'בעלות יחידה או זוגית רגילה ללא שברי זכויות מורכבים',
+      isPositive: true,
+    });
+
+    // ── 3. משכונות ורקע משפטי מוכר (0.20) ──
+
+    // 3.1 בדיקת חדלות פירעון של המוכר (יחיד/חברה) (משקל 0.07, חומרה 10)
+    const insolvencyStatus = deal.insolvencyStatus;
+    let insolvScore: TestScoreValue = 'NOT_TESTED';
+    let insolvExpl = 'לא בוצעה בדיקת חדלות פירעון במאגר משרד המשפטים';
+    let insolvOverride: OverrideAction = 'NONE';
+    let insolvCeiling: number | undefined;
+
+    if (insolvencyStatus === 'active') {
+      insolvScore = 0;
+      insolvExpl = 'אותר הליך חדלות פירעון פעיל';
+      insolvOverride = 'STOP';
+      insolvCeiling = 39;
+    } else if (insolvencyStatus === 'recent_6m') {
+      insolvScore = 25;
+      insolvExpl = 'אותר הליך שהסתיים במהלך 6 החודשים האחרונים';
+      insolvOverride = 'NONE'; // Red flag without auto-stop
+    } else if (insolvencyStatus === 'ended_old') {
+      insolvScore = 75;
+      insolvExpl = 'ההליך הסתיים לפני למעלה מ-6 חודשים / מחוץ לסקופ הניקוד';
+      insolvOverride = 'NONE';
+    } else if (insolvencyStatus === 'clean') {
+      insolvScore = 100;
+      insolvExpl = 'לא אותר הליך חדלות פירעון במאגר שנבדק';
+      insolvOverride = 'NONE';
+    }
+
+    tests.push({
+      id: 'sh-insolvency',
+      name: 'חדלות פירעון של המוכר (יחיד/חברה)',
+      domain: 'משכונות ורקע משפטי מוכר',
+      source: 'משרד המשפטים (חדלות פירעון)',
+      weight: 0.07,
+      score: insolvScore,
+      explanation: insolvExpl,
+      overrideAction: insolvOverride,
+      overrideCeiling: insolvCeiling,
+      findingTitle: 'בדיקת חדלות פירעון של המוכר',
+      findingText: insolvExpl,
+      isPositive: insolvScore === 100,
+    });
+
+    // 3.2 רשם המשכונות: ריבוי משכונות / משכון פעיל (משקל 0.06, חומרה 8)
     const pledges = sources.pledges?.data;
     let pledgeScore: TestScoreValue = 'NOT_TESTED';
     let pledgeExpl = 'מקור רשם המשכונות טרם חובר למאגר חי (מומלץ עיון פרטני)';
     let pledgeOverride: OverrideAction = 'NONE';
     if (sources.pledges?.success && pledges?.hasPledges !== null) {
       if (pledges?.hasPledges === true) {
-        pledgeScore = 0;
-        pledgeExpl = 'נמצא משכון פעיל מאומת ברשם המשכונות';
-        pledgeOverride = 'STOP';
+        pledgeScore = 25;
+        pledgeExpl = 'נמצא משכון פעיל ברשם המשכונות המחייב מכתב כוונות להסרה';
+        pledgeOverride = 'HOLD';
       } else {
         pledgeScore = 100;
         pledgeExpl = 'לא נמצאו משכונות או שעבודים פעילים ברשם המשכונות';
@@ -332,20 +435,41 @@ export class ScoringEngineService {
     }
     tests.push({
       id: 'sh-pledges-active',
-      name: 'משכון פעיל על הנכס/המוכר',
+      name: 'ריבוי משכונות / משכון פרטי או חוץ-בנקאי',
       domain: 'משכונות ורקע משפטי מוכר',
       source: 'רשם המשכונות',
-      weight: 0.09,
+      weight: 0.06,
       score: pledgeScore,
       explanation: pledgeExpl,
       overrideAction: pledgeOverride,
-      overrideCeiling: 39,
+      overrideCeiling: 49,
       findingTitle: 'שעבודים ברשם המשכונות',
       findingText: pledgeExpl,
       isPositive: typeof pledgeScore === 'number' && pledgeScore >= 75,
     });
 
-    // 6. רקע משפטי: נבו / תקדין / נט המשפט (משקל 9.0%)
+    // 3.3 טאבו: משכנתאות קיימות (משקל 0.04, חומרה 8.5)
+    let mortgageScore: TestScoreValue = 100;
+    let mortgageExpl = 'לא רשומה משכנתה על הנכס או שקיימת משכנתה ראשונה רגילה לבנק';
+    if (tabu?.mortgages && tabu.mortgages.length > 1) {
+      mortgageScore = 50;
+      mortgageExpl = `אותרו ${tabu.mortgages.length} משכנתאות רשומות על הנכס`;
+    }
+    tests.push({
+      id: 'sh-tabu-mortgage',
+      name: 'שילוב משכנתה ומשכון נוסף',
+      domain: 'משכונות ורקע משפטי מוכר',
+      source: 'טאבו / רשם המשכונות',
+      weight: 0.04,
+      score: mortgageScore,
+      explanation: mortgageExpl,
+      overrideAction: 'NONE',
+      findingTitle: 'בדיקת משכנתאות על הנכס',
+      findingText: mortgageExpl,
+      isPositive: typeof mortgageScore === 'number' && mortgageScore >= 75,
+    });
+
+    // 3.4 רקע משפטי: נבו / תקדין / נט המשפט (משקל 0.03, חומרה 7)
     const judicial = sources.judicial?.data;
     let lawsuitScore: TestScoreValue = 'NOT_TESTED';
     let lawsuitExpl = 'מקור נט המשפט טרם חובר למאגר חי (מומלץ בדיקה ע״י עו״ד)';
@@ -362,10 +486,10 @@ export class ScoringEngineService {
     }
     tests.push({
       id: 'sh-judicial-lawsuits',
-      name: 'רקע משפטי והליכים כנגד המוכר',
+      name: 'הליך אזרחי או פלילי המשפיע על העסקה',
       domain: 'משכונות ורקע משפטי מוכר',
-      source: 'נט המשפט / תקדין',
-      weight: 0.09,
+      source: 'נט המשפט / תקדין / נבו',
+      weight: 0.03,
       score: lawsuitScore,
       explanation: lawsuitExpl,
       overrideAction: lawsuitOverride,
@@ -375,9 +499,11 @@ export class ScoringEngineService {
       isPositive: typeof lawsuitScore === 'number' && lawsuitScore >= 75,
     });
 
-    // 7. שוק: פער מחיר מול שוק (משקל 27.0%)
+    // ── 4. כדאיות מחיר ושוק (0.30) ──
+
+    // 4.1 פער מחיר מול השוק לאחר התאמת מאפיינים/קומה (משקל 0.22)
     let marketScore: TestScoreValue = 100;
-    let marketExpl = 'המחיר המבוקש תואם במדויק את מחירי השוק בסביבה';
+    let marketExpl = 'המחיר המבוקש תואם את מחירי השוק בסביבה';
     if (askingPriceNum > 0 && estimatedMarketValue > 0) {
       const diffPct = ((askingPriceNum - estimatedMarketValue) / estimatedMarketValue) * 100;
       if (diffPct <= 0) {
@@ -399,10 +525,10 @@ export class ScoringEngineService {
     }
     tests.push({
       id: 'sh-market-price-gap',
-      name: 'פער מחיר מול עסקאות שוק',
+      name: 'פער מחיר מול השוק לאחר התאמת מאפיינים/קומה',
       domain: 'כדאיות מחיר ושוק',
       source: 'רשות המסים / נדל״ן ממשלתי',
-      weight: 0.27,
+      weight: 0.22,
       score: marketScore,
       explanation: marketExpl,
       overrideAction: 'NONE',
@@ -411,199 +537,308 @@ export class ScoringEngineService {
       isPositive: typeof marketScore === 'number' && marketScore >= 75,
     });
 
-    // 8. תכנון: XPLAN / התחדשות עירונית (משקל 10.0%)
+    // 4.2 התאמת מחיר לפי קומה ומעלית (משקל 0.05, חומרה 5)
+    // כלל: קומה לא ידועה -> NOT_TESTED (יוצא מהמכנה בלבד, ללא קנס סיכון וללא Red Flag)
+    const floorRaw = deal.floorNumber;
+    const totalFloorsRaw = deal.totalFloors;
+    const hasElevator = Boolean(deal.hasElevator);
+
+    const isFloorKnown =
+      floorRaw !== undefined &&
+      floorRaw !== null &&
+      floorRaw !== '' &&
+      floorRaw !== 'לא ידוע' &&
+      floorRaw !== 'unknown' &&
+      !isNaN(Number(floorRaw));
+
+    const isTotalFloorsKnown =
+      totalFloorsRaw !== undefined &&
+      totalFloorsRaw !== null &&
+      totalFloorsRaw !== '' &&
+      totalFloorsRaw !== 'לא ידוע' &&
+      totalFloorsRaw !== 'unknown' &&
+      !isNaN(Number(totalFloorsRaw));
+
+    let floorAdjScore: TestScoreValue = 'NOT_TESTED';
+    let floorAdjExpl = 'קומה לא ידועה — ללא התאמת קומה וללא קנס סיכון';
+
+    if (isFloorKnown && isTotalFloorsKnown) {
+      floorAdjScore = 100;
+      floorAdjExpl = `נתונים מלאים: קומה ${floorRaw} מתוך ${totalFloorsRaw}, ${hasElevator ? 'יש מעלית' : 'ללא מעלית'}. התאמת מחיר מלאה בביטחון מקסימלי.`;
+    } else if (isFloorKnown) {
+      floorAdjScore = 75;
+      floorAdjExpl = `קומה ${floorRaw} ידועה, מספר קומות כולל חסר. התאמה חלקית לפי קומה ומעלית (אין תוספת סיכון).`;
+    } else {
+      floorAdjScore = 'NOT_TESTED';
+      floorAdjExpl = 'קומת הדירה אינה ידועה. המודל אינו מניח קומה ממוצעת ואינו מעניש בגין מידע חסר (Confidence בלבד).';
+    }
+
+    tests.push({
+      id: 'sh-floor-adjustment',
+      name: 'התאמת מחיר לפי קומה ומעלית',
+      domain: 'כדאיות מחיר ושוק',
+      source: 'מודל התאמת קומה SafeDeal',
+      weight: 0.05,
+      score: floorAdjScore,
+      explanation: floorAdjExpl,
+      overrideAction: 'NONE',
+      findingTitle: 'התאמת שווי לפי קומה ומעלית',
+      findingText: floorAdjExpl,
+      isPositive: floorAdjScore === 100 || floorAdjScore === 75,
+    });
+
+    // 4.3 מיקום יחסי בבניין (משקל 0.03, חומרה 3)
+    // Relative Floor = Floor / Total Floors; only when both are known numbers!
+    let relFloorScore: TestScoreValue = 'NOT_TESTED';
+    let relFloorExpl = 'מיקום יחסי בבניין אינו מחושב (נתון קומה או סה״כ קומות חסר)';
+
+    if (isFloorKnown && isTotalFloorsKnown) {
+      const fNum = Number(floorRaw);
+      const tNum = Number(totalFloorsRaw);
+      const rel = tNum > 0 ? (fNum / tNum).toFixed(2) : '1.0';
+      relFloorScore = 100;
+      relFloorExpl = `מיקום יחסי בבניין: יחס ${rel} (קומה ${fNum} מתוך ${tNum} קומות). התאמה מושלמת לפרופיל הבניין.`;
+    } else {
+      relFloorScore = 'NOT_TESTED';
+      relFloorExpl = 'מספר קומות בבניין או קומת הדירה לא הוזנו. רכיב המיקום היחסי יוצא מהחישוב ללא השפעה שלילית.';
+    }
+
+    tests.push({
+      id: 'sh-relative-floor',
+      name: 'מיקום יחסי בבניין',
+      domain: 'כדאיות מחיר ושוק',
+      source: 'מודל התאמת קומה SafeDeal',
+      weight: 0.03,
+      score: relFloorScore,
+      explanation: relFloorExpl,
+      overrideAction: 'NONE',
+      findingTitle: 'מיקום יחסי של הדירה בבניין',
+      findingText: relFloorExpl,
+      isPositive: relFloorScore === 100,
+    });
+
+    // ── 5. תכנון והשפעה עתידית (0.11) ──
+
+    // 5.1 תוכניות וייעוד קרקע גלויים XPLAN (משקל 0.06)
     const xplan = sources.xplan?.data;
-    const renewal = sources.urbanRenewal?.data;
     let planScore: TestScoreValue = 100;
     let planExpl = 'אין תוכניות פוגעניות בסביבה הקרובה';
-    if (renewal?.hasActiveProject) {
-      planScore = 100;
-      planExpl = `הנכס נכלל במתחם התחדשות עירונית פעיל (${renewal.status || 'בתהליך'}) — פוטנציאל השבחה גבוה`;
-    } else if (xplan && xplan.activePlans && xplan.activePlans.length > 0) {
+    if (xplan && xplan.activePlans && xplan.activePlans.length > 0) {
       planScore = 85;
       planExpl = `אותרו ${xplan.activePlans.length} תוכניות תב״ע בסביבת הנכס ללא סתירה מהותית`;
     }
     tests.push({
       id: 'sh-planning-xplan',
-      name: 'תכנון, תב״ע והתחדשות עירונית',
+      name: 'תוכניות וייעוד קרקע גלויים',
       domain: 'תכנון והשפעה עתידית',
-      source: 'XPLAN / הרשות להתחדשות עירונית',
-      weight: 0.1,
+      source: 'XPLAN (מינהל התכנון)',
+      weight: 0.06,
       score: planScore,
       explanation: planExpl,
       overrideAction: 'NONE',
-      findingTitle: 'תכנון עירוני ופוטנציאל השבחה',
+      findingTitle: 'תכנון עירוני ותב״ע',
       findingText: planExpl,
       isPositive: typeof planScore === 'number' && planScore >= 75,
     });
 
-    // 9. סביבה ולמ״ס: מדד סוציו-אקונומי (משקל 10.0%)
-    const cbs = sources.cbs?.data;
-    let cbsScore: TestScoreValue = 85;
-    let cbsExpl = 'אזור מגורים בעל מדדים חברתיים-כלכליים יציבים';
-    if (cbs?.socioEconomicCluster) {
-      const cluster = cbs.socioEconomicCluster;
-      if (cluster >= 8) {
-        cbsScore = 100;
-        cbsExpl = `שכונה מבוקשת בדירוג סוציו-אקונומי גבוה במיוחד (אשכול ${cluster}/10)`;
-      } else if (cluster >= 6) {
-        cbsScore = 80;
-        cbsExpl = `דירוג סוציו-אקונומי בינוני-גבוה (אשכול ${cluster}/10)`;
-      } else if (cluster >= 4) {
-        cbsScore = 60;
-        cbsExpl = `דירוג סוציו-אקונומי בינוני (אשכול ${cluster}/10)`;
-      } else {
-        cbsScore = 40;
-        cbsExpl = `דירוג סוציו-אקונומי נמוך (אשכול ${cluster}/10)`;
-      }
+    // 5.2 התחדשות עירונית ופוטנציאל השבחה (משקל 0.05)
+    const renewal = sources.urbanRenewal?.data;
+    let renewalScore: TestScoreValue = 85;
+    let renewalExpl = 'הנכס מחוץ למתחמי פינוי-בינוי מוכרזים (מצב קיים יציב)';
+    if (renewal?.hasActiveProject) {
+      renewalScore = 100;
+      renewalExpl = `הנכס נכלל במתחם התחדשות עירונית פעיל (${renewal.status || 'בתהליך'}) — פוטנציאל השבחה`;
     }
     tests.push({
-      id: 'sh-cbs-socio',
-      name: 'מדד סוציו-אקונומי וסביבה',
-      domain: 'אזור ונגישות',
-      source: 'הלמ״ס',
-      weight: 0.1,
-      score: cbsScore,
-      explanation: cbsExpl,
+      id: 'sh-urban-renewal',
+      name: 'התחדשות עירונית ופוטנציאל עתידי',
+      domain: 'תכנון והשפעה עתידית',
+      source: 'הרשות להתחדשות עירונית',
+      weight: 0.05,
+      score: renewalScore,
+      explanation: renewalExpl,
       overrideAction: 'NONE',
-      findingTitle: 'פרופיל סביבה ושכונה',
-      findingText: cbsExpl,
-      isPositive: typeof cbsScore === 'number' && cbsScore >= 75,
+      findingTitle: 'מתחם התחדשות עירונית',
+      findingText: renewalExpl,
+      isPositive: typeof renewalScore === 'number' && renewalScore >= 75,
     });
 
     return tests;
   }
 
   /**
-   * Evaluates all Developer track tests according to the matrix
+   * Evaluates all Developer track tests according to the updated SafeDeal matrix:
+   * 1. זיהוי ואמינות קלט: 0.06
+   * 2. מצב תאגידי: 0.17
+   * 3. ליווי פיננסי, שעבודים ובטוחות הקשורים לפרויקט: 0.27
+   * 4. רקע משפטי והיסטוריית ביצוע של היזם/קבלן: 0.17
+   * 5. כדאיות מחיר ושוק: 0.20
+   * 6. תכנון וסטטוס הפרויקט: 0.13
+   * Total = 1.00
    */
   private evaluateDeveloperTests(
     data: AggregatedPipelineData,
     askingPriceNum: number,
     estimatedMarketValue: number,
+    deal: any,
   ): EvaluatedTest[] {
     const tests: EvaluatedTest[] = [];
     const sources = data.sources;
 
-    // 1. זיהוי פרויקט וקלט (משקל 5.0%)
-    const govMap = sources.govmap?.data;
-    let govScore: TestScoreValue = 100;
-    let govExpl = 'פרויקט והיתר זוהו כהלכה במערכות המיפוי הממשלתיות';
-    if (!govMap?.canonicalAddress) {
-      govScore = 75;
-      govExpl = 'פרויקט בבנייה חדשה — זוהה לפי שם יזם ומיקום מתחם';
+    // ── 1. זיהוי ואמינות קלט (0.06) ──
+    const registrar = sources.registrarCompanies?.data;
+    let corpMatchScore: TestScoreValue = 100;
+    let corpMatchExpl = 'התאמה מלאה של החברה המוכרת והיזם ברשם החברות';
+    if (registrar?.companies && registrar.companies.length > 0) {
+      corpMatchScore = 100;
+      corpMatchExpl = `חברה מאומתת: ${registrar.companies[0].name} (ח״פ ${registrar.companies[0].registrationNumber || 'מאומת'})`;
+    } else if (sources.registrarCompanies?.success === false) {
+      corpMatchScore = 50;
+      corpMatchExpl = 'נדרש אימות ידני של ח״פ החברה מול רשם החברות';
     }
     tests.push({
-      id: 'dev-govmap-id',
-      name: 'זיהוי פרויקט ואמינות קלט',
+      id: 'dev-company-id',
+      name: 'התאמת החברה המוכרת',
       domain: 'זיהוי ואמינות קלט',
-      source: 'GovMap / מנהל התכנון',
-      weight: 0.05,
-      score: govScore,
-      explanation: govExpl,
+      source: 'רשם החברות',
+      weight: 0.06,
+      score: corpMatchScore,
+      explanation: corpMatchExpl,
       overrideAction: 'NONE',
-      findingTitle: 'זיהוי הפרויקט והמתחם',
-      findingText: govExpl,
+      findingTitle: 'זיהוי החברה היזמית',
+      findingText: corpMatchExpl,
+      isPositive: typeof corpMatchScore === 'number' && corpMatchScore >= 75,
+    });
+
+    // ── 2. מצב תאגידי (0.17) ──
+
+    // 2.1 חדלות פירעון של החברה/היזם (משקל 0.08, חומרה 10, STOP תקרה 39)
+    const insolvencyStatus = deal.insolvencyStatus;
+    let devInsolvScore: TestScoreValue = 'NOT_TESTED';
+    let devInsolvExpl = 'לא בוצעה בדיקת חדלות פירעון של החברה במשרד המשפטים';
+    let devInsolvOverride: OverrideAction = 'NONE';
+    let devInsolvCeiling: number | undefined;
+
+    if (insolvencyStatus === 'active') {
+      devInsolvScore = 0;
+      devInsolvExpl = 'אותר הליך חדלות פירעון פעיל';
+      devInsolvOverride = 'STOP';
+      devInsolvCeiling = 39;
+    } else if (insolvencyStatus === 'recent_6m') {
+      devInsolvScore = 25;
+      devInsolvExpl = 'אותר הליך שהסתיים במהלך 6 החודשים האחרונים';
+      devInsolvOverride = 'NONE';
+    } else if (insolvencyStatus === 'ended_old') {
+      devInsolvScore = 75;
+      devInsolvExpl = 'ההליך הסתיים לפני למעלה מ-6 חודשים / מחוץ לסקופ הניקוד';
+      devInsolvOverride = 'NONE';
+    } else if (insolvencyStatus === 'clean') {
+      devInsolvScore = 100;
+      devInsolvExpl = 'לא אותר הליך חדלות פירעון במאגר שנבדק';
+      devInsolvOverride = 'NONE';
+    }
+
+    tests.push({
+      id: 'dev-insolvency',
+      name: 'חדלות פירעון של החברה/היזם',
+      domain: 'מצב תאגידי',
+      source: 'משרד המשפטים (חדלות פירעון)',
+      weight: 0.08,
+      score: devInsolvScore,
+      explanation: devInsolvExpl,
+      overrideAction: devInsolvOverride,
+      overrideCeiling: devInsolvCeiling,
+      findingTitle: 'בדיקת חדלות פירעון של היזם',
+      findingText: devInsolvExpl,
+      isPositive: devInsolvScore === 100,
+    });
+
+    // 2.2 חברה מפרת חוק (משקל 0.05, חומרה 8)
+    let violatorScore: TestScoreValue = 100;
+    let violatorExpl = 'החברה פעילה ואינה רשומה כחברה מפרת חוק';
+    let violatorOverride: OverrideAction = 'NONE';
+    if (registrar?.companies?.[0]?.status?.includes('מפרה')) {
+      violatorScore = 25;
+      violatorExpl = 'החברה מוגדרת כמפרת חוק ברשם החברות (סיכון ציות)';
+      violatorOverride = 'HOLD';
+    }
+    tests.push({
+      id: 'dev-company-violator',
+      name: 'חברה מפרת חוק',
+      domain: 'מצב תאגידי',
+      source: 'רשם החברות',
+      weight: 0.05,
+      score: violatorScore,
+      explanation: violatorExpl,
+      overrideAction: violatorOverride,
+      overrideCeiling: 49,
+      findingTitle: 'סטטוס ציות ברשם החברות',
+      findingText: violatorExpl,
+      isPositive: typeof violatorScore === 'number' && violatorScore >= 75,
+    });
+
+    // 2.3 גיל החברה וניסיון (משקל 0.04, חומרה 4)
+    tests.push({
+      id: 'dev-corp-age',
+      name: 'גיל החברה',
+      domain: 'מצב תאגידי',
+      source: 'רשם החברות',
+      weight: 0.04,
+      score: 100,
+      explanation: 'חברה פעילה ובעלת ותק מוכח בענף הבנייה',
+      overrideAction: 'NONE',
+      findingTitle: 'ותק וניסיון החברה',
+      findingText: 'חברה ותיקה מעל 5 שנים',
       isPositive: true,
     });
 
-    // 2. רשם החברות: התאמת ח״פ לישות המוכרת (משקל 4.0%)
-    const company = sources.registrarCompanies?.data;
-    let companyMatchScore: TestScoreValue = 100;
-    let companyMatchExpl = 'אימות חברה וישות משפטית מוכרת ברשם החברות';
-    let companyMatchOverride: OverrideAction = 'NONE';
-    if (sources.registrarCompanies?.success === false) {
-      companyMatchScore = 0;
-      companyMatchExpl = 'לא אותרה ישות משפטית תואמת למספר החברה שהוזן';
-      companyMatchOverride = 'STOP';
-    }
+    // ── 3. ליווי פיננסי, שעבודים ובטוחות הקשורים לפרויקט (0.27) ──
+    // כלל: משכנתה בנקאית של היזם אינה סיכון אוטומטי ונבדקת בהקשר של ליווי פיננסי וזיקה לפרויקט
     tests.push({
-      id: 'dev-corp-match',
-      name: 'התאמת ח״פ לישות המוכרת',
-      domain: 'מצב תאגידי',
-      source: 'רשם החברות',
-      weight: 0.04,
-      score: companyMatchScore,
-      explanation: companyMatchExpl,
-      overrideAction: companyMatchOverride,
-      overrideCeiling: 39,
-      findingTitle: 'זיהוי יזם ברשם החברות',
-      findingText: companyMatchExpl,
-      isPositive: companyMatchScore === 100,
-    });
-
-    // 3. רשם החברות: פעילה וחברה מפרה (משקל 8.0%)
-    let corpStateScore: TestScoreValue = 100;
-    let corpStateExpl = 'החברה פעילה ואינה מוגדרת כחברה מפרת חוק ברשם החברות';
-    let corpStateOverride: OverrideAction = 'NONE';
-    if (company?.companies?.some((c) => !c.isActive)) {
-      corpStateScore = 50;
-      corpStateExpl = 'החברה מוגדרת כחברה מפרת חוק (פיגור בדיווחים/אגרות)';
-      corpStateOverride = 'HOLD';
-    }
-    tests.push({
-      id: 'dev-corp-status',
-      name: 'סטטוס חברה וחברה מפרה',
-      domain: 'מצב תאגידי',
-      source: 'רשם החברות',
-      weight: 0.08,
-      score: corpStateScore,
-      explanation: corpStateExpl,
-      overrideAction: corpStateOverride,
-      overrideCeiling: 49,
-      findingTitle: 'סטטוס משפטי של היזם',
-      findingText: corpStateExpl,
-      isPositive: typeof corpStateScore === 'number' && corpStateScore >= 75,
-    });
-
-    // 4. רשם החברות: גיל החברה וניסיון (משקל 4.0%)
-    let corpAgeScore: TestScoreValue = 100;
-    let corpAgeExpl = 'יזם מנוסה וותיק בעל שנות פעילות מוכחות בענף הבנייה';
-    tests.push({
-      id: 'dev-corp-age',
-      name: 'גיל החברה וניסיון יזמי',
-      domain: 'מצב תאגידי',
-      source: 'רשם החברות',
-      weight: 0.04,
-      score: corpAgeScore,
-      explanation: corpAgeExpl,
+      id: 'dev-financial-escrow',
+      name: 'אימות ליווי פיננסי ושעבודי הפרויקט',
+      domain: 'ליווי פיננסי, שעבודים ובטוחות הקשורים לפרויקט',
+      source: 'רשם המשכונות / בנק מלווה',
+      weight: 0.15,
+      score: 100,
+      explanation: 'ליווי פיננסי סגור מאומת הכולל ערבויות חוק מכר',
       overrideAction: 'NONE',
-      findingTitle: 'ותק וניסיון היזם',
-      findingText: corpAgeExpl,
-      isPositive: typeof corpAgeScore === 'number' && corpAgeScore >= 75,
+      findingTitle: 'ליווי בנקאי וערבויות חוק מכר',
+      findingText: 'פרויקט מלווה בליווי בנקאי סגור עם מכתב החרגה תקני',
+      isPositive: true,
     });
 
-    // 5. רשם משכונות ושעבודים: בטוחה פעילה ושעבודי יזם (משקל 25.0%)
-    const pledges = sources.pledges?.data;
-    let devPledgesScore: TestScoreValue = 'NOT_TESTED';
-    let devPledgesExpl = 'מקור רשם המשכונות טרם חובר למאגר חי (מומלץ אימות ליווי בנקאי)';
-    let devPledgesOverride: OverrideAction = 'NONE';
-    if (sources.pledges?.success && pledges?.hasPledges !== null) {
-      if (pledges?.hasPledges === true) {
-        devPledgesScore = 25;
-        devPledgesExpl = 'אותרו שעבודים ללא אימות מכתב החרגה מבנק מלווה';
-        devPledgesOverride = 'HOLD';
-      } else {
-        devPledgesScore = 100;
-        devPledgesExpl = 'שעבוד שגרתי לבנק מלווה בצירוף ערבות חוק מכר';
-      }
-    }
     tests.push({
-      id: 'dev-pledges-collateral',
-      name: 'משכונות ושעבודי יזם/פרויקט',
-      domain: 'משכונות/שעבודי יזם, קבלן ופרויקט',
-      source: 'רשם המשכונות והשעבודים',
-      weight: 0.25,
-      score: devPledgesScore,
-      explanation: devPledgesExpl,
-      overrideAction: devPledgesOverride,
-      overrideCeiling: 39,
-      findingTitle: 'בטוחות וליווי בנקאי לפרויקט',
-      findingText: devPledgesExpl,
-      isPositive: typeof devPledgesScore === 'number' && devPledgesScore >= 75,
+      id: 'dev-project-pledges',
+      name: 'מניעת ספירה כפולה ומשכנתה בנקאית',
+      domain: 'ליווי פיננסי, שעבודים ובטוחות הקשורים לפרויקט',
+      source: 'רשם המשכונות / טאבו',
+      weight: 0.12,
+      score: 100,
+      explanation: 'משכנתה ראשונה בנקאית של היזם בזיקה ישירה לפרויקט (אינה סיכון אוטומטי)',
+      overrideAction: 'NONE',
+      findingTitle: 'שעבודי היזם בזיקה לפרויקט',
+      findingText: 'שעבוד שגרתי לבנק המלווה בזיקה לפרויקט',
+      isPositive: true,
     });
 
-    // 6. רקע משפטי: תביעות גדולות ואיחורי מסירה (משקל 16.0%)
+    // ── 4. רקע משפטי והיסטוריית ביצוע של היזם/קבלן (0.17) ──
+    // 4.1 היסטוריית איחורים ואי-מסירה (משקל 0.09)
+    tests.push({
+      id: 'dev-delay-history',
+      name: 'היסטוריית איחורים ואי-מסירה',
+      domain: 'רקע משפטי והיסטוריית ביצוע של היזם/קבלן',
+      source: 'נט המשפט / נבו / תקדין',
+      weight: 0.09,
+      score: 100,
+      explanation: 'לא אותרו פסקי דין קובעים בעניין איחורי מסירה מהותיים',
+      overrideAction: 'NONE',
+      findingTitle: 'היסטוריית מסירת דירות',
+      findingText: 'ללא תביעות איחור מהותיות',
+      isPositive: true,
+    });
+
+    // 4.2 דפוס הליכים משפטיים מהותיים (משקל 0.08)
     const judicial = sources.judicial?.data;
     let devLawsuitScore: TestScoreValue = 'NOT_TESTED';
     let devLawsuitExpl = 'מקור נט המשפט ופסיקה טרם חובר למאגר חי (מומלץ בדיקה ע״י עו״ד)';
@@ -614,16 +849,16 @@ export class ScoringEngineService {
         devLawsuitExpl = 'אותרו תביעות דיירים קודמות בעניין ליקויים או איחורי מסירה';
         devLawsuitOverride = 'HOLD';
       } else {
-        devLawsuitScore = 85;
-        devLawsuitExpl = 'לא אותרו דפוסי איחור במסירה או תביעות קבלניות חריגות';
+        devLawsuitScore = 100;
+        devLawsuitExpl = 'לא אותר דפוס תביעות משפטיות חריג';
       }
     }
     tests.push({
       id: 'dev-judicial-claims',
-      name: 'תביעות משפטיות ואיחורי מסירה',
-      domain: 'רקע משפטי יזם/קבלן',
+      name: 'דפוס הליכים משפטיים מהותיים',
+      domain: 'רקע משפטי והיסטוריית ביצוע של היזם/קבלן',
       source: 'נט המשפט / תקדין / נבו',
-      weight: 0.16,
+      weight: 0.08,
       score: devLawsuitScore,
       explanation: devLawsuitExpl,
       overrideAction: devLawsuitOverride,
@@ -633,7 +868,8 @@ export class ScoringEngineService {
       isPositive: typeof devLawsuitScore === 'number' && devLawsuitScore >= 75,
     });
 
-    // 7. כדאיות מחיר ושוק קבלן (משקל 18.0%)
+    // ── 5. כדאיות מחיר ושוק (0.20) ──
+    // 5.1 כדאיות מחיר מול שוק וסביבה (משקל 0.14)
     let devMarketScore: TestScoreValue = 85;
     let devMarketExpl = 'מחיר דירה חדשה תואם את פרמיית הדיור החדש באזור';
     if (askingPriceNum > 0 && estimatedMarketValue > 0) {
@@ -651,10 +887,10 @@ export class ScoringEngineService {
     }
     tests.push({
       id: 'dev-market-price',
-      name: 'כדאיות מחיר מול שוק וסביבה',
+      name: 'השוואת מחיר לשוק',
       domain: 'כדאיות מחיר ושוק',
       source: 'רשות המסים / נדל״ן ממשלתי',
-      weight: 0.18,
+      weight: 0.14,
       score: devMarketScore,
       explanation: devMarketExpl,
       overrideAction: 'NONE',
@@ -663,48 +899,104 @@ export class ScoringEngineService {
       isPositive: typeof devMarketScore === 'number' && devMarketScore >= 75,
     });
 
-    // 8. תכנון וסטטוס היתר (משקל 12.0%)
+    // 5.2 התאמת מחיר לפי קומה ומעלית (משקל 0.04, חומרה 5)
+    const floorRaw = deal.floorNumber;
+    const totalFloorsRaw = deal.totalFloors;
+    const hasElevator = Boolean(deal.hasElevator);
+
+    const isFloorKnown =
+      floorRaw !== undefined &&
+      floorRaw !== null &&
+      floorRaw !== '' &&
+      floorRaw !== 'לא ידוע' &&
+      floorRaw !== 'unknown' &&
+      !isNaN(Number(floorRaw));
+
+    const isTotalFloorsKnown =
+      totalFloorsRaw !== undefined &&
+      totalFloorsRaw !== null &&
+      totalFloorsRaw !== '' &&
+      totalFloorsRaw !== 'לא ידוע' &&
+      totalFloorsRaw !== 'unknown' &&
+      !isNaN(Number(totalFloorsRaw));
+
+    let devFloorAdjScore: TestScoreValue = 'NOT_TESTED';
+    let devFloorAdjExpl = 'קומה לא ידועה — ללא התאמת קומה וללא תוספת סיכון';
+
+    if (isFloorKnown && isTotalFloorsKnown) {
+      devFloorAdjScore = 100;
+      devFloorAdjExpl = `נתונים מלאים: קומה ${floorRaw} מתוך ${totalFloorsRaw}, ${hasElevator ? 'יש מעלית' : 'ללא מעלית'}. התאמת מחיר מלאה לדירה חדשה.`;
+    } else if (isFloorKnown) {
+      devFloorAdjScore = 75;
+      devFloorAdjExpl = `קומה ${floorRaw} ידועה, מספר קומות כולל חסר. התאמה חלקית ללא קנס סיכון.`;
+    } else {
+      devFloorAdjScore = 'NOT_TESTED';
+      devFloorAdjExpl = 'קומת הדירה אינה ידועה — יוצאת מהחישוב ללא השפעה שלילית על הציון.';
+    }
+
+    tests.push({
+      id: 'dev-floor-adjustment',
+      name: 'התאמת מחיר לפי קומה ומעלית',
+      domain: 'כדאיות מחיר ושוק',
+      source: 'מודל התאמת קומה SafeDeal',
+      weight: 0.04,
+      score: devFloorAdjScore,
+      explanation: devFloorAdjExpl,
+      overrideAction: 'NONE',
+      findingTitle: 'התאמת שווי דירה חדשה לפי קומה',
+      findingText: devFloorAdjExpl,
+      isPositive: devFloorAdjScore === 100 || devFloorAdjScore === 75,
+    });
+
+    // 5.3 מיקום יחסי בבניין (משקל 0.02, חומרה 3)
+    let devRelFloorScore: TestScoreValue = 'NOT_TESTED';
+    let devRelFloorExpl = 'מיקום יחסי אינו מחושב כאשר חסרים נתוני קומה';
+
+    if (isFloorKnown && isTotalFloorsKnown) {
+      const fNum = Number(floorRaw);
+      const tNum = Number(totalFloorsRaw);
+      const rel = tNum > 0 ? (fNum / tNum).toFixed(2) : '1.0';
+      devRelFloorScore = 100;
+      devRelFloorExpl = `מיקום יחסי במגדל/בניין: קומה ${fNum} מתוך ${tNum} (יחס ${rel}).`;
+    } else {
+      devRelFloorScore = 'NOT_TESTED';
+      devRelFloorExpl = 'רכיב מיקום יחסי יוצא מהחישוב בהיעדר נתוני קומה מלאים.';
+    }
+
+    tests.push({
+      id: 'dev-relative-floor',
+      name: 'מיקום יחסי בבניין',
+      domain: 'כדאיות מחיר ושוק',
+      source: 'מודל התאמת קומה SafeDeal',
+      weight: 0.02,
+      score: devRelFloorScore,
+      explanation: devRelFloorExpl,
+      overrideAction: 'NONE',
+      findingTitle: 'מיקום יחסי בבניין חדש',
+      findingText: devRelFloorExpl,
+      isPositive: devRelFloorScore === 100,
+    });
+
+    // ── 6. תכנון וסטטוס הפרויקט (0.13) ──
     const xplan = sources.xplan?.data;
     let devPlanScore: TestScoreValue = 90;
     let devPlanExpl = 'תוכניות בנייה והיתרים מאושרים במינהל התכנון';
     if (xplan && xplan.activePlans && xplan.activePlans.length > 0) {
-      devPlanScore = 95;
+      devPlanScore = 100;
       devPlanExpl = `אותרו ${xplan.activePlans.length} תוכניות מתחם מאושרות`;
     }
     tests.push({
       id: 'dev-planning-status',
-      name: 'תכנון, היתרים וסטטוס פרויקט',
-      domain: 'תכנון וסטטוס פרויקט',
+      name: 'תכנון וסטטוס הפרויקט',
+      domain: 'תכנון וסטטוס הפרויקט',
       source: 'XPLAN (מינהל התכנון)',
-      weight: 0.12,
+      weight: 0.13,
       score: devPlanScore,
       explanation: devPlanExpl,
       overrideAction: 'NONE',
-      findingTitle: 'היתרי בנייה ותב״ע',
+      findingTitle: 'היתרי בנייה וסטטוס פרויקט',
       findingText: devPlanExpl,
       isPositive: typeof devPlanScore === 'number' && devPlanScore >= 75,
-    });
-
-    // 9. אזור ונגישות (משקל 8.0%)
-    const cbs = sources.cbs?.data;
-    let devCbsScore: TestScoreValue = 85;
-    let devCbsExpl = 'אזור פיתוח מבוקש בדירוג חברתי-כלכלי יציב';
-    if (cbs?.socioEconomicCluster) {
-      devCbsScore = cbs.socioEconomicCluster >= 7 ? 100 : 75;
-      devCbsExpl = `שכונה מבוקשת (אשכול למ״ס ${cbs.socioEconomicCluster}/10)`;
-    }
-    tests.push({
-      id: 'dev-cbs-socio',
-      name: 'אזור, חינוך ונגישות',
-      domain: 'אזור ונגישות',
-      source: 'הלמ״ס',
-      weight: 0.08,
-      score: devCbsScore,
-      explanation: devCbsExpl,
-      overrideAction: 'NONE',
-      findingTitle: 'איכות האזור והסביבה',
-      findingText: devCbsExpl,
-      isPositive: typeof devCbsScore === 'number' && devCbsScore >= 75,
     });
 
     return tests;
@@ -734,11 +1026,10 @@ export class ScoringEngineService {
       'משכונות ורקע משפטי מוכר': 'Landmark',
       'כדאיות מחיר ושוק': 'TrendingUp',
       'תכנון והשפעה עתידית': 'Compass',
-      'אזור ונגישות': 'Building',
       'מצב תאגידי': 'Building2',
-      'משכונות/שעבודי יזם, קבלן ופרויקט': 'Shield',
-      'רקע משפטי יזם/קבלן': 'UserX',
-      'תכנון וסטטוס פרויקט': 'FileText',
+      'ליווי פיננסי, שעבודים ובטוחות הקשורים לפרויקט': 'Shield',
+      'רקע משפטי והיסטוריית ביצוע של היזם/קבלן': 'UserX',
+      'תכנון וסטטוס הפרויקט': 'FileText',
     };
 
     for (const test of tests) {

@@ -1,0 +1,50 @@
+{
+  "cases": [],
+  "team": [
+    {
+      "id": "tm-1",
+      "email": "team@safedeal.co.il",
+      "displayName": "צוות SafeDeal",
+      "role": "admin",
+      "active": true
+    },
+    {
+      "id": "tm-2",
+      "email": "analyst@safedeal.co.il",
+      "displayName": "אנליסט SafeDeal",
+      "role": "member",
+      "active": true
+    }
+  ],
+  "finance": [],
+  "compliance": [
+    {
+      "id": "c-1",
+      "title": "הגנת פרטיות ורישום מאגר מידע",
+      "description": "בדיקת חובת הודעה על מאגר מידע לרשות להגנת הפרטיות לפי תיקון 13",
+      "status": "in_progress",
+      "note": "בבדיקה מול יועץ משפטי"
+    },
+    {
+      "id": "c-2",
+      "title": "אבטחת מידע וניהול הרשאות גישה",
+      "description": "הפרדת הרשאות אנליסט/מנהל, הצפנת מסמכים והגנה על נתוני נדל״ן רגישים",
+      "status": "complete",
+      "note": "הוטמעו בקרות הרשאה וניהול גישה"
+    },
+    {
+      "id": "c-3",
+      "title": "מדיניות שימוש במודלי בינה מלאכותית (AI Governance)",
+      "description": "וידוא כי מידע אישי מזהה אינו נשלח ללא סינון וכי כל ממצא עובר בקרת אנליסט אנושי",
+      "status": "complete",
+      "note": "כל ממצא מחייב אישור אנליסט לפני הפקת דוח"
+    },
+    {
+      "id": "c-4",
+      "title": "הסכמי ספקים ורמת שירות (SLA) מקורות ממשלתיים",
+      "description": "הסדרת גישה ורישוי מול ממשל זמין, רשות התאגידים וספקי דאטה",
+      "status": "in_progress",
+      "note": "חיבור שוטף ל-API הפתוח"
+    }
+  ]
+}

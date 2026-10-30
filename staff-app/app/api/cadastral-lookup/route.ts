@@ -1,3 +1,5 @@
+export const maxDuration = 30;
+
 const customerOrigin = "https://safedeal-coral.vercel.app";
 const timeoutMs = 12_000;
 

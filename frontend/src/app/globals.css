@@ -548,6 +548,89 @@
     }
   }
 
+  /* ── Mobile form layout: comfortable spacing, readable fields, reachable actions ── */
+  @media (max-width: 640px) {
+    html, body {
+      overflow-x: clip;
+    }
+
+    .sd-glass,
+    .sd-report-container {
+      border-radius: 1rem;
+    }
+
+    .sd-label {
+      margin-bottom: 6px;
+      font-size: 0.75rem;
+    }
+
+    .sd-dropzone {
+      min-height: 132px;
+    }
+
+    .form-step-actions {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+      gap: 10px;
+      margin-inline: -1rem;
+      margin-bottom: -1rem;
+      padding: 12px 1rem calc(12px + env(safe-area-inset-bottom));
+      border-top: 1px solid rgba(255,255,255,.1);
+      background: rgba(6,14,28,.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .form-step-back,
+    .form-step-next {
+      min-height: 48px;
+      justify-content: center;
+      padding-inline: 12px;
+      border-radius: .75rem;
+      font-size: .8125rem;
+      letter-spacing: .02em;
+      white-space: normal;
+    }
+
+    .form-step-count {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      justify-self: center;
+      align-self: center;
+      font-size: .6875rem;
+    }
+
+    .form-step-back,
+    .form-step-next {
+      grid-row: 2;
+    }
+
+    .sd-review-row {
+      gap: 10px;
+      padding: 12px 14px;
+    }
+
+    .sd-report-header {
+      padding: 18px 16px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .form-step-actions {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .form-step-back,
+    .form-step-next {
+      padding-inline: 8px;
+      font-size: .75rem;
+    }
+  }
+
   /* ── High-Efficiency PDF Print Optimization (2-Page Deck) ── */
   @media print {
     @page {

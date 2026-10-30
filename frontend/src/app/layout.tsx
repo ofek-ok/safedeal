@@ -41,7 +41,14 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <div
+          id="safedeal-govmap-runtime"
+          aria-hidden="true"
+          style={{ position: "fixed", left: "-10000px", top: 0, width: 320, height: 240, overflow: "hidden", pointerEvents: "none" }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

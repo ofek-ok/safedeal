@@ -204,7 +204,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
         askingPrice:  !data.step3.askingPrice    ? "מחיר הוא שדה חובה"  : undefined,
         propertyArea: !data.step3.propertyArea   ? "שטח הוא שדה חובה"   : undefined,
         roomsCount:   !data.step3.roomsCount     ? "יש לבחור מס׳ חדרים" : undefined,
-        floorNumber:  !data.step3.floorNumber    ? "קומה היא שדה חובה"  : undefined,
+        floorNumber:  !data.step3.floorNumber    ? "יש להזין קומה או לסמן 'לא ידוע'"  : undefined,
         fullName:     !data.step1.fullName.trim() ? "שם מלא הוא שדה חובה" : undefined,
         email:        !data.step1.email.trim()    ? undefined : !isValidEmail(data.step1.email) ? "כתובת הדוא״ל אינה תקינה" : undefined,
       }
@@ -366,25 +366,114 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
             )}
           </div>
 
-          {/* Floor */}
-          <div className="space-y-3">
-            <label htmlFor="floorNumber" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">קומה *</label>
-            <input
-              id="floorNumber"
-              type="number"
-              min={0}
-              max={80}
-              value={data.step3.floorNumber}
-              onChange={(e) => setStep3("floorNumber", e.target.value)}
-              placeholder="4"
-              className="w-32 bg-transparent border-b border-white/[0.15] py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#00C896] transition-colors duration-300"
-              style={{ ...(errors.floorNumber ? { borderColor: "rgba(248,113,113,0.6)" } : {}) }}
-            />
-            {errors.floorNumber && (
-              <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400">
-                <AlertCircle size={12} /> {errors.floorNumber}
+          {/* Floor & Total Floors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
+            {/* Floor Number */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label htmlFor="floorNumber" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+                  קומת הדירה *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isUnknown = data.step3.floorNumber === "לא ידוע" || data.step3.floorNumber === "unknown";
+                    setStep3("floorNumber", isUnknown ? "" : "לא ידוע");
+                  }}
+                  className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all duration-200 ${
+                    data.step3.floorNumber === "לא ידוע" || data.step3.floorNumber === "unknown"
+                      ? "border-[#00C896] bg-[#00C896]/15 text-[#00C896] font-semibold"
+                      : "border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+                  }`}
+                >
+                  לא ידוע
+                </button>
+              </div>
+
+              {data.step3.floorNumber === "לא ידוע" || data.step3.floorNumber === "unknown" ? (
+                <div className="py-3 text-sm text-[#00C896] font-medium border-b border-white/[0.15] flex items-center justify-between">
+                  <span>קומה לא ידועה (ללא קנס סיכון)</span>
+                  <button
+                    type="button"
+                    onClick={() => setStep3("floorNumber", "")}
+                    className="text-xs text-slate-400 hover:text-white underline"
+                  >
+                    הזן מספר
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    id="floorNumber"
+                    type="number"
+                    min={0}
+                    max={80}
+                    value={data.step3.floorNumber}
+                    onChange={(e) => setStep3("floorNumber", e.target.value)}
+                    placeholder="לדוגמה: 4 (0 לקרקע)"
+                    className="w-full bg-transparent border-b border-white/[0.15] py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#00C896] transition-colors duration-300"
+                    style={{ ...(errors.floorNumber ? { borderColor: "rgba(248,113,113,0.6)" } : {}) }}
+                  />
+                </div>
+              )}
+              {errors.floorNumber && (
+                <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-red-400">
+                  <AlertCircle size={12} /> {errors.floorNumber}
+                </p>
+              )}
+            </div>
+
+            {/* Total Floors in Building */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label htmlFor="totalFloors" className="block text-[11px] uppercase tracking-widest text-slate-400 font-medium">
+                  מספר קומות בבניין <span className="text-slate-500 font-normal">(אופציונלי)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isUnknown = data.step3.totalFloors === "לא ידוע" || data.step3.totalFloors === "unknown";
+                    setStep3("totalFloors", isUnknown ? "" : "לא ידוע");
+                  }}
+                  className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all duration-200 ${
+                    data.step3.totalFloors === "לא ידוע" || data.step3.totalFloors === "unknown"
+                      ? "border-[#00C896] bg-[#00C896]/15 text-[#00C896] font-semibold"
+                      : "border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+                  }`}
+                >
+                  לא ידוע
+                </button>
+              </div>
+
+              {data.step3.totalFloors === "לא ידוע" || data.step3.totalFloors === "unknown" ? (
+                <div className="py-3 text-sm text-[#00C896] font-medium border-b border-white/[0.15] flex items-center justify-between">
+                  <span>מספר קומות לא ידוע</span>
+                  <button
+                    type="button"
+                    onClick={() => setStep3("totalFloors", "")}
+                    className="text-xs text-slate-400 hover:text-white underline"
+                  >
+                    הזן מספר
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    id="totalFloors"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={data.step3.totalFloors || ""}
+                    onChange={(e) => setStep3("totalFloors", e.target.value)}
+                    placeholder="לדוגמה: 8"
+                    className="w-full bg-transparent border-b border-white/[0.15] py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#00C896] transition-colors duration-300"
+                  />
+                </div>
+              )}
+              <p className="text-[10px] text-slate-500">
+                מאפשר לחשב מיקום יחסי בבניין ולהתאים את מחיר השוק בדיוק מרבי
               </p>
-            )}
+            </div>
           </div>
 
           {/* Amenities */}
@@ -449,110 +538,6 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           </div>
         </div>
 
-        {/* Legal & Debt Risk Verification Section */}
-        <div className="p-4 sm:p-6 rounded-2xl border border-teal-500/20 bg-teal-500/[0.02] space-y-4 sm:space-y-6">
-          <div className="flex items-center justify-between border-b border-teal-500/10 pb-2.5 sm:pb-3">
-            <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 sm:gap-2" style={{ fontFamily: "var(--font-serif)" }}>
-              <Shield className="text-teal-400" size={15} />
-              <span>בדיקת רקע משפטית וחובות</span>
-            </h4>
-            <span className="text-[9px] sm:text-[10px] text-teal-400 border border-teal-500/30 px-1.5 sm:px-2 py-0.5 rounded font-mono">אימות רשמי</span>
-          </div>
-
-          {data.step3.dealType === "developer" || data.step3.dealType === "new-developer" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-              <div>
-                <label htmlFor="developerName" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  שם היזם / קבלן
-                </label>
-                <input
-                  id="developerName"
-                  type="text"
-                  value={data.step3.developerName || ""}
-                  onChange={(e) => setStep3("developerName", e.target.value)}
-                  placeholder="לדוגמה: נווה פארק יזמות בע״מ"
-                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="developerRegNumber" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  מספר חברה / ח.פ
-                  <span className="mr-2 text-teal-400/70 text-[9px] border border-teal-500/30 px-1 py-0.5 rounded">→ רשם החברות</span>
-                </label>
-                <input
-                  id="developerRegNumber"
-                  type="text"
-                  inputMode="numeric"
-                  value={data.step3.developerRegNumber || ""}
-                  onChange={(e) => setStep3("developerRegNumber", e.target.value)}
-                  placeholder="לדוגמה: 514123456"
-                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="accreditedBank" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  שם הבנק המלווה (ערבויות חוק מכר)
-                </label>
-                <input
-                  id="accreditedBank"
-                  type="text"
-                  value={data.step3.accreditedBank || ""}
-                  onChange={(e) => setStep3("accreditedBank", e.target.value)}
-                  placeholder="לדוגמה: בנק הפועלים / לאומי"
-                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="targetDeliveryDate" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  מועד מסירה מובטח בחוזה
-                </label>
-                <input
-                  id="targetDeliveryDate"
-                  type="text"
-                  value={data.step3.targetDeliveryDate || ""}
-                  onChange={(e) => setStep3("targetDeliveryDate", e.target.value)}
-                  placeholder="לדוגמה: 12/2027"
-                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-              <div>
-                <label htmlFor="sellerName" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  שם מלא של המוכר
-                </label>
-                <input
-                  id="sellerName"
-                  type="text"
-                  value={data.step3.sellerName || ""}
-                  onChange={(e) => setStep3("sellerName", e.target.value)}
-                  placeholder="לדוגמה: ישראל ישראלי"
-                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="sellerIdNumber" className="block text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 mb-1.5 sm:mb-2 font-medium">
-                  תעודת זהות
-                </label>
-                <input
-                  id="sellerIdNumber"
-                  type="text"
-                  inputMode="numeric"
-                  value={data.step3.sellerIdNumber || ""}
-                  onChange={(e) => setStep3("sellerIdNumber", e.target.value)}
-                  placeholder="לדוגמה: 012345678"
-                  className="w-full bg-transparent border-b border-white/15 py-2 sm:py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-[#00C896] focus:outline-none"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
         <div className="w-full h-[1px] bg-white/[0.08]" />
 
         {/* Documents */}
@@ -563,12 +548,31 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
           <div className="space-y-2 sm:space-y-4">
             <p className="flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-400 font-medium">
               נסח טאבו
-              <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">מומלץ</span>
+              <span className="text-slate-600 text-[9px] border border-slate-700 px-1.5 py-0.5 rounded">רשות</span>
             </p>
             <p className="text-xs text-slate-400 leading-relaxed">
-              מומלץ לצרף נסח טאבו: הוא עוזר לנו לדייק את נתוני הנכס ולקצר את זמן הכנת הדוח. אפשר להמשיך גם בלי המסמך.
+              יש לכם נסח טאבו? אפשר לצרף אותו כאן, אך אין חובה. אם לא צירפתם נסח או שאינכם יודעים את הגוש והחלקה, האנליסט יאתר את פרטי הרישום ויפיק את המסמכים הדרושים.
             </p>
-            <Dropzone
+            {data.step2.block && data.step2.parcel ? (
+              <a
+                href={`https://mekarkein-online.justice.gov.il/voucher/main/${encodeURIComponent(data.step2.block)}/${encodeURIComponent(data.step2.parcel)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex text-xs text-[#00C896] underline underline-offset-4 hover:text-white transition-colors"
+              >
+                להנפקת נסח טאבו לפי גוש {data.step2.block} וחלקה {data.step2.parcel}
+              </a>
+            ) : (
+              <a
+                href="https://mekarkein-online.justice.gov.il/voucher/main/9029/32"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex text-xs text-[#00C896] underline underline-offset-4 hover:text-white transition-colors"
+              >
+                להנפקת נסח טאבו באתר משרד המשפטים
+              </a>
+            )}
+                        <Dropzone
               id="tabu-upload"
               label="גרור לכאן את נסח הטאבו"
               sublabel="או לחצו לבחירת קובץ · PDF, JPG, PNG, WEBP · עד 20MB"

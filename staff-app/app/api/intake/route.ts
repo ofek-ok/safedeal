@@ -55,9 +55,14 @@ export async function POST(request: Request) {
     const personal = objectValue(input.personal ?? input);
     const location = objectValue(input.location ?? input);
     const deal = objectValue(input.deal ?? input);
-    const sellerNames = (Array.isArray(deal.sellerNames)
-      ? deal.sellerNames.filter((name): name is string => typeof name === "string")
-      : [textValue(deal, "sellerName", 120)])
+    const submittedSellers = Array.isArray(deal.sellers)
+      ? deal.sellers.filter((seller): seller is Record<string, unknown> => !!seller && typeof seller === "object" && !Array.isArray(seller))
+      : [];
+    const sellerNames = (submittedSellers.length
+      ? submittedSellers.map((seller) => textValue(seller, "name", 120))
+      : Array.isArray(deal.sellerNames)
+        ? deal.sellerNames.filter((name): name is string => typeof name === "string")
+        : [textValue(deal, "sellerName", 120)])
       .map((name) => name.trim().slice(0, 120)).filter(Boolean).slice(0, 10);
     const safeDeal = { ...deal };
     delete safeDeal.sellerName;

@@ -198,5 +198,17 @@ export interface AggregatedPipelineData {
     pledges: SourceResult<PledgesData>;
     judicial: SourceResult<JudicialData>;
   };
+  deal?: {
+    floorNumber?: string;
+    totalFloors?: string;
+    hasElevator?: boolean;
+    condition?: string;
+    sellerName?: string;
+    sellerIdNumber?: string;
+    developerName?: string;
+    developerRegNumber?: string;
+    insolvencyStatus?: 'clean' | 'active' | 'recent_6m' | 'ended_old' | 'not_tested';
+    [key: string]: any;
+  };
   warnings: string[];
 }

@@ -1,8 +1,8 @@
 "use client";
 
 const STEPS = [
-  { id: 1, label: "סוג נכס" },
-  { id: 2, label: "כתובת" },
+  { id: 1, label: "כתובת ומוכר" },
+  { id: 2, label: "סוג נכס" },
   { id: 3, label: "פרטים" },
   { id: 4, label: "שליחה" },
 ];

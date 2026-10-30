@@ -56,6 +56,12 @@ const schemaStatements = [
     user_id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL,
     role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS finance_transactions (\n    id TEXT PRIMARY KEY, type TEXT NOT NULL CHECK (type IN ('income', 'expense')),\n    transaction_date TEXT NOT NULL, category TEXT NOT NULL, description TEXT NOT NULL,\n    amount_agorot INTEGER NOT NULL CHECK (amount_agorot > 0), created_by TEXT NOT NULL, created_at TEXT NOT NULL\n  )`,
+  `CREATE TABLE IF NOT EXISTS compliance_tasks (
+    id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'not_started', note TEXT NOT NULL DEFAULT '',
+    updated_by TEXT NOT NULL, updated_at TEXT NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS documents (
     id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
     file_key TEXT NOT NULL UNIQUE, filename TEXT NOT NULL, content_type TEXT NOT NULL,

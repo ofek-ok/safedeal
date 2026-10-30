@@ -164,12 +164,18 @@ export interface ReportData {
   missingDataWarnings?: string[];
 }
 
+export interface SellerDetails {
+  name: string;
+  idNumber: string;
+}
+
 export interface Step3DealDetails {
   dealType: DealType | "";
   askingPrice: string;   // raw numeric string (formatted for display)
   propertyArea: string;  // m²
   roomsCount: string;
   floorNumber: string;
+  totalFloors?: string;  // מספר קומות בבניין (אופציונלי או "לא ידוע")
   condition: PropertyCondition | "";
   hasParking?: boolean;
   hasUndergroundParking: boolean;  // חניון תת קרקעי
@@ -187,6 +193,7 @@ export interface Step3DealDetails {
   // ── Smart Optional Fields ──
   sellerName?: string;
   sellerIdNumber?: string;
+  sellers?: SellerDetails[];
   isRented?: boolean;
   hasAdditions?: boolean;
   developerName?: string;
@@ -238,6 +245,7 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     propertyArea: "",
     roomsCount: "",
     floorNumber: "",
+    totalFloors: "",
     condition: "",
     hasParking: false,
     hasUndergroundParking: false,
@@ -254,6 +262,7 @@ export const INITIAL_FORM_DATA: WizardFormData = {
     monthlyRent: "",
     sellerName: "",
     sellerIdNumber: "",
+    sellers: [{ name: "", idNumber: "" }],
     isRented: false,
     hasAdditions: false,
     developerName: "",

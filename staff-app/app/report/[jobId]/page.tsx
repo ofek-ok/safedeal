@@ -165,9 +165,13 @@ function renderReport(r: any, version: number, generatedBy: string) {
           score={r.bottomLine?.score || r.safeScore}
         />
 
-        <DataHubPillars />
+        <DataHubPillars
+          pillars={r.pillars}
+          sourceStatuses={r.sourceStatuses}
+          warnings={r.missingDataWarnings}
+        />
 
-        <OperativeNextSteps />
+        <OperativeNextSteps steps={r.operativeNextSteps} />
       </div>
 
       {/* Footer */}

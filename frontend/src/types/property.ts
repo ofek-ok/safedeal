@@ -138,6 +138,7 @@ export interface ReportData {
     balconySqm?: string;
     floor: string;
     totalFloors?: string;
+    hasElevator?: boolean;
     parkingStorage?: string;
     askingPrice: string;
     askingPriceNum?: number;
@@ -162,6 +163,9 @@ export interface ReportData {
   madlanInsights?: MadlanInsights;
   coveragePercent?: number;
   missingDataWarnings?: string[];
+  pillars?: any;
+  operativeNextSteps?: any[];
+  sourceStatuses?: Array<{ sourceId: string; sourceName: string; status: "success" | "warning" | "error" }>;
 }
 
 export interface SellerDetails {

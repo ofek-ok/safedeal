@@ -338,13 +338,13 @@ export default function ReportByIdPage() {
 
         {/* Detailed 4 Pillars */}
         <DataHubPillars
-          pillars={"pillars" in r ? (r as any).pillars : undefined}
-          sourceStatuses={"sourceStatuses" in r ? (r as any).sourceStatuses : undefined}
-          warnings={"missingDataWarnings" in r ? (r as any).missingDataWarnings : undefined}
+          pillars={r.pillars}
+          sourceStatuses={r.sourceStatuses}
+          warnings={r.missingDataWarnings}
         />
 
         {/* Operative Role Checklist */}
-        <OperativeNextSteps steps={"operativeNextSteps" in r ? (r as any).operativeNextSteps : undefined} />
+        <OperativeNextSteps steps={r.operativeNextSteps} />
       </div>
 
       {/* Footer */}

@@ -141,10 +141,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         />
 
         {/* 4 Pillars with 11 Sources & Insolvency check */}
-        <DataHubPillars />
+        <DataHubPillars
+          pillars={r.pillars}
+          sourceStatuses={r.sourceStatuses}
+          warnings={r.missingDataWarnings}
+        />
 
         {/* Operative Checklist */}
-        <OperativeNextSteps />
+        <OperativeNextSteps steps={r.operativeNextSteps} />
       </div>
 
       {/* Footer */}

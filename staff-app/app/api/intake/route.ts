@@ -113,7 +113,7 @@ export async function POST(request: Request) {
         : [textValue(deal, "sellerName", 120)])
       .map((name) => name.trim().slice(0, 120)).filter(Boolean).slice(0, 10);
     const primarySellerId = submittedSellers[0]?.idNumber || textValue(deal, "sellerIdNumber", 40).replace(/[^\d-]/g, "") || textValue(deal, "developerRegNumber", 40).replace(/[^\d-]/g, "");
-    const safeDeal = { ...deal, sellers: submittedSellers };
+    const safeDeal: Record<string, unknown> = { ...deal, sellers: submittedSellers };
     delete safeDeal.sellerName;
     delete safeDeal.sellerIdNumber;
     delete safeDeal.sellerId;

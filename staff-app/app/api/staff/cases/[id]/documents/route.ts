@@ -5,7 +5,7 @@ import { getFilesBucket } from "../../../../../lib/storage";
 const maxFileBytes = 20 * 1024 * 1024;
 const allowedTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const allowedExtensions = new Set(["pdf", "jpg", "jpeg", "png", "webp", "heic", "heif"]);
-const documentTypes = new Set(["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח מתדיינים / הליכים משפטיים", "הסכם / טיוטת חוזה", "תכנון והיתרים", "מסמכי מוכר / יזם", "מסמכי רשות מקומית", "מסמך פיננסי", "אחר"]);
+const documentTypes = new Set(["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח חדלות פירעון (משרד המשפטים)", "דוח מתדיינים / הליכים משפטיים", "הסכם / טיוטת חוזה", "תכנון והיתרים", "מסמכי מוכר / יזם", "מסמכי רשות מקומית", "מסמך פיננסי", "אחר"]);
 
 function cleanText(value: FormDataEntryValue | null, limit: number) {
   return typeof value === "string" ? value.trim().slice(0, limit) : "";

@@ -198,7 +198,7 @@ export function ValuationCard({ valuation }: ValuationCardProps) {
                   <th className="py-2.5 px-3 font-medium">חדרים</th>
                   <th className="py-2.5 px-3 font-medium">שטח</th>
                   <th className="py-2.5 px-3 font-medium">מחיר עסקה</th>
-                  <th className="py-2.5 px-3 font-medium">מחיר למ"ר</th>
+                  <th className="py-2.5 px-3 font-medium">מחיר למ״ר</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04] text-slate-300">
@@ -209,7 +209,7 @@ export function ValuationCard({ valuation }: ValuationCardProps) {
                   >
                     <td className="py-3 px-3 text-slate-400 whitespace-nowrap">{deal.dealDate}</td>
                     <td className="py-3 px-3 whitespace-nowrap">{deal.rooms}</td>
-                    <td className="py-3 px-3 whitespace-nowrap">{deal.sqm} מ"ר</td>
+                    <td className="py-3 px-3 whitespace-nowrap">{deal.sqm} מ״ר</td>
                     <td
                       className="py-3 px-3 font-semibold text-white whitespace-nowrap"
                       style={{ fontFamily: "var(--font-serif)" }}
@@ -217,7 +217,7 @@ export function ValuationCard({ valuation }: ValuationCardProps) {
                       {formatPrice(deal.price)}
                     </td>
                     <td className="py-3 px-3 text-[#00C896] whitespace-nowrap">
-                      {formatPrice(deal.pricePerSqm)} / מ"ר
+                      {formatPrice(deal.pricePerSqm)} / מ״ר
                     </td>
                   </tr>
                 ))}

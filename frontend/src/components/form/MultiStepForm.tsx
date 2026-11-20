@@ -10,6 +10,7 @@ import { Step4Checkout } from "./Step4Checkout";
 import { SafeDealLogo } from "@/components/SafeDealLogo";
 import type { WizardFormData } from "@/types/property";
 import { INITIAL_FORM_DATA } from "@/types/property";
+import { isValidEmail } from "@/lib/utils";
 
 export function MultiStepForm() {
   const [step, setStep]         = useState(1);
@@ -23,6 +24,12 @@ export function MultiStepForm() {
 
   const next = () => {
     if (step === 1) {
+      if (!formData.step3.dealType) {
+        setShowErrors(true);
+        return;
+      }
+    }
+    if (step === 2) {
       const address = formData.step2;
       const hasAddress = address.city.trim() && address.street.trim() && address.houseNumber.trim();
       const sellers = formData.step3.sellers ?? [];
@@ -32,10 +39,24 @@ export function MultiStepForm() {
         return;
       }
     }
+    if (step === 3) {
+      const { askingPrice, propertyArea, roomsCount } = formData.step3;
+      const { fullName, email, phone } = formData.step1;
+      const hasValidEmail = email.trim() ? isValidEmail(email.trim()) : false;
+      const hasContact = hasValidEmail || phone.trim().length >= 7;
+      const emailInvalid = Boolean(email.trim()) && !hasValidEmail;
+      if (!askingPrice.trim() || !propertyArea.trim() || !roomsCount.trim() || !fullName.trim() || !hasContact || emailInvalid) {
+        setShowErrors(true);
+        return;
+      }
+    }
     setShowErrors(false);
     if (step < TOTAL) setStep((s) => s + 1);
   };
-  const back = () => { if (step > 1)    setStep((s) => s - 1); };
+  const back = () => {
+    setShowErrors(false);
+    if (step > 1) setStep((s) => s - 1);
+  };
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
@@ -136,9 +157,23 @@ export function MultiStepForm() {
       <div className="w-full rounded-2xl border border-white/14 bg-[#0A1628]/85 backdrop-blur-2xl p-4 sm:p-6 md:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
         <div className="min-h-[260px] sm:min-h-[360px]">
           {step === 1 && (
+            <Step1PropertyType
+              data={{ dealType: formData.step3.dealType }}
+              onChange={(dealType) => {
+                setShowErrors(false);
+                setFormData((f) => ({ ...f, step3: { ...f.step3, dealType } }));
+              }}
+              onAutoAdvance={() => {
+                setShowErrors(false);
+                setStep(2);
+              }}
+            />
+          )}
+          {step === 2 && (
             <Step1PropertyAddress
               address={formData.step2}
               sellers={formData.step3.sellers ?? []}
+              dealType={formData.step3.dealType}
               onAddressChange={(step2) => setFormData((f) => ({ ...f, step2 }))}
               onSellersChange={(sellers) => setFormData((f) => ({
                 ...f,
@@ -152,18 +187,11 @@ export function MultiStepForm() {
               showErrors={showErrors}
             />
           )}
-          {step === 2 && (
-            <Step1PropertyType
-              data={{ dealType: formData.step3.dealType }}
-              onChange={(dealType) => setFormData((f) => ({ ...f, step3: { ...f.step3, dealType } }))}
-              onAutoAdvance={next}
-            />
-          )}
           {step === 3 && (
             <Step3Details
               data={formData}
               onChange={setFormData}
-              showErrors={false}
+              showErrors={showErrors}
             />
           )}
           {step === 4 && (
@@ -176,22 +204,22 @@ export function MultiStepForm() {
           )}
         </div>
 
-        {step < TOTAL && (
-          <div className="form-step-actions flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-10 border-t border-white/[0.08]">
-            <button
-              type="button"
-              onClick={back}
-              disabled={step === 1}
-              className="form-step-back flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
-            >
-              <ArrowRight size={14} />
-              חזרה
-            </button>
+        <div className="form-step-actions flex items-center justify-between pt-4 sm:pt-8 mt-6 sm:mt-10 border-t border-white/[0.08]">
+          <button
+            type="button"
+            onClick={back}
+            disabled={step === 1}
+            className="form-step-back flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+          >
+            <ArrowRight size={14} />
+            חזרה
+          </button>
 
-            <span className="form-step-count text-[10px] uppercase tracking-widest text-slate-600 font-mono">
-              0{step} / 0{TOTAL}
-            </span>
+          <span className="form-step-count text-[10px] uppercase tracking-widest text-slate-600 font-mono">
+            0{step} / 0{TOTAL}
+          </span>
 
+          {step < TOTAL ? (
             <button 
               type="button" 
               onClick={next} 
@@ -200,8 +228,10 @@ export function MultiStepForm() {
               המשך
               <ArrowLeft size={14} />
             </button>
-          </div>
-        )}
+          ) : (
+            <span className="w-20" aria-hidden="true" />
+          )}
+        </div>
       </div>
     </div>
   );

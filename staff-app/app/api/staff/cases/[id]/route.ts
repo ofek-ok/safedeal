@@ -53,64 +53,41 @@ export async function PUT(_request: Request, context: { params: Promise<{ id: st
     const { id } = await context.params;
     if (!await caseIsVisible(staff, id)) return jsonError("התיק לא נמצא או שאינך משויך אליו.", 404);
     const db = getDb();
-    const [caseRow, findingsResult, docsResult, latest] = await Promise.all([
+    const [caseRow, findingsResult, docsResult, latest, checklistResult] = await Promise.all([
       db.$client.prepare(`SELECT * FROM cases WHERE id = ?`).bind(id).first<Record<string, unknown>>(),
-      db.$client.prepare(`SELECT category, title, note, severity, source, confidence, state, review_note AS reviewNote, reviewed_by AS reviewedBy, reviewed_at AS reviewedAt FROM findings WHERE case_id = ? ORDER BY created_at`).bind(id).all(),
+      db.$client.prepare(`SELECT id, category, title, note, severity, source, confidence, state, review_note AS reviewNote, reviewed_by AS reviewedBy, reviewed_at AS reviewedAt FROM findings WHERE case_id = ? ORDER BY created_at`).bind(id).all(),
       db.$client.prepare(`SELECT filename, content_type AS contentType, size, uploaded_at AS uploadedAt FROM documents WHERE case_id = ? ORDER BY uploaded_at`).bind(id).all(),
       db.$client.prepare(`SELECT MAX(version) AS version FROM reports WHERE case_id = ?`).bind(id).first<{ version: number | null }>(),
+      db.$client.prepare(`SELECT item_key AS itemKey, completed FROM case_checklist WHERE case_id = ?`).bind(id).all<{ itemKey: string; completed: number }>(),
     ]);
     if (!caseRow) return jsonError("התיק לא נמצא.", 404);
-    
-    // Auto-complete preliminary checklist upon analyst report draft generation
+
     const now = new Date().toISOString();
-    const autoChecklistItems = ["reports_collected", "data_reviewed", "data_verified", "ai_findings_reviewed"];
-    for (const key of autoChecklistItems) {
-      await db.$client.prepare(`INSERT INTO case_checklist (case_id, item_key, completed, completed_by, completed_at) VALUES (?, ?, 1, ?, ?)
-        ON CONFLICT(case_id, item_key) DO UPDATE SET completed = 1, completed_by = excluded.completed_by, completed_at = excluded.completed_at`)
-        .bind(id, key, staff.displayName, now).run().catch(() => undefined);
+    const checklistMap = new Map((checklistResult.results ?? []).map((item) => [item.itemKey, item.completed === 1]));
+    if (["reports_collected", "data_reviewed", "data_verified", "ai_findings_reviewed"].some((key) => !checklistMap.get(key))) {
+      return jsonError("יש להשלים את כל סעיפי צ׳ק־ליסט האנליסט לפני הפקת הדוח.", 409);
     }
 
-    let findings = (findingsResult.results ?? []) as { id?: string; category: string; title: string; note: string; severity: string; source: string | null; state: string; review_note?: string | null; reviewed_by?: string | null }[];
-
-    // If findings are empty, create initial verified baseline findings from the 5 key checks
-    if (!findings.length) {
-      const defaultFindings = [
-        { id: crypto.randomUUID(), category: "זיהוי ורישום", title: "אימות גוש וחלקה מול מרכז מיפוי ישראל (GovMap)", note: `אותרה התאמה מלאה לכתובת ${caseRow.street ?? ""} ${caseRow.house ?? ""}, ${caseRow.city ?? ""}. גוש ${caseRow.block ?? "מאומת"}, חלקה ${caseRow.parcel ?? "מאומתת"}.`, severity: "נמוכה", source: "GovMap GIS", state: "אושר" },
-        { id: crypto.randomUUID(), category: "זכויות ורישום", title: "אימות בעלות והעדר עיקולים בנסח הטאבו", note: "הצלבת שמות המוכרים מול בעלי הזכויות המופיעים בנסח. לא אותרו עיקולים פעילים המונעים העברת בעלות.", severity: "נמוכה", source: "לשכת רישום המקרקעין", state: "אושר" },
-        { id: crypto.randomUUID(), category: "מרשם המשכונות", title: "בדיקת שעבובים וזכויות חוזיות ברשם המשכונות", note: "בדיקה פרסונלית לפי תעודות זהות של המוכרים. לא אותרו שעבודי צד ג׳ חריגים על זכויות הנכס.", severity: "נמוכה", source: "רשות התאגידים - רשם המשכונות", state: "אושר" },
-        { id: crypto.randomUUID(), category: "חדלות פירעון", title: "בדיקת הליכי חדלות פירעון (משרד המשפטים)", note: "לא אותר הליך חדלות פירעון במאגר שנבדק. המוכר כשיר לביצוע עסקת מקרקעין.", severity: "נמוכה", source: "משרד המשפטים - מאגר חדלות פירעון", state: "אושר" },
-        { id: crypto.randomUUID(), category: "שוק ותמחור", title: "בדיקת התאמת מחיר, קומה ומעלית", note: `המחיר המבוקש תואם את טווח עסקאות השוק באזור בהתחשב בנתוני הקומה והמעלית שנבדקו.`, severity: "נמוכה", source: "רשות המסים / נדל״ן ממשלתי", state: "אושר" },
-      ];
-      for (const df of defaultFindings) {
-        await db.$client.prepare(`INSERT INTO findings (id, case_id, category, title, note, severity, source, confidence, state, reviewed_by, reviewed_at, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 95, 'אושר', ?, ?, ?)`)
-          .bind(df.id, id, df.category, df.title, df.note, df.severity, df.source, staff.displayName, now, now).run().catch(() => undefined);
-      }
-      findings = defaultFindings;
-    } else {
-      // Auto-approve unreviewed findings when analyst explicitly initiates report generation
-      for (const item of findings) {
-        if (item.state === "לבדיקה") {
-          item.state = "אושר";
-          if (item.id) {
-            await db.$client.prepare(`UPDATE findings SET state = 'אושר', reviewed_by = ?, reviewed_at = ? WHERE id = ?`)
-              .bind(staff.displayName, now, item.id).run().catch(() => undefined);
-          }
-        }
-      }
+    const findings = (findingsResult.results ?? []) as { id: string; category: string; title: string; note: string; severity: string; source: string | null; state: string; reviewNote?: string | null; reviewedBy?: string | null }[];
+    const unreviewed = findings.filter((item) => item.state === "לבדיקה" || item.state === "לברור");
+    if (unreviewed.length > 0) {
+      return jsonError(`נותרו ${unreviewed.length} ממצאים שממתינים לבקרת אנליסט (אישור/דחייה) לפני הפקת הדוח.`, 409);
     }
 
     const approvedFindings = findings.filter((item) => item.state === "אושר");
+    if (approvedFindings.length === 0) {
+      return jsonError("יש לאשר לפחות ממצא מאומת אחד לפני הפקת דוח (המערכת אינה מייצרת ממצאים פיקטיביים).", 409);
+    }
     const reportId = crypto.randomUUID();
     const version = (latest?.version ?? 0) + 1;
     const snapshot = JSON.stringify({
       case: caseRow,
-      findings: approvedFindings.length ? approvedFindings : findings,
+      findings: approvedFindings,
       documents: docsResult.results ?? [],
       generatedBy: staff.displayName,
       generatedAt: now,
       version,
-      status: "טיוטה לבדיקת אנליסט",
+      status: "דוח מוכן לשליחה",
     });
 
     await db.$client.batch([

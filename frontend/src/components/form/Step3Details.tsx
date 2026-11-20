@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Info, Car, Package, Shield, ArrowUp, Sun, Building2, Accessibility, ChevronDown, Check, Dumbbell, Users, Sparkles, Warehouse } from "lucide-react";
+import { User, Mail, Phone, TrendingUp, AlertCircle, Upload, FileText, X, Car, Package, Shield, ArrowUp, Sun, Building2, Accessibility, ChevronDown, Check, Dumbbell, Users, Sparkles, Warehouse } from "lucide-react";
 import type { WizardFormData, Step3DealDetails, PropertyCondition } from "@/types/property";
 import { ROOMS_OPTIONS, PROPERTY_CONDITION_LABELS } from "@/types/property";
 import { formatThousands, stripFormatting, calcYield, formatBytes, isValidEmail } from "@/lib/utils";
@@ -206,7 +206,11 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
         roomsCount:   !data.step3.roomsCount     ? "יש לבחור מס׳ חדרים" : undefined,
         floorNumber:  !data.step3.floorNumber    ? "יש להזין קומה או לסמן 'לא ידוע'"  : undefined,
         fullName:     !data.step1.fullName.trim() ? "שם מלא הוא שדה חובה" : undefined,
-        email:        !data.step1.email.trim()    ? undefined : !isValidEmail(data.step1.email) ? "כתובת הדוא״ל אינה תקינה" : undefined,
+        email:        data.step1.email.trim() && !isValidEmail(data.step1.email.trim())
+          ? "כתובת הדוא״ל אינה תקינה"
+          : !data.step1.email.trim() && data.step1.phone.trim().length < 7
+          ? "יש להזין כתובת דוא״ל או מספר טלפון לשליחת הדוח"
+          : undefined,
       }
     : {};
 
@@ -564,7 +568,7 @@ export function Step3Details({ data, onChange, showErrors }: Props) {
               </a>
             ) : (
               <a
-                href="https://mekarkein-online.justice.gov.il/voucher/main/9029/32"
+                href="https://mekarkein-online.justice.gov.il/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex text-xs text-[#00C896] underline underline-offset-4 hover:text-white transition-colors"

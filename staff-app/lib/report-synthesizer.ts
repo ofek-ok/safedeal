@@ -198,53 +198,86 @@ export function synthesizeFullReport(params: {
   // Domain 4: תכנון עירוני והנדסי (20%)
 
   // Domain 1: Cadastral & Tabu
-  let scoreDomain1 = 92;
-  if (!block || block === "—" || !parcel || parcel === "—") scoreDomain1 -= 15;
-  const tabuHighSeverity = findings.filter((f) => f.category?.includes("זכויות") && f.severity === "גבוהה").length;
-  scoreDomain1 -= tabuHighSeverity * 30;
-  scoreDomain1 = Math.max(20, Math.min(100, scoreDomain1));
-
-  // Domain 2: Pledges & Insolvency
-  let scoreDomain2 = 95;
-  if (hasActiveInsolvency) {
-    scoreDomain2 = 0;
-  } else if (hasRecentInsolvency) {
-    scoreDomain2 = 40;
+  const hasTabuFindingOrDoc =
+    findings.some((f) => f.category?.includes("זכויות") || f.category?.includes("טאבו") || f.source?.includes("טאבו")) ||
+    (params.documents ?? []).some((d) => d.filename?.toLowerCase().includes("tabu") || d.filename?.includes("טאבו"));
+  let scoreDomain1: number | null = null;
+  if (block !== "—" && parcel !== "—" || hasTabuFindingOrDoc) {
+    scoreDomain1 = 92;
+    if (!block || block === "—" || !parcel || parcel === "—") scoreDomain1 -= 15;
+    if (!hasTabuFindingOrDoc) scoreDomain1 -= 12;
+    const tabuHighSeverity = findings.filter((f) => f.category?.includes("זכויות") && f.severity === "גבוהה").length;
+    scoreDomain1 -= tabuHighSeverity * 30;
+    scoreDomain1 = Math.max(20, Math.min(100, scoreDomain1));
   }
-  const pledgesHighSeverity = findings.filter((f) => f.category?.includes("משכונות") && f.severity === "גבוהה").length;
-  scoreDomain2 -= pledgesHighSeverity * 35;
-  scoreDomain2 = Math.max(0, Math.min(100, scoreDomain2));
+
+  // Domain 2: Pledges & Insolvency — ONLY scored if actually verified (NOT_TESTED excluded from denominator!)
+  const pledgeFinding = findings.find((f) => f.category?.includes("משכונות") || f.title?.includes("משכונות"));
+  const insolvencyFinding = findings.find((f) => f.category?.includes("חדלות") || f.title?.includes("חדלות"));
+  const hasVerifiedPledgesOrInsolvency = Boolean(pledgeFinding || insolvencyFinding || deal.insolvencyStatus);
+  let scoreDomain2: number | null = null;
+  if (hasVerifiedPledgesOrInsolvency) {
+    scoreDomain2 = 95;
+    if (hasActiveInsolvency) {
+      scoreDomain2 = 0;
+    } else if (hasRecentInsolvency) {
+      scoreDomain2 = 40;
+    }
+    const pledgesHighSeverity = findings.filter((f) => f.category?.includes("משכונות") && f.severity === "גבוהה").length;
+    scoreDomain2 -= pledgesHighSeverity * 35;
+    scoreDomain2 = Math.max(0, Math.min(100, scoreDomain2));
+  }
 
   // Domain 3: Market & Floor Adjustment
-  let scoreDomain3 = 88;
+  let scoreDomain3: number | null = null;
   const cityBasePsm = CITY_PSM_MAP[city] || 24000;
   const baseEstimatedVal = areaNum > 0 ? areaNum * cityBasePsm : askingPriceNum || 2500000;
   const floorAdjustedEstimatedVal = Math.round(baseEstimatedVal * floorAdjustmentFactor);
 
   let priceDiffPercent = 0;
   if (askingPriceNum > 0 && floorAdjustedEstimatedVal > 0) {
+    scoreDomain3 = 88;
     priceDiffPercent = Math.round(((askingPriceNum - floorAdjustedEstimatedVal) / floorAdjustedEstimatedVal) * 100);
     if (priceDiffPercent > 18) scoreDomain3 -= 35;
     else if (priceDiffPercent > 10) scoreDomain3 -= 18;
     else if (priceDiffPercent < -15) scoreDomain3 -= 10; // Underpriced investigation
+    scoreDomain3 = Math.max(25, Math.min(100, scoreDomain3));
   }
-  scoreDomain3 = Math.max(25, Math.min(100, scoreDomain3));
 
   // Domain 4: Planning & Engineering
-  let scoreDomain4 = 90;
-  const engHighSeverity = findings.filter((f) => (f.category?.includes("הנדס") || f.category?.includes("תכנון")) && f.severity === "גבוהה").length;
-  scoreDomain4 -= engHighSeverity * 30;
-  scoreDomain4 = Math.max(30, Math.min(100, scoreDomain4));
+  const hasPlanningFinding = findings.some((f) => f.category?.includes("הנדס") || f.category?.includes("תכנון"));
+  let scoreDomain4: number | null = null;
+  if (hasPlanningFinding) {
+    scoreDomain4 = 90;
+    const engHighSeverity = findings.filter((f) => (f.category?.includes("הנדס") || f.category?.includes("תכנון")) && f.severity === "גבוהה").length;
+    scoreDomain4 -= engHighSeverity * 30;
+    scoreDomain4 = Math.max(30, Math.min(100, scoreDomain4));
+  }
 
-  // Weighted SafeScore
-  let calculatedSafeScore = Math.round(
-    scoreDomain1 * 0.3 + scoreDomain2 * 0.25 + scoreDomain3 * 0.25 + scoreDomain4 * 0.2
-  );
+  // Weighted SafeScore — Exclude NOT_TESTED domains from denominator!
+  const domainWeights: Array<{ score: number | null; weight: number }> = [
+    { score: scoreDomain1, weight: 0.30 },
+    { score: scoreDomain2, weight: 0.25 },
+    { score: scoreDomain3, weight: 0.25 },
+    { score: scoreDomain4, weight: 0.20 },
+  ];
+  const testedDomains = domainWeights.filter((d): d is { score: number; weight: number } => d.score !== null);
+  const testedWeightSum = testedDomains.reduce((sum, d) => sum + d.weight, 0);
+  let calculatedSafeScore =
+    testedWeightSum > 0
+      ? Math.round(testedDomains.reduce((sum, d) => sum + d.score * d.weight, 0) / testedWeightSum)
+      : 0;
 
   // Apply Hard Overrides: If Active Insolvency -> STOP, Max Cap = 39!
   if (hasActiveInsolvency) {
     calculatedSafeScore = Math.min(calculatedSafeScore, 39);
   }
+
+  // Fallback display values for breakdown bars (0 when NOT_TESTED)
+  const scoreDomain1Display = scoreDomain1 ?? 0;
+  const scoreDomain2Display = scoreDomain2 ?? 0;
+  const scoreDomain3Display = scoreDomain3 ?? 0;
+  const scoreDomain4Display = scoreDomain4 ?? 0;
 
   // Final Score (Preserve manual analyst override if provided on case report)
   const safeScore = caseRow.report?.safeScore ?? calculatedSafeScore;
@@ -255,6 +288,8 @@ export function synthesizeFullReport(params: {
   const riskText =
     hasActiveInsolvency
       ? "רמת סיכון: גבוהה (הליך חדלות פירעון פעיל)"
+      : testedWeightSum === 0
+      ? "טרם הוזנו בדיקות מאומתות לתיק"
       : safeScore >= 80
       ? "רמת סיכון: נמוכה"
       : safeScore >= 65
@@ -266,25 +301,30 @@ export function synthesizeFullReport(params: {
   const recommendationText =
     hasActiveInsolvency
       ? "עצירת העברת כספים: נדרש בירור משפטי מול הממונה על הליכי חדלות פירעון"
+      : testedWeightSum === 0
+      ? "נדרשת השלמת בדיקות אנליסט והעלאת מסמכים לפני קבלת החלטה"
       : safeScore >= 80
       ? "מומלץ להתקדם לעסקה בליווי משפטי שגרתי"
       : safeScore >= 65
       ? "ניתן להתקדם בזהירות בכפוף להסדרת הממצאים בהסכם"
       : "נדרשת בדיקה משפטית קפדנית והסדרת בטוחות לפני חתימה";
 
-  // Coverage Calculation (Reflects missing floor or missing block/parcel without penalizing score)
-  let coveragePercent = 70;
-  if (block !== "—" && parcel !== "—") coveragePercent += 8;
-  if (isFloorKnown) coveragePercent += 6;
-  if (isTotalFloorsKnown) coveragePercent += 5;
-  if (hasElevator !== undefined) coveragePercent += 4;
-  if (areaNum > 0 && askingPriceNum > 0) coveragePercent += 7;
-  coveragePercent = Math.min(100, coveragePercent);
+  // Coverage Calculation strictly reflects verified domain weights
+  const coveragePercent = Math.round(testedWeightSum * 100);
 
-  // Missing Data Warnings (Strictly algorithmic without false red flags)
+  // Missing Data Warnings (Strictly transparent about NOT_TESTED sources)
   const missingDataWarnings: string[] = [];
+  if (!pledgeFinding) {
+    missingDataWarnings.push("רשם המשכונות — ממתין לחיבור מאגר רשמי (NOT_TESTED, מוחרג מחישוב הציון).");
+  }
+  if (!insolvencyFinding && !deal.insolvencyStatus) {
+    missingDataWarnings.push("חדלות פירעון / נט המשפט — טרם הוזנה בדיקה מאומתת (NOT_TESTED, מוחרג מחישוב הציון).");
+  }
+  if (!hasTabuFindingOrDoc) {
+    missingDataWarnings.push("נסח טאבו לא צורף — בדיקת זכויות חלקית בלבד.");
+  }
   if (!isFloorKnown) {
-    missingDataWarnings.push("קומת הנכס אינה ידועה — מודל הערכת השווי אינו מעניש בציון הסיכון, אך רמת הכיסוי מופחתת.");
+    missingDataWarnings.push("קומת הנכס אינה ידועה — מודל הערכת השווי אינו מעניש בציון הסיכון.");
   }
   if (isFloorKnown && !isTotalFloorsKnown) {
     missingDataWarnings.push("מספר קומות בבניין לא צוין — בוצעה התאמת קומה חלקית בלבד ללא שקלול מיקום יחסי.");
@@ -303,29 +343,32 @@ export function synthesizeFullReport(params: {
   top5Findings.push({
     title: "זכויות הבעלות והרישום בטאבו",
     text:
-      block !== "—" && parcel !== "—"
+      block !== "—" && parcel !== "—" && hasTabuFindingOrDoc
         ? `זוהה רישום תקין בלשכת רישום המקרקעין בכתובת ${address} (גוש ${block}, חלקה ${parcel}).`
+        : block !== "—" && parcel !== "—"
+        ? `אותר גוש ${block}, חלקה ${parcel}, אך נסח טאבו טרם צורף ואומת.`
         : "הזכויות טרם אומתו במלואן מול נסח הטאבו — נדרש אימות מספר גוש וחלקה.",
-    isPositive: block !== "—" && parcel !== "—",
+    isPositive: block !== "—" && parcel !== "—" && hasTabuFindingOrDoc,
   });
 
-  // Check 2: Insolvency (Mandatory official legal phrasing)
+  // Check 2: Insolvency (Transparent NOT_TESTED when unverified)
   top5Findings.push({
     title: hasActiveInsolvency
       ? "אותרו אינדיקציות להליך חדלות פירעון"
       : "בדיקת חדלות פירעון (משרד המשפטים)",
     text: hasActiveInsolvency
       ? "אותר הליך חדלות פירעון פעיל במאגר משרד המשפטים — הוחלה תקרת ציון 39."
-      : "לא אותר הליך חדלות פירעון במאגר שנבדק (משרד המשפטים — insolvency.justice.gov.il).",
-    isPositive: !hasActiveInsolvency,
+      : insolvencyFinding
+      ? insolvencyFinding.note
+      : "טרם הוזנה בדיקת חדלות פירעון מאומתת (NOT_TESTED — מוחרג מחישוב הציון).",
+    isPositive: Boolean(insolvencyFinding && !hasActiveInsolvency),
   });
 
-  // Check 3: Pledges
-  const pledgeFinding = findings.find((f) => f.category?.includes("משכונות"));
+  // Check 3: Pledges (Transparent NOT_TESTED when unverified)
   top5Findings.push({
     title: "בדיקת רשם המשכונות",
-    text: pledgeFinding?.note || "לא אותרו הודעות משכון או שעבודים פעילים על זכויות המוכר/הנכס.",
-    isPositive: pledgeFinding ? pledgeFinding.severity !== "גבוהה" : true,
+    text: pledgeFinding?.note || "ממתין לחיבור מאגר רשמי (NOT_TESTED — לא שוקלל בציון, יש לבדוק ידנית לפני חתימה).",
+    isPositive: pledgeFinding ? pledgeFinding.severity !== "גבוהה" : false,
   });
 
   // Check 4: Floor & Valuation
@@ -346,8 +389,10 @@ export function synthesizeFullReport(params: {
   // Check 5: Engineering & Planning
   top5Findings.push({
     title: "בדיקת היתרי בנייה ותכנון עירוני",
-    text: `אותרה התאמה מול מערכות התכנון (XPLAN) והיתרי הבנייה ב-${city || "הרשות המקומית"}. לא אותרו צווי הריסה.`,
-    isPositive: scoreDomain4 >= 75,
+    text: scoreDomain4 !== null
+      ? `אותרה התאמה מול מערכות התכנון (XPLAN) והיתרי הבנייה ב-${city || "הרשות המקומית"}.`
+      : "בדיקת תכנון והיתרי בנייה טרם הושלמה (NOT_TESTED — מוחרג מחישוב הציון).",
+    isPositive: scoreDomain4 !== null && scoreDomain4 >= 75,
   });
 
   // 7. Quick Risk Map (Solely based on the 6 key case areas)
@@ -355,32 +400,32 @@ export function synthesizeFullReport(params: {
     {
       id: "ownership",
       label: "זיהוי וזכויות בעלות",
-      status: scoreDomain1 >= 80 ? "green" : scoreDomain1 >= 60 ? "yellow" : "red",
+      status: scoreDomain1 === null ? "yellow" : scoreDomain1 >= 80 ? "green" : scoreDomain1 >= 60 ? "yellow" : "red",
     },
     {
       id: "debts",
       label: "שעבודים ומשכונות",
-      status: scoreDomain2 >= 75 ? "green" : "yellow",
+      status: scoreDomain2 === null ? "yellow" : scoreDomain2 >= 75 ? "green" : "yellow",
     },
     {
       id: "insolvency",
       label: "חדלות פירעון (משרד המשפטים)",
-      status: hasActiveInsolvency ? "red" : hasRecentInsolvency ? "yellow" : "green",
+      status: hasActiveInsolvency ? "red" : !insolvencyFinding && !deal.insolvencyStatus ? "yellow" : hasRecentInsolvency ? "yellow" : "green",
     },
     {
       id: "market-price",
       label: "מחיר מול שוק וקומה",
-      status: !isFloorKnown ? "yellow" : priceDiffPercent > 12 ? "yellow" : "green",
+      status: scoreDomain3 === null || !isFloorKnown ? "yellow" : priceDiffPercent > 12 ? "yellow" : "green",
     },
     {
       id: "building-state",
       label: "היתרי בנייה ותיק בניין",
-      status: scoreDomain4 >= 75 ? "green" : "yellow",
+      status: scoreDomain4 !== null && scoreDomain4 >= 75 ? "green" : "yellow",
     },
     {
       id: "seller-risk",
       label: isDeveloper ? "יציבות היזם והחברה" : "סיכון המוכר ורקע משפטי",
-      status: hasActiveInsolvency ? "red" : "green",
+      status: hasActiveInsolvency ? "red" : hasVerifiedPledgesOrInsolvency ? "green" : "yellow",
     },
   ];
 
@@ -454,17 +499,17 @@ export function synthesizeFullReport(params: {
 
   // 10. Score Breakdown Bars
   const scoreBreakdown: ScoreBreakdownItem[] = [
-    { id: "ownership", label: "בעלות וזכויות", score: scoreDomain1, status: scoreDomain1 >= 80 ? "green" : "yellow", iconKey: "Scale" },
-    { id: "debts", label: "שעבודים ומשכונות", score: scoreDomain2, status: scoreDomain2 >= 75 ? "green" : "yellow", iconKey: "Landmark" },
+    { id: "ownership", label: "בעלות וזכויות", score: scoreDomain1Display, status: scoreDomain1 !== null && scoreDomain1 >= 80 ? "green" : "yellow", iconKey: "Scale" },
+    { id: "debts", label: "שעבודים ומשכונות (ממתין לחיבור)", score: scoreDomain2Display, status: scoreDomain2 !== null && scoreDomain2 >= 75 ? "green" : "yellow", iconKey: "Landmark" },
     {
       id: "insolvency",
       label: "חדלות פירעון (משרד המשפטים)",
-      score: hasActiveInsolvency ? 0 : 100,
-      status: hasActiveInsolvency ? "red" : "green",
+      score: hasActiveInsolvency ? 0 : insolvencyFinding || deal.insolvencyStatus ? 100 : 0,
+      status: hasActiveInsolvency ? "red" : insolvencyFinding || deal.insolvencyStatus ? "green" : "yellow",
       iconKey: "Shield",
     },
-    { id: "building-state", label: "מצב הבניין והיתרים", score: scoreDomain4, status: scoreDomain4 >= 75 ? "green" : "yellow", iconKey: "Building" },
-    { id: "market-price", label: "מחיר מול שוק וקומה", score: scoreDomain3, status: scoreDomain3 >= 75 ? "green" : "yellow", iconKey: "TrendingUp" },
+    { id: "building-state", label: "מצב הבניין והיתרים", score: scoreDomain4Display, status: scoreDomain4 !== null && scoreDomain4 >= 75 ? "green" : "yellow", iconKey: "Building" },
+    { id: "market-price", label: "מחיר מול שוק וקומה", score: scoreDomain3Display, status: scoreDomain3 !== null && scoreDomain3 >= 75 ? "green" : "yellow", iconKey: "TrendingUp" },
   ];
 
   // 11. Actionable Steps

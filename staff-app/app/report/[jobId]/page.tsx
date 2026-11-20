@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { getDb } from "../../../db";
+import { getStaffIdentity } from "../../lib/staff";
 import { SafeDealLogo } from "@/components/SafeDealLogo";
 import { ReportActionBar } from "@/components/report/ReportActionBar";
 import { ExecutiveHeader } from "@/components/report/ExecutiveHeader";
@@ -47,28 +48,16 @@ export default async function PublicReportPage({ params }: { params: Promise<{ j
       .all<any>(),
   ]);
 
-  if (!caseRow && !reportRow) {
-    // If not in database, fallback to sample report matching the concept deck
-    const sampleReport = synthesizeFullReport({
-      caseRow: {
-        id: jobId,
-        case_number: `SD-2026-${jobId.slice(-3).toUpperCase()}`,
-        street: "רחוב הרימון",
-        house: "8",
-        city: "הוד השרון",
-        block: "6452",
-        parcel: "14",
-        price: "3,050,000",
-        area: "112",
-        rooms: "4",
-        floor: "3",
-        asset_type: "דירת 4 חדרים",
-      },
-      findings: [],
-      version: 1,
-    });
+  if (!caseRow || !reportRow) {
+    notFound();
+  }
 
-    return renderReport(sampleReport, 1, "צוות אנליסטים SafeDeal");
+  // Only allow public viewing of officially sent reports; drafts require authenticated staff
+  if (caseRow.status !== "דוח נשלח") {
+    const staff = await getStaffIdentity();
+    if (!staff) {
+      notFound();
+    }
   }
 
   let snapshotData: any = null;

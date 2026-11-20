@@ -1,6 +1,7 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { ShieldCheck, X } from "lucide-react";
 import type { WizardFormData } from "@/types/property";
 import { DEAL_TYPE_LABELS } from "@/types/property";
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function Step4Checkout({ data, isSubmitting, onSubmit, onChange }: Props) {
+  const [showTerms, setShowTerms] = useState(false);
   const addressString = [data.step2.street, data.step2.houseNumber, data.step2.city]
     .filter(Boolean)
     .join(" ");
@@ -95,13 +97,70 @@ export function Step4Checkout({ data, isSubmitting, onSubmit, onChange }: Props)
         <div>
           <p className="text-[11px] sm:text-xs text-slate-400 tracking-wider leading-relaxed">
             אני מאשר/ת את{" "}
-            <span className="text-[#00C896] hover:text-[#00C896]/80 underline underline-offset-4 transition-colors">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowTerms(true);
+              }}
+              className="text-[#00C896] hover:text-[#00C896]/80 underline underline-offset-4 transition-colors"
+            >
               תנאי השימוש ומדיניות הפרטיות
-            </span>{" "}
+            </button>{" "}
             של SafeDeal
           </p>
         </div>
       </label>
+
+      {showTerms && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="terms-modal-title"
+          onClick={() => setShowTerms(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#0A1628] p-6 text-right shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 id="terms-modal-title" className="text-lg font-bold text-white" style={{ fontFamily: "var(--font-serif)" }}>
+                תנאי שימוש ומדיניות פרטיות — SafeDeal
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowTerms(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+                aria-label="סגירה"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed max-h-[60vh] overflow-y-auto">
+              <p>
+                <strong className="text-white">מהות השירות:</strong> דוח SafeDeal מספק מיון ובדיקת נאותות ראשונית המבוססת על מאגרים ממשלתיים פומביים ומסמכים שנמסרו על ידי הלקוח. הדוח אינו מהווה ייעוץ משפטי, שמאות מקרקעין או חוות דעת הנדסית ואינו מחליף ליווי של עו״ד מקרקעין או שמאי מוסמך.
+              </p>
+              <p>
+                <strong className="text-white">שמירת פרטיות ואבטחת מידע:</strong> הפרטים והמסמכים המועלים בטופס (לרבות נסח טאבו ופרטי קשר) משמשים אך ורק להפקת הדוח עבורך ואינם נמכרים או מועברים לצד שלישי ללא הסכמתך.
+              </p>
+              <p>
+                <strong className="text-white">שקיפות מקורות:</strong> מאגרים שאינם מחוברים או שטרם נבדקו מסומנים בדוח במפורש כלא נבדקו (NOT_TESTED) ומוחרגים מחישוב הציון.
+              </p>
+            </div>
+            <div className="flex justify-end pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowTerms(false)}
+                className="px-5 py-2 rounded-lg bg-[#00C896] text-navy-950 text-xs font-bold hover:bg-[#00C896]/90 transition-colors"
+              >
+                הבנתי, סגירה
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Submit */}
       <button

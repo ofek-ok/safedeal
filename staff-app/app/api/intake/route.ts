@@ -205,6 +205,8 @@ export async function POST(request: Request) {
           .bind(crypto.randomUUID(), id, data.name || "לקוח", now),
         db.$client.prepare(`INSERT INTO intake_attempts (ip_hash, created_at) VALUES (?, ?)`)
           .bind(ipHash, now),
+        db.$client.prepare(`DELETE FROM intake_attempts WHERE created_at < ?`)
+          .bind(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
         ...uploaded.map((doc) => db.$client.prepare(`INSERT INTO documents (id, case_id, file_key, filename, content_type, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
           .bind(doc.id, id, doc.key, doc.name, doc.type, doc.size, now)),
       ];

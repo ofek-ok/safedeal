@@ -95,6 +95,11 @@ const schemaStatements = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_activity_case_created ON activity(case_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_intake_attempts_ip_created ON intake_attempts(ip_hash, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_documents_case_id ON documents(case_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_findings_case_created ON findings(case_id, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_cases_status_created ON cases(status, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_cases_analyst_created ON cases(analyst_user_id, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_finance_date_created ON finance_transactions(transaction_date DESC, created_at DESC)`,
 ];
 
 let schemaReady: Promise<void> | undefined;

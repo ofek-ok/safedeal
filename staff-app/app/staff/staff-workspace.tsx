@@ -189,7 +189,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
     return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, "he"));
   }, [cases]);
   const activeCount = cases.filter((item) => item.status !== "דוח נשלח").length;
-  const reviewCount = cases.reduce((sum, item) => sum + (item.findingCount ?? 0), 0);
+  const reviewCount = cases.reduce((sum, item) => sum + Number(item.findingCount ?? 0), 0);
   const waitingDocuments = cases.filter((item) => item.status === "ממתין למסמכים");
   const unassignedCases = cases.filter((item) => item.status !== "דוח נשלח" && !item.analystUserId);
   const now = new Date();

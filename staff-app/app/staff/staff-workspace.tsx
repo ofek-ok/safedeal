@@ -54,6 +54,75 @@ const FINDING_MACROS = [
   { label: "חדלות פירעון — תקין", category: "חדלות פירעון", severity: "נמוכה", title: "לא אותר הליך חדלות פירעון פעיל", note: "בוצעה בדיקה במאגר הממונה על הליכי חדלות פירעון במשרד המשפטים — לא אותר הליך פעיל על שם המוכר/היזם.", source: "משרד המשפטים — insolvency.justice.gov.il" },
 ] as const;
 
+const WORKFLOW_STEP_GUIDES: ReadonlyArray<{ title: string; subtitle: string; bullets: readonly string[]; tip: string }> = [
+  {
+    title: "מה לעשות בשלב 01 — זיהוי הנכס",
+    subtitle: "אימות כתובת, גוש/חלקה ופרטי מוכר",
+    bullets: [
+      "אמת שהעיר, הרחוב ומספר הבית מדויקים מול בקשת הלקוח.",
+      "לחץ על 'איתור גוש/חלקה אוטומטי מ-GovMap' או אמת ידנית במפות הממשלה.",
+      "ודא שכל שמות המוכרים / היזם והת.ז./ח.פ. מוזנים בצורה נקייה.",
+      "הצץ ב'פרטי הבקשה' וודא שהמחיר, השטח והקומה הגיוניים ללא טעות הקלדה.",
+    ],
+    tip: "לא מתקדמים להפקת נסח לפני שגוש וחלקה מאומתים ונשמרו בתיק.",
+  },
+  {
+    title: "מה לעשות בשלב 02 — נסח טאבו",
+    subtitle: "אימות בעלות, הצמדות ועיקולים",
+    bullets: [
+      "פתח את נסח הטאבו ב'צפייה' ובדוק שתאריך ההפקה עדכני (עד 14 יום).",
+      "הצלב שמות בעלי זכויות ומספרי ת.ז. מול המוכרים שהוזנו בטופס.",
+      "בדוק עיקולים, צווי מניעה, הפקעות והערות אזהרה סותרות (דגל STOP!).",
+      "בדוק משכנתאות קיימות, שטח רשום והצמדות (חניה, מחסן, מרפסת/גג).",
+    ],
+    tip: "כל סתירה בין המוכר לבעלים הרשומים מחייבת ממצא בחומרה גבוהה.",
+  },
+  {
+    title: "מה לעשות בשלב 03 — מרשם המשכונות",
+    subtitle: "איתור שעבודים חוזיים על כל מוכר",
+    bullets: [
+      "פתח את מרשם המשכונות וחפש לפי ת.ז. / ח.פ. של כל בעל זכויות בנפרד.",
+      "אמת שהתוצאה שייכת לאותו אדם/נכס (שם דומה ללא ת.ז. אינו מספיק).",
+      "שמור PDF או צילום מסך של התוצאה והעלה לתיק — גם אם אין משכונות!",
+      "משכון פעיל בעל זיקה לנכס ללא מכתב החרגה = תעד כממצא גבוה.",
+    ],
+    tip: "העלאת תיעוד חיפוש נקי מגנה משפטית ומוכיחה שהבדיקה בוצעה בפועל.",
+  },
+  {
+    title: "מה לעשות בשלב 04 — חדלות פירעון",
+    subtitle: "בדיקת כשירות משפטית במשרד המשפטים",
+    bullets: [
+      "היכנס למאגר הממונה על הליכי חדלות פירעון (insolvency.justice.gov.il).",
+      "בצע חיפוש מדויק לפי ת.ז. / ח.פ. ושם מלא לכל מוכר או יזם.",
+      "הליך פעיל או צו פתיחת הליכים = דגל STOP מיידי (תקרת SafeScore 39).",
+      "שמור צילום מסך של התוצאה והעלה תחת 'דוח חדלות פירעון'.",
+    ],
+    tip: "הליך שנסגר ב-6 החודשים האחרונים דורש תיעוד כממצא בינוני לבירור.",
+  },
+  {
+    title: "מה לעשות בשלב 05 — הליכים משפטיים",
+    subtitle: "איתור תביעות וסכסוכים ב-Nevo / נט המשפט",
+    bullets: [
+      "חפש תיקים אזרחיים ופליליים רלוונטיים על שם המוכר או חברת היזם.",
+      "בעסקת קבלן: בדוק תביעות ליקויי בנייה, איחורי מסירה ותביעות חוזרות.",
+      "הבדל בין תיק סגור ללא הרשעה לבין תיק פתוח המאיים על הזכויות בנכס.",
+      "תעד כל ממצא מהותי בלשונית 'ממצאים' כולל מספר תיק ומקור.",
+    ],
+    tip: "אין לקבוע ממצא פלילי/משפטי כעובדה ללא אסמכתא מפורשת במסמך.",
+  },
+  {
+    title: "מה לעשות בשלב 06 — בקרת דוח ושליחה",
+    subtitle: "אימות סופי לפני שהלקוח מקבל את הדוח",
+    bullets: [
+      "ודא שכל 4 סעיפי הצ׳קליסט מסומנים ושאין ממצאים בסטטוס 'לבדיקה'.",
+      "לחץ 'הפקת דוח' ופתח את הדוח המלא לבדיקה ויזואלית.",
+      "בסרגל האנליסט בראש הדוח: בדוק/ערוך ציון SafeScore והמלצת שורה תחתונה.",
+      "לחץ 'שלח דוח ללקוח' — המייל יישלח עם קישור ישיר לדוח ולהורדת PDF.",
+    ],
+    tip: "לאחר השליחה הסטטוס מתעדכן אוטומטית ל'דוח נשלח' והקישור נפתח ללקוח.",
+  },
+];
+
 function getSlaBadge(createdAt: string, status: string): { label: string; bg: string; color: string; border: string } | null {
   if (status === "דוח נשלח") return null;
   const elapsedHours = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60);
@@ -897,6 +966,32 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
               </div>
               </div>
               <aside className="workflow-side-rail">
+                {(() => {
+                  const guide = WORKFLOW_STEP_GUIDES[activeWorkflowStep] ?? WORKFLOW_STEP_GUIDES[0];
+                  return (
+                    <div className="side-rail-card side-guide-card">
+                      <div className="side-rail-head" style={{ borderBottomColor: "#ccfbf1" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <Info size={15} style={{ color: "#0d766e", flexShrink: 0 }} />
+                          <b>{guide.title}</b>
+                        </div>
+                        <span style={{ fontSize: "10px", fontWeight: 800, color: "#0f766e", background: "#ccfbf1", padding: "2px 7px", borderRadius: "999px" }}>מדריך שלב</span>
+                      </div>
+                      <small style={{ display: "block", color: "#475569", fontSize: "11px", marginBottom: "8px" }}>{guide.subtitle}</small>
+                      <ul className="side-guide-list">
+                        {guide.bullets.map((bullet, idx) => (
+                          <li key={idx}>
+                            <span className="guide-bullet-num">{idx + 1}</span>
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="side-guide-tip">
+                        <b>דגש לאנליסט:</b> {guide.tip}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="side-rail-card">
                   <div className="side-rail-head">
                     <b>מסמכי התיק ({detail.documents.length})</b>

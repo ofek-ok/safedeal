@@ -1,11 +1,6 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
+import { getSessionStaff } from "./lib/auth";
 
-/**
- * Vercel's deployment protection is the sign-in boundary for this private app.
- * Vercel does not provide a verified employee identity to application code, so
- * activity is attributed to the shared SafeDeal team account until individual
- * staff authentication is configured.
- */
 export type ChatGPTUser = {
   userId: string;
   displayName: string;
@@ -13,28 +8,23 @@ export type ChatGPTUser = {
   fullName: string | null;
 };
 
-const TEAM_USER_ID = "vercel-protected-team";
-const TEAM_EMAIL = "team@safedeal.invalid";
-
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
-  const protectedRuntime = process.env.VERCEL === "1" && process.env.SAFEDEAL_VERCEL_AUTH_REQUIRED === "true";
-  const localRuntime = process.env.NODE_ENV === "development";
-  if (!protectedRuntime && !localRuntime) return null;
-
+  const session = await getSessionStaff();
+  if (!session) return null;
   return {
-    userId: process.env.SAFEDEAL_STAFF_USER_ID || TEAM_USER_ID,
-    displayName: "צוות SafeDeal",
-    email: process.env.SAFEDEAL_STAFF_USER_EMAIL || TEAM_EMAIL,
-    fullName: "צוות SafeDeal",
+    userId: session.userId,
+    displayName: session.displayName,
+    email: session.email,
+    fullName: session.displayName,
   };
 }
 
-export async function requireChatGPTUser(_returnTo: string): Promise<ChatGPTUser> {
+export async function requireChatGPTUser(returnTo: string): Promise<ChatGPTUser> {
   const user = await getChatGPTUser();
   if (user) return user;
-  notFound();
+  redirect(`/login?next=${encodeURIComponent(returnTo || "/staff")}`);
 }
 
-export function chatGPTSignInPath(_returnTo: string): string {
-  return "/staff";
+export function chatGPTSignInPath(returnTo: string): string {
+  return `/login?next=${encodeURIComponent(returnTo || "/staff")}`;
 }

@@ -193,6 +193,9 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [teamEmail, setTeamEmail] = useState("");
+  const [teamName, setTeamName] = useState("");
+  const [teamPassword, setTeamPassword] = useState("");
+  const [teamRole, setTeamRole] = useState<"member" | "admin">("member");
   const [propertyIds, setPropertyIds] = useState({ block: "", parcel: "", subParcel: "" });
   const [financeTransactions, setFinanceTransactions] = useState<FinanceTransaction[]>([]);
   const [financeSummary, setFinanceSummary] = useState({ income: 0, expenses: 0, balance: 0 });
@@ -390,9 +393,22 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
 
   const addMember = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true);
-    try { await request("/api/staff/team", { method: "POST", body: JSON.stringify({ email: teamEmail, role: "member" }) }); setTeamEmail(""); await loadTeam(); setNotice("ה-Member נוסף. עם הכניסה הראשונה, ההרשאה תיקושר לחשבון שלו."); }
+    try {
+      await request("/api/staff/team", {
+        method: "POST",
+        body: JSON.stringify({ email: teamEmail, displayName: teamName || teamEmail, password: teamPassword, role: teamRole }),
+      });
+      setTeamEmail(""); setTeamName(""); setTeamPassword(""); setTeamRole("member");
+      await loadTeam();
+      setNotice("המשתמש נשמר בהצלחה עם אימייל וסיסמה ומוכן להתחברות.");
+    }
     catch (error) { setNotice(error instanceof Error ? error.message : "לא הצלחנו להוסיף את העובד."); }
     finally { setBusy(false); }
+  };
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    window.location.href = "/login";
   };
 
   const addFinanceTransaction = async (event: React.FormEvent) => {
@@ -600,7 +616,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
         {staff.role === "admin" && <button className={`side-link ${section === "compliance" ? "active" : ""}`} aria-current={section === "compliance" ? "page" : undefined} onClick={() => { navigateSection("compliance"); void loadCompliance(); }}><ShieldCheck size={18} />ציות ופרטיות</button>}
         {staff.role === "admin" && <button className={`side-link ${section === "team" ? "active" : ""}`} aria-current={section === "team" ? "page" : undefined} onClick={() => { navigateSection("team"); void loadTeam(); }}><Users size={18} />צוות</button>}
       </nav>
-      <div className="sidebar-bottom"><div className="sidebar-security"><ShieldCheck size={17} /><span><b>גישה מאובטחת</b><small>רק צוות מורשה</small></span></div><div className="staff-profile"><div className="profile-avatar">{staff.displayName.slice(0, 1)}</div><span><b>{staff.displayName}</b><small>{staff.role === "admin" ? "Admin · מנהל מערכת" : "Member · אנליסט"}</small></span><a title="התנתקות" href="/signout-with-chatgpt?return_to=%2F"><LogOut size={16} /></a></div></div>
+      <div className="sidebar-bottom"><div className="sidebar-security"><ShieldCheck size={17} /><span><b>גישה מאובטחת</b><small>רק צוות מורשה</small></span></div><div className="staff-profile"><div className="profile-avatar">{staff.displayName.slice(0, 1)}</div><span><b>{staff.displayName}</b><small>{staff.role === "admin" ? "Admin · מנהל מערכת" : "Member · אנליסט"}</small></span><button type="button" title="התנתקות" onClick={() => void handleLogout()} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "4px" }}><LogOut size={16} /></button></div></div>
     </aside>
     {mobileNavOpen && <button className="staff-nav-scrim" type="button" aria-label="סגירת תפריט" onClick={() => setMobileNavOpen(false)} />}
     <main className="staff-main" id="staff-content" tabIndex={-1}>
@@ -1084,7 +1100,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
           <div className="staff-metrics finance-metrics"><article><span className="metric-label">הכנסות רשומות</span><b>{financeMoney(financeSummary.income)}</b><small>סך כל הרישומים במערכת</small></article><article><span className="metric-label">הוצאות רשומות</span><b>{financeMoney(financeSummary.expenses)}</b><small>סך כל הרישומים במערכת</small></article><article><span className="metric-label">יתרה חשבונאית</span><b>{financeMoney(financeSummary.balance)}</b><small>הכנסות פחות הוצאות</small></article></div>
           <section className="finance-layout"><form className="finding-form finance-form" onSubmit={addFinanceTransaction}><div className="section-title"><div><b>הוספת תנועה</b><small>הזינו הכנסה או הוצאה לצורך מעקב</small></div></div><div className="form-grid"><label>סוג תנועה<select value={financeForm.type} onChange={(event) => setFinanceForm({ ...financeForm, type: event.target.value as "income" | "expense" })}><option value="income">הכנסה</option><option value="expense">הוצאה</option></select></label><label>תאריך<input type="date" value={financeForm.date} onChange={(event) => setFinanceForm({ ...financeForm, date: event.target.value })} required /></label><label>קטגוריה<input value={financeForm.category} onChange={(event) => setFinanceForm({ ...financeForm, category: event.target.value })} placeholder="לדוגמה: בדיקה, תוכנה, שיווק" maxLength={80} required /></label><label>סכום בש״ח<input type="number" min="0.01" max="10000000" step="0.01" value={financeForm.amount} onChange={(event) => setFinanceForm({ ...financeForm, amount: event.target.value })} required /></label><label className="span-two">תיאור<input value={financeForm.description} onChange={(event) => setFinanceForm({ ...financeForm, description: event.target.value })} maxLength={300} required /></label></div><div className="form-actions"><button className="button-primary" disabled={busy}><Plus size={16} />שמירת תנועה</button></div></form>
           <section className="finance-transactions"><div className="section-title"><div><b>תנועות אחרונות</b><small>{financeTransactions.length} תנועות מוצגות</small></div></div>{financeTransactions.length ? <div className="finance-list">{financeTransactions.map((item) => <article className="finance-row" key={item.id}><span className={`finance-kind ${item.type}`}>{item.type === "income" ? "הכנסה" : "הוצאה"}</span><span className="finance-copy"><b>{item.description}</b><small>{item.category} · {new Date(`${item.date}T12:00:00`).toLocaleDateString("he-IL")}</small></span><b className={`finance-amount ${item.type}`}>{item.type === "income" ? "+" : "−"}{financeMoney(item.amount)}</b></article>)}</div> : <div className="inline-empty">עדיין לא נרשמו הכנסות או הוצאות.</div>}</section></section>
-        </> : <section className="team-panel"><div className="staff-heading"><div><div className="eyebrow">הרשאות</div><h1>ניהול צוות</h1><p>רק עובדים שנוספו לכאן יוכלו להיכנס לתיקים.</p></div></div><form className="team-invite" onSubmit={addMember}><div><b>הוספת Member</b><small>העובד ייכנס באמצעות החשבון שלו ויוכל לבצע את שלבי האנליזה.</small></div><input type="email" placeholder="כתובת דוא״ל של העובד" value={teamEmail} onChange={(e) => setTeamEmail(e.target.value)} required /><button className="button-primary" disabled={busy}><Plus size={16} />הוספה לצוות</button></form><div className="team-list">{team.map((member) => <div className="team-row" key={member.email}><div className="profile-avatar">{member.displayName.slice(0, 1)}</div><span><b>{member.displayName}</b><small>{member.email}</small></span><span className="team-role">{member.role === "admin" ? "Admin · מנהל מערכת" : "Member · אנליסט"}</span><span className={member.active ? "member-active" : "member-inactive"}>{member.active ? "פעיל" : "לא פעיל"}</span></div>)}{!team.length && <div className="empty-state">רשימת הצוות ריקה.</div>}</div></section>}
+        </> : <section className="team-panel"><div className="staff-heading"><div><div className="eyebrow">הרשאות ומשתמשים</div><h1>ניהול צוות ומשתמשים</h1><p>הוסיפו משתמשים עם דוא״ל, סיסמה ותפקיד. ניתן גם לאפס סיסמה למשתמש קיים ע״י הזנת אותו דוא״ל.</p></div></div><form className="team-invite" onSubmit={addMember} style={{ flexWrap: "wrap", gap: "10px" }}><div style={{ width: "100%" }}><b>יצירת / עדכון משתמש</b><small>הסיסמה נשמרת מוצפנת (scrypt) במסד הנתונים.</small></div><input type="text" placeholder="שם מלא" value={teamName} onChange={(e) => setTeamName(e.target.value)} required /><input type="email" placeholder="כתובת דוא״ל" value={teamEmail} onChange={(e) => setTeamEmail(e.target.value)} required /><input type="password" placeholder="סיסמה (מינימום 8 תווים)" minLength={8} value={teamPassword} onChange={(e) => setTeamPassword(e.target.value)} required /><select value={teamRole} onChange={(e) => setTeamRole(e.target.value as "member" | "admin")} style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}><option value="member">Member · אנליסט</option><option value="admin">Admin · מנהל מערכת</option></select><button className="button-primary" disabled={busy}><Plus size={16} />שמירת משתמש</button></form><div className="team-list">{team.map((member) => <div className="team-row" key={member.email}><div className="profile-avatar">{member.displayName.slice(0, 1)}</div><span><b>{member.displayName}</b><small>{member.email}</small></span><span className="team-role">{member.role === "admin" ? "Admin · מנהל מערכת" : "Member · אנליסט"}</span><span className={member.active ? "member-active" : "member-inactive"}>{member.active ? "פעיל" : "לא פעיל"}</span></div>)}{!team.length && <div className="empty-state">רשימת הצוות ריקה.</div>}</div></section>}
       </div>
     </main>
     {/* Email Dispatch Confirmation Modal */}

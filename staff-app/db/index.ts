@@ -54,8 +54,15 @@ const schemaStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS staff_members (
     user_id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL,
-    role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL
+    role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, password_hash TEXT, last_login_at TEXT, created_at TEXT NOT NULL
   )`,
+  `ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS password_hash TEXT`,
+  `ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS last_login_at TEXT`,
+  `CREATE TABLE IF NOT EXISTS staff_sessions (
+    token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES staff_members(user_id) ON DELETE CASCADE,
+    expires_at TEXT NOT NULL, created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_staff_sessions_user ON staff_sessions(user_id)`,
   `CREATE TABLE IF NOT EXISTS finance_transactions (\n    id TEXT PRIMARY KEY, type TEXT NOT NULL CHECK (type IN ('income', 'expense')),\n    transaction_date TEXT NOT NULL, category TEXT NOT NULL, description TEXT NOT NULL,\n    amount_agorot INTEGER NOT NULL CHECK (amount_agorot > 0), created_by TEXT NOT NULL, created_at TEXT NOT NULL\n  )`,
   `CREATE TABLE IF NOT EXISTS compliance_tasks (
     id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL,

@@ -40,8 +40,19 @@ export const staffMembers = pgTable("staff_members", {
   displayName: text("display_name").notNull(),
   role: text("role").notNull(),
   active: integer("active").notNull().default(1),
+  passwordHash: text("password_hash"),
+  lastLoginAt: text("last_login_at"),
   createdAt: text("created_at").notNull(),
 });
+
+export const staffSessions = pgTable("staff_sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  userId: text("user_id").notNull().references(() => staffMembers.userId, { onDelete: "cascade" }),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull(),
+}, (table) => [
+  index("idx_staff_sessions_user").on(table.userId),
+]);
 
 export const documents = pgTable("documents", {
   id: text("id").primaryKey(),

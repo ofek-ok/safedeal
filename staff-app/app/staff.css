@@ -1816,3 +1816,60 @@ html { scroll-behavior: smooth; }
   line-height: 1.4;
   color: #92400e;
 }
+
+/* Fix specificity override against legacy .case-focus-mode .analysis-workflow 2-col grid */
+.case-workspace-new.case-focus-mode .case-panel-nav {
+  position: static !important;
+  margin: 0 0 10px !important;
+}
+.case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  padding: 16px 18px !important;
+  grid-template-columns: none !important;
+}
+.case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell .workflow-progress {
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell .workflow-step-nav-horizontal {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  flex-direction: initial !important;
+  width: 100% !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 6px !important;
+}
+.case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell .workflow-focus-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.95fr) !important;
+  gap: 18px !important;
+  width: 100% !important;
+  align-items: start !important;
+}
+.case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell .workflow-stage {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+.case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell .workflow-side-rail {
+  position: static !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+@media (max-width: 1120px) {
+  .case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell .workflow-focus-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell .workflow-step-nav-horizontal {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 700px) {
+  .case-workspace-new.case-focus-mode .analysis-workflow.workflow-focus-shell .workflow-step-nav-horizontal {
+    display: flex !important;
+    overflow-x: auto !important;
+  }
+}

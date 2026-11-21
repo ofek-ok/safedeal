@@ -19,6 +19,7 @@ import { MadlanInsightsCard } from "@/components/report/MadlanInsightsCard";
 import { DataHubPillars } from "@/components/report/DataHubPillars";
 import { OperativeNextSteps } from "@/components/report/OperativeNextSteps";
 import { synthesizeFullReport } from "@/lib/report-synthesizer";
+import { AnalystReportBar } from "./analyst-report-bar";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,19 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         </Link>
         <SafeDealLogo size="sm" />
       </header>
+
+      {/* Analyst Live Report Editor & Dispatch Bar */}
+      <AnalystReportBar
+        caseId={id}
+        caseNumber={String(activeCase.case_number ?? caseRow?.case_number ?? id)}
+        clientEmail={String(activeCase.client_email ?? caseRow?.client_email ?? "")}
+        status={String(caseRow?.status ?? activeCase.status ?? "")}
+        version={activeVersion}
+        initialScore={r.safeScore}
+        initialRiskText={r.riskText}
+        initialRecommendation={r.recommendationText}
+        hasSavedReport={Boolean(reportRow)}
+      />
 
       {/* Action Bar (Download PDF / Send Email) */}
       <ReportActionBar backLink="/staff" backLabel="חזרה לתיקי עבודה" />

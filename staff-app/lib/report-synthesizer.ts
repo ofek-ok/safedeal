@@ -286,7 +286,8 @@ export function synthesizeFullReport(params: {
     safeScore >= 80 ? "low" : safeScore >= 65 ? "low-medium" : safeScore >= 45 ? "medium-high" : "high";
 
   const riskText =
-    hasActiveInsolvency
+    caseRow.report?.riskTextOverride ||
+    (hasActiveInsolvency
       ? "רמת סיכון: גבוהה (הליך חדלות פירעון פעיל)"
       : testedWeightSum === 0
       ? "טרם הוזנו בדיקות מאומתות לתיק"
@@ -296,10 +297,11 @@ export function synthesizeFullReport(params: {
       ? "רמת סיכון: בינונית-נמוכה"
       : safeScore >= 45
       ? "רמת סיכון: בינונית"
-      : "רמת סיכון: גבוהה";
+      : "רמת סיכון: גבוהה");
 
   const recommendationText =
-    hasActiveInsolvency
+    caseRow.report?.recommendationOverride ||
+    (hasActiveInsolvency
       ? "עצירת העברת כספים: נדרש בירור משפטי מול הממונה על הליכי חדלות פירעון"
       : testedWeightSum === 0
       ? "נדרשת השלמת בדיקות אנליסט והעלאת מסמכים לפני קבלת החלטה"
@@ -307,7 +309,7 @@ export function synthesizeFullReport(params: {
       ? "מומלץ להתקדם לעסקה בליווי משפטי שגרתי"
       : safeScore >= 65
       ? "ניתן להתקדם בזהירות בכפוף להסדרת הממצאים בהסכם"
-      : "נדרשת בדיקה משפטית קפדנית והסדרת בטוחות לפני חתימה";
+      : "נדרשת בדיקה משפטית קפדנית והסדרת בטוחות לפני חתימה");
 
   // Coverage Calculation strictly reflects verified domain weights
   const coveragePercent = Math.round(testedWeightSum * 100);

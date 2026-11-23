@@ -1,6 +1,14 @@
 import { getDb } from "../../../../../../db";
+import { runCaseDocumentAnalysis } from "../../../../../lib/analyze-documents";
 import { caseIsVisible, getStaffIdentity, jsonError } from "../../../../../lib/staff";
 import { getFilesBucket } from "../../../../../lib/storage";
+
+const autoAnalyzeTypes = new Set([
+  "נסח טאבו / אישור זכויות",
+  "דוח מרשם המשכונות",
+  "דוח חדלות פירעון (משרד המשפטים)",
+  "דוח מתדיינים / הליכים משפטיים",
+]);
 
 const maxFileBytes = 20 * 1024 * 1024;
 const allowedTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
@@ -74,7 +82,20 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       throw error;
     }
 
-    return Response.json({ id: documentId, filename: fileName, contentType: type, size: file.size, uploadedAt: now, ...metadata }, { status: 201 });
+    let analysis: { ran: boolean; findingsCreated?: number; summary?: string; error?: string } = { ran: false };
+    if (autoAnalyzeTypes.has(documentType)) {
+      const result = await runCaseDocumentAnalysis({ caseId: id, staff, allowAnyStatus: true }).catch((err) => ({
+        ok: false as const,
+        error: err instanceof Error ? err.message : "שגיאה בקריאת המסמך",
+      }));
+      if (result.ok) {
+        analysis = { ran: true, findingsCreated: result.findingsCreated, summary: result.summary };
+      } else {
+        analysis = { ran: false, error: result.error };
+      }
+    }
+
+    return Response.json({ id: documentId, filename: fileName, contentType: type, size: file.size, uploadedAt: now, ...metadata, analysis }, { status: 201 });
   } catch (error) {
     console.error("SafeDeal staff document upload failed", error);
     return jsonError("לא הצלחנו לשמור את המסמך בתיק.", 503);

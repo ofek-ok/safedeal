@@ -550,13 +550,22 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
     setBusy(true);
     try {
       const response = await fetch(`/api/staff/cases/${selectedId}/documents`, { method: "POST", body: formData });
-      const data = await response.json().catch(() => ({})) as { error?: string };
+      const data = await response.json().catch(() => ({})) as {
+        error?: string;
+        analysis?: { ran?: boolean; findingsCreated?: number; error?: string };
+      };
       if (!response.ok) throw new Error(data.error || "לא הצלחנו לשמור את המסמך.");
       form.reset();
       setDocumentForm(false);
       await loadDetail(selectedId);
       await loadCases();
-      setNotice("המסמך נשמר בתיק עם פרטי המקור.");
+      if (data.analysis?.ran) {
+        setNotice(`המסמך נשמר, נקרא אוטומטית ונותח לפי אלגוריתם הסיכונים (נוצרו ${data.analysis.findingsCreated ?? 0} ממצאים משוקללים).`);
+      } else if (data.analysis?.error) {
+        setNotice(`המסמך נשמר בתיק, אך הניתוח האוטומטי לא הושלם (${data.analysis.error}).`);
+      } else {
+        setNotice("המסמך נשמר בתיק עם פרטי המקור.");
+      }
     } catch (error) { setNotice(error instanceof Error ? error.message : "לא הצלחנו לשמור את המסמך."); }
     finally { setBusy(false); }
   };
@@ -698,27 +707,42 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                 <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח בתיק. בדוק כתובת, גוש וחלקה, תת־חלקה ובעלי זכויות." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, ואז העלה אותו לתיק."}</p>{sellerNames.length > 0 && <small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small>}<a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a><button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[0]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[0])}>{hasDocumentType(requiredDocumentTypes[0]) ? "בדיקת הנסח בתיק" : "העלאת נסח טאבו"}</button></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
                 <article hidden={activeWorkflowStep !== 2} className={`workflow-step ${workflowDone[2] ? "is-done" : ""} ${workflowCurrentStep === 2 ? "is-active" : ""}`}>
                   <span className="workflow-step-number">03</span>
-                  <div>
+                  <div style={{ width: "100%" }}>
                     <b>מרשם המשכונות והבטוחות</b>
-                    <p>השתמש בשם ובתעודת הזהות של כל בעל/ת זכויות כפי שמופיעים בנסח. אם יש כמה בעלים, בדוק כל אחד בנפרד ואמת התאמת זהות לפני החיפוש.</p>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", margin: "8px 0" }}>
-                      <span style={{ fontSize: "12px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: hasPledgeDoc ? "#ecfdf5" : "#fffbeb", color: hasPledgeDoc ? "#065f46" : "#92400e", border: `1px solid ${hasPledgeDoc ? "#a7f3d0" : "#fde68a"}` }}>
-                        {hasPledgeDoc ? "✓ מסמך רשם המשכונות הועלה לתיק" : "טרם הועלה מסמך רשם המשכונות"}
-                      </span>
-                      <span style={{ fontSize: "12px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: hasPledgeFinding ? "#ecfdf5" : "#fffbeb", color: hasPledgeFinding ? "#065f46" : "#92400e", border: `1px solid ${hasPledgeFinding ? "#a7f3d0" : "#fde68a"}` }}>
-                        {hasPledgeFinding ? "✓ ממצא רשם המשכונות משולב בתיק ובשקלול" : "ממתין לתיעוד ממצא לשקלול הסיכון"}
-                      </span>
-                    </div>
-                    {hasPledgeDoc && !hasPledgeFinding && (
-                      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#92400e" }}>
-                        <b>שים לב:</b> המסמך הועלה לתיק, אך טרם תועד ממצא משוקלל. יש לתעד ממצא (תקין או שעבוד פעיל) כדי שישפיע על שקלול הסיכון והדוח.
-                      </div>
-                    )}
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
-                      <a className="workflow-action workflow-link" href="https://ica.justice.gov.il/SearchPledge/PledgeBrowse?grdPledgeBrowse-sort=State-asc" target="_blank" rel="noopener noreferrer">פתיחת מרשם הבטוחות</a>
-                      <button type="button" className="workflow-action" onClick={() => hasPledgeDoc ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[1])}>{hasPledgeDoc ? "צפייה במסמך שהועלה" : "העלאת דוח רשם המשכונות"}</button>
-                      <button type="button" className="workflow-action strong" onClick={() => { setFinding({ category: "רשם המשכונות", title: "", note: "", severity: "בינונית", source: "רשם המשכונות והבטוחות" }); setFindingForm(true); setCasePanel("findings"); }}>תיעוד ממצא משכונות</button>
-                    </div>
+                    <p>בעת העלאת דוח רשם המשכונות המערכת קוראת את המסמך אוטומטית, מחלצת ממצאים ומשקללת את הסיכון לפי אלגוריתם SafeDeal.</p>
+                    {(() => {
+                      const pledgeFindingsList = (detail?.findings ?? []).filter((f) => f.state !== "נדחה" && f.state !== "הוחלף" && /משכונות|משכון|שעבוד/.test(`${f.category} ${f.title} ${f.source ?? ""}`));
+                      return (
+                        <>
+                          {pledgeFindingsList.length > 0 ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", margin: "12px 0" }}>
+                              {pledgeFindingsList.map((pf) => (
+                                <div key={pf.id} style={{ padding: "12px", borderRadius: "8px", border: `1px solid ${pf.severity === "גבוהה" ? "#fecaca" : pf.severity === "בינונית" ? "#fde68a" : "#a7f3d0"}`, background: pf.severity === "גבוהה" ? "#fef2f2" : pf.severity === "בינונית" ? "#fffbeb" : "#ecfdf5" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                    <b style={{ fontSize: "13px", color: "#161B1A" }}>{pf.title}</b>
+                                    <span style={{ fontSize: "11px", fontWeight: 500, padding: "2px 8px", borderRadius: "8px", background: "#FFFFFF", border: "1px solid rgba(22,27,26,0.1)" }}>חומרה: {pf.severity}</span>
+                                  </div>
+                                  <p style={{ margin: 0, fontSize: "12px", color: "#4E5856", lineHeight: 1.5 }}>{pf.note}</p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : hasPledgeDoc ? (
+                            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "12px", borderRadius: "8px", margin: "12px 0", fontSize: "12px", color: "#92400e" }}>
+                              <b>מסמך רשם המשכונות קיים בתיק</b> אך טרם עובד. לחץ על ״קריאת המסמך ושקלול סיכונים״ להפקת ממצאים אוטומטית מהקובץ.
+                            </div>
+                          ) : null}
+                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
+                            <a className="workflow-action workflow-link" href="https://ica.justice.gov.il/SearchPledge/PledgeBrowse?grdPledgeBrowse-sort=State-asc" target="_blank" rel="noopener noreferrer">פתיחת מרשם הבטוחות</a>
+                            <button type="button" className="workflow-action" onClick={() => hasPledgeDoc ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[1])}>{hasPledgeDoc ? "צפייה במסמך שהועלה" : "העלאת דוח רשם המשכונות"}</button>
+                            {hasPledgeDoc && (
+                              <button type="button" className="workflow-action strong" disabled={busy} onClick={() => void analyzeCase()}>
+                                {busy ? "קורא ומשקלל…" : pledgeFindingsList.length > 0 ? "סריקה חוזרת של המסמך" : "קריאת המסמך ושקלול סיכונים"}
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                   <span className="workflow-check">{workflowDone[2] ? <Check size={16} /> : "3"}</span>
                 </article>

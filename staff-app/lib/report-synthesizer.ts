@@ -47,6 +47,8 @@ export function synthesizeFullReport(params: {
     contentType?: string;
     size?: number;
     uploadedAt?: string;
+    documentType?: string | null;
+    source?: string | null;
   }>;
   version?: number;
   generatedAt?: string;
@@ -172,59 +174,132 @@ export function synthesizeFullReport(params: {
     ? `${deal.roomsCount} חדרים`
     : "לא צוין";
 
-  // 4. Insolvency Assessment (Official Ministry of Justice: insolvency.justice.gov.il)
-  // Check findings and intake payload for active insolvency flags
+  const activeFindings = findings.filter((f) => f.state !== "נדחה" && f.state !== "הוחלף");
+  const docs = params.documents ?? [];
+  const checks =
+    intakeData.checks && typeof intakeData.checks === "object" && !Array.isArray(intakeData.checks)
+      ? (intakeData.checks as Record<string, { status?: string; note?: string; updatedBy?: string; updatedAt?: string }>)
+      : {};
+
+  // 4. Pledges, Insolvency & Legal Assessments (3-State & Document-Aware)
+  const isPledgeFinding = (f: (typeof activeFindings)[number]) =>
+    /משכונות|משכון|רשם הבטוחות|רשם המשכונות/.test(`${f.category ?? ""} ${f.title ?? ""} ${f.source ?? ""}`);
+  const isPledgeDoc = (d: (typeof docs)[number]) =>
+    /משכונות|משכון|pledge/i.test(`${d.documentType ?? ""} ${d.filename ?? ""} ${d.source ?? ""}`);
+
+  const pledgeFindings = activeFindings.filter(isPledgeFinding);
+  const hasPledgeDoc = docs.some(isPledgeDoc);
+  const pledgeHighFindings = pledgeFindings.filter((f) => f.severity === "גבוהה");
+  const pledgeMedFindings = pledgeFindings.filter((f) => f.severity === "בינונית");
+  const pledgeState: "found_high" | "found_medium" | "clean" | "uploaded_pending" | "incomplete" =
+    pledgeHighFindings.length > 0
+      ? "found_high"
+      : pledgeMedFindings.length > 0
+      ? "found_medium"
+      : pledgeFindings.length > 0
+      ? "clean"
+      : hasPledgeDoc
+      ? "uploaded_pending"
+      : "incomplete";
+
+  // Insolvency Assessment (Official Ministry of Justice: insolvency.justice.gov.il)
+  const insolvencyCheck = checks.insolvency;
+  const insolvencyFindings = activeFindings.filter((f) =>
+    /חדלות/.test(`${f.category ?? ""} ${f.title ?? ""} ${f.note ?? ""}`)
+  );
   const hasActiveInsolvency =
     deal.insolvencyStatus === "active" ||
-    findings.some(
-      (f) =>
-        (f.category?.includes("חדלות") || f.title?.includes("חדלות") || f.note?.includes("חדלות")) &&
-        (f.severity === "גבוהה" || f.note?.includes("פעיל") || f.note?.includes("צו פתיחת הליכים"))
+    insolvencyFindings.some(
+      (f) => f.severity === "גבוהה" || /פעיל|צו פתיחת הליכים/.test(`${f.title ?? ""} ${f.note ?? ""}`)
     );
-
   const hasRecentInsolvency =
     deal.insolvencyStatus === "recent_6m" ||
-    findings.some(
-      (f) =>
-        (f.category?.includes("חדלות") || f.title?.includes("חדלות") || f.note?.includes("חדלות")) &&
-        (f.severity === "בינונית" || f.note?.includes("6 חודשים"))
+    insolvencyFindings.some(
+      (f) => f.severity === "בינונית" || /6 חודשים/.test(f.note ?? "")
     );
+  const insolvencyState: "found" | "none_found" | "incomplete" =
+    hasActiveInsolvency ||
+    hasRecentInsolvency ||
+    insolvencyCheck?.status === "found" ||
+    insolvencyFindings.some((f) => f.severity !== "נמוכה")
+      ? "found"
+      : insolvencyCheck?.status === "none_found" ||
+        deal.insolvencyStatus === "clear" ||
+        (insolvencyFindings.length > 0 && !hasActiveInsolvency && !hasRecentInsolvency)
+      ? "none_found"
+      : "incomplete";
+  const hasInsolvencyDoc = docs.some((d) =>
+    /חדלות|insolvency/i.test(`${d.documentType ?? ""} ${d.filename ?? ""} ${d.source ?? ""}`)
+  );
+
+  // Legal Check Assessment (Nevo / Net HaMishpat — same 3-state mechanism)
+  const legalCheck = checks.legal;
+  const legalFindings = activeFindings.filter((f) =>
+    /משפטי|תביע|פלילי|אזרחי|נבו|נט המשפט|מתדיינים/.test(`${f.category ?? ""} ${f.title ?? ""} ${f.source ?? ""}`)
+  );
+  const hasLegalDoc = docs.some((d) =>
+    /מתדיינים|משפטי|נבו|נט המשפט|legal/i.test(`${d.documentType ?? ""} ${d.filename ?? ""} ${d.source ?? ""}`)
+  );
+  const legalHighFindings = legalFindings.filter((f) => f.severity === "גבוהה");
+  const legalMedFindings = legalFindings.filter((f) => f.severity === "בינונית");
+  const legalState: "found" | "none_found" | "incomplete" =
+    legalHighFindings.length > 0 || legalMedFindings.length > 0 || legalCheck?.status === "found"
+      ? "found"
+      : legalCheck?.status === "none_found" ||
+        (legalFindings.length > 0 && legalHighFindings.length === 0 && legalMedFindings.length === 0)
+      ? "none_found"
+      : "incomplete";
 
   // 5. Algorithmic SafeScore Calculation
   // 4 Domains:
   // Domain 1: זיהוי וזכויות קדסטרליות וטאבו (30%)
-  // Domain 2: מרשם המשכונות וחדלות פירעון (25%) -> Cap at 39 if active insolvency!
+  // Domain 2: מרשם המשכונות, חדלות פירעון ורקע משפטי (25%) -> Cap at 39 if active insolvency!
   // Domain 3: כדאיות מחיר, קומה ושוק (25%)
   // Domain 4: תכנון עירוני והנדסי (20%)
 
   // Domain 1: Cadastral & Tabu
   const hasTabuFindingOrDoc =
-    findings.some((f) => f.category?.includes("זכויות") || f.category?.includes("טאבו") || f.source?.includes("טאבו")) ||
-    (params.documents ?? []).some((d) => d.filename?.toLowerCase().includes("tabu") || d.filename?.includes("טאבו"));
+    activeFindings.some((f) => f.category?.includes("זכויות") || f.category?.includes("טאבו") || f.source?.includes("טאבו")) ||
+    docs.some((d) => /טאבו|tabu|זכויות/i.test(`${d.documentType ?? ""} ${d.filename ?? ""}`));
   let scoreDomain1: number | null = null;
   if (block !== "—" && parcel !== "—" || hasTabuFindingOrDoc) {
     scoreDomain1 = 92;
     if (!block || block === "—" || !parcel || parcel === "—") scoreDomain1 -= 15;
     if (!hasTabuFindingOrDoc) scoreDomain1 -= 12;
-    const tabuHighSeverity = findings.filter((f) => f.category?.includes("זכויות") && f.severity === "גבוהה").length;
+    const tabuHighSeverity = activeFindings.filter((f) => f.category?.includes("זכויות") && f.severity === "גבוהה").length;
     scoreDomain1 -= tabuHighSeverity * 30;
     scoreDomain1 = Math.max(20, Math.min(100, scoreDomain1));
   }
 
-  // Domain 2: Pledges & Insolvency — ONLY scored if actually verified (NOT_TESTED excluded from denominator!)
-  const pledgeFinding = findings.find((f) => f.category?.includes("משכונות") || f.title?.includes("משכונות"));
-  const insolvencyFinding = findings.find((f) => f.category?.includes("חדלות") || f.title?.includes("חדלות"));
-  const hasVerifiedPledgesOrInsolvency = Boolean(pledgeFinding || insolvencyFinding || deal.insolvencyStatus);
+  // Domain 2: Pledges, Insolvency & Legal — ONLY scored if actually verified (incomplete excluded from denominator!)
+  const hasVerifiedPledgesOrInsolvency =
+    pledgeState === "found_high" ||
+    pledgeState === "found_medium" ||
+    pledgeState === "clean" ||
+    insolvencyState !== "incomplete" ||
+    legalState !== "incomplete";
   let scoreDomain2: number | null = null;
   if (hasVerifiedPledgesOrInsolvency) {
     scoreDomain2 = 95;
     if (hasActiveInsolvency) {
       scoreDomain2 = 0;
-    } else if (hasRecentInsolvency) {
-      scoreDomain2 = 40;
+    } else if (hasRecentInsolvency || insolvencyState === "found") {
+      scoreDomain2 = 45;
     }
-    const pledgesHighSeverity = findings.filter((f) => f.category?.includes("משכונות") && f.severity === "גבוהה").length;
-    scoreDomain2 -= pledgesHighSeverity * 35;
+    if (pledgeState === "found_high") {
+      scoreDomain2 -= pledgeHighFindings.length * 40;
+      scoreDomain2 = Math.min(scoreDomain2, 35);
+    } else if (pledgeState === "found_medium") {
+      scoreDomain2 -= pledgeMedFindings.length * 20;
+    }
+    if (legalHighFindings.length > 0) {
+      scoreDomain2 -= legalHighFindings.length * 35;
+      scoreDomain2 = Math.min(scoreDomain2, 40);
+    } else if (legalMedFindings.length > 0) {
+      scoreDomain2 -= legalMedFindings.length * 18;
+    } else if (legalState === "found") {
+      scoreDomain2 -= 20;
+    }
     scoreDomain2 = Math.max(0, Math.min(100, scoreDomain2));
   }
 
@@ -245,11 +320,11 @@ export function synthesizeFullReport(params: {
   }
 
   // Domain 4: Planning & Engineering
-  const hasPlanningFinding = findings.some((f) => f.category?.includes("הנדס") || f.category?.includes("תכנון"));
+  const hasPlanningFinding = activeFindings.some((f) => f.category?.includes("הנדס") || f.category?.includes("תכנון"));
   let scoreDomain4: number | null = null;
   if (hasPlanningFinding) {
     scoreDomain4 = 90;
-    const engHighSeverity = findings.filter((f) => (f.category?.includes("הנדס") || f.category?.includes("תכנון")) && f.severity === "גבוהה").length;
+    const engHighSeverity = activeFindings.filter((f) => (f.category?.includes("הנדס") || f.category?.includes("תכנון")) && f.severity === "גבוהה").length;
     scoreDomain4 -= engHighSeverity * 30;
     scoreDomain4 = Math.max(30, Math.min(100, scoreDomain4));
   }
@@ -314,13 +389,22 @@ export function synthesizeFullReport(params: {
   // Coverage Calculation strictly reflects verified domain weights
   const coveragePercent = Math.round(testedWeightSum * 100);
 
-  // Missing Data Warnings (Strictly transparent about NOT_TESTED sources)
+  // Missing Data Warnings (Strictly transparent about incomplete checks)
   const missingDataWarnings: string[] = [];
-  if (!pledgeFinding) {
-    missingDataWarnings.push("רשם המשכונות — ממתין לחיבור מאגר רשמי (NOT_TESTED, מוחרג מחישוב הציון).");
+  if (pledgeState === "uploaded_pending") {
+    missingDataWarnings.push("רשם המשכונות — מסמך הועלה לתיק וממתין לעיבוד ואישור ממצאי האנליסט.");
+  } else if (pledgeState === "incomplete") {
+    missingDataWarnings.push("רשם המשכונות — הבדיקה לא הושלמה (מוחרג מחישוב הציון).");
   }
-  if (!insolvencyFinding && !deal.insolvencyStatus) {
-    missingDataWarnings.push("חדלות פירעון / נט המשפט — טרם הוזנה בדיקה מאומתת (NOT_TESTED, מוחרג מחישוב הציון).");
+  if (insolvencyState === "incomplete") {
+    missingDataWarnings.push("חדלות פירעון — הבדיקה לא הושלמה (טרם בוצע אימות במאגר משרד המשפטים).");
+  }
+  if (legalState === "incomplete") {
+    missingDataWarnings.push(
+      hasLegalDoc
+        ? "בדיקה משפטית — מסמך משפטי הועלה לתיק וממתין לאישור ממצאי האנליסט."
+        : "בדיקה משפטית — הבדיקה לא הושלמה (חסר אימות מול מאגרי פסיקה/נט המשפט)."
+    );
   }
   if (!hasTabuFindingOrDoc) {
     missingDataWarnings.push("נסח טאבו לא צורף — בדיקת זכויות חלקית בלבד.");
@@ -338,7 +422,7 @@ export function synthesizeFullReport(params: {
     missingDataWarnings.push("מחיר מבוקש לא הוזן — לא בוצע חישוב כדאיות כלכלית מול מחירי שוק.");
   }
 
-  // 6. Top 5 Findings (Solely from case evaluated items & verified findings)
+  // 6. Top Key Findings (Solely from case evaluated items & verified findings)
   const top5Findings: TopFindingItem[] = [];
 
   // Check 1: Cadastral & Tabu
@@ -353,27 +437,58 @@ export function synthesizeFullReport(params: {
     isPositive: block !== "—" && parcel !== "—" && hasTabuFindingOrDoc,
   });
 
-  // Check 2: Insolvency (Transparent NOT_TESTED when unverified)
+  // Check 2: Pledges Registrar
   top5Findings.push({
-    title: hasActiveInsolvency
-      ? "אותרו אינדיקציות להליך חדלות פירעון"
-      : "בדיקת חדלות פירעון (משרד המשפטים)",
-    text: hasActiveInsolvency
-      ? "אותר הליך חדלות פירעון פעיל במאגר משרד המשפטים — הוחלה תקרת ציון 39."
-      : insolvencyFinding
-      ? insolvencyFinding.note
-      : "טרם הוזנה בדיקת חדלות פירעון מאומתת (NOT_TESTED — מוחרג מחישוב הציון).",
-    isPositive: Boolean(insolvencyFinding && !hasActiveInsolvency),
+    title:
+      pledgeState === "found_high" || pledgeState === "found_medium"
+        ? "ממצאים ברשם המשכונות"
+        : "בדיקת רשם המשכונות",
+    text:
+      pledgeState === "found_high" || pledgeState === "found_medium"
+        ? pledgeFindings.map((f) => f.title || f.note).join(" · ")
+        : pledgeState === "clean"
+        ? pledgeFindings[0]?.note || "בדיקת רשם המשכונות הושלמה — לא אותרו משכונות פעילים."
+        : pledgeState === "uploaded_pending"
+        ? "מסמך רשם המשכונות הועלה לתיק — ממתין לעיבוד ואישור ממצאים על ידי האנליסט."
+        : "בדיקת רשם המשכונות לא הושלמה — יש לבצע בדיקה לפני חתימה.",
+    isPositive: pledgeState === "clean",
   });
 
-  // Check 3: Pledges (Transparent NOT_TESTED when unverified)
+  // Check 3: Insolvency (3 clear states)
   top5Findings.push({
-    title: "בדיקת רשם המשכונות",
-    text: pledgeFinding?.note || "ממתין לחיבור מאגר רשמי (NOT_TESTED — לא שוקלל בציון, יש לבדוק ידנית לפני חתימה).",
-    isPositive: pledgeFinding ? pledgeFinding.severity !== "גבוהה" : false,
+    title:
+      insolvencyState === "found"
+        ? "אותרו הליכי חדלות פירעון"
+        : "בדיקת חדלות פירעון (משרד המשפטים)",
+    text:
+      insolvencyState === "found"
+        ? hasActiveInsolvency
+          ? "אותר הליך חדלות פירעון פעיל במאגר משרד המשפטים — הוחלה תקרת ציון 39."
+          : insolvencyFindings[0]?.note || insolvencyCheck?.note || "אותרו הליכי חדלות פירעון קודמים הדורשים בירור."
+        : insolvencyState === "none_found"
+        ? insolvencyFindings[0]?.note || insolvencyCheck?.note || "הבדיקה בוצעה במאגר משרד המשפטים — לא אותרו הליכי חדלות פירעון."
+        : "הבדיקה לא הושלמה — טרם בוצע אימות חדלות פירעון (מוחרג מחישוב הציון).",
+    isPositive: insolvencyState === "none_found",
   });
 
-  // Check 4: Floor & Valuation
+  // Check 4: Legal Check (3 clear states)
+  top5Findings.push({
+    title:
+      legalState === "found"
+        ? "אותרו ממצאים בבדיקה המשפטית"
+        : "בדיקה משפטית והליכים (נבו / נט המשפט)",
+    text:
+      legalState === "found"
+        ? legalFindings.map((f) => f.title || f.note).join(" · ") || legalCheck?.note || "אותרו ממצאים משפטיים הדורשים בחינה."
+        : legalState === "none_found"
+        ? legalFindings[0]?.note || legalCheck?.note || "הבדיקה המשפטית הושלמה — לא אותרו ממצאים רלוונטיים."
+        : hasLegalDoc
+        ? "מסמך משפטי הועלה לתיק — ממתין לעיבוד ואישור ממצאים על ידי האנליסט."
+        : "הבדיקה המשפטית לא הושלמה — טרם הוזנו תוצאות בדיקה.",
+    isPositive: legalState === "none_found",
+  });
+
+  // Check 5: Floor & Valuation
   top5Findings.push({
     title: "התאמת שווי שוק, קומה ומעלית",
     text: `${floorAdjustmentLabel}. ${
@@ -385,19 +500,10 @@ export function synthesizeFullReport(params: {
           : `המחיר המבוקש נמוך בכ-${Math.abs(priceDiffPercent)}% ממחיר השוק המשוער ב-${city || "אזור"}.`
         : "מחיר העסקה לא הוזן."
     }`,
-    isPositive: priceDiffPercent <= 10,
+    isPositive: askingPriceNum > 0 && priceDiffPercent <= 10,
   });
 
-  // Check 5: Engineering & Planning
-  top5Findings.push({
-    title: "בדיקת היתרי בנייה ותכנון עירוני",
-    text: scoreDomain4 !== null
-      ? `אותרה התאמה מול מערכות התכנון (XPLAN) והיתרי הבנייה ב-${city || "הרשות המקומית"}.`
-      : "בדיקת תכנון והיתרי בנייה טרם הושלמה (NOT_TESTED — מוחרג מחישוב הציון).",
-    isPositive: scoreDomain4 !== null && scoreDomain4 >= 75,
-  });
-
-  // 7. Quick Risk Map (Solely based on the 6 key case areas)
+  // 7. Quick Risk Map (Solely based on verified case areas)
   const quickRiskMap: QuickRiskCategory[] = [
     {
       id: "ownership",
@@ -406,13 +512,23 @@ export function synthesizeFullReport(params: {
     },
     {
       id: "debts",
-      label: "שעבודים ומשכונות",
-      status: scoreDomain2 === null ? "yellow" : scoreDomain2 >= 75 ? "green" : "yellow",
+      label: "רשם המשכונות ושעבודים",
+      status:
+        pledgeState === "found_high"
+          ? "red"
+          : pledgeState === "found_medium" || pledgeState === "uploaded_pending" || pledgeState === "incomplete"
+          ? "yellow"
+          : "green",
     },
     {
       id: "insolvency",
       label: "חדלות פירעון (משרד המשפטים)",
-      status: hasActiveInsolvency ? "red" : !insolvencyFinding && !deal.insolvencyStatus ? "yellow" : hasRecentInsolvency ? "yellow" : "green",
+      status:
+        hasActiveInsolvency
+          ? "red"
+          : insolvencyState === "found" || insolvencyState === "incomplete"
+          ? "yellow"
+          : "green",
     },
     {
       id: "market-price",
@@ -426,18 +542,21 @@ export function synthesizeFullReport(params: {
     },
     {
       id: "seller-risk",
-      label: isDeveloper ? "יציבות היזם והחברה" : "סיכון המוכר ורקע משפטי",
-      status: hasActiveInsolvency ? "red" : hasVerifiedPledgesOrInsolvency ? "green" : "yellow",
+      label: isDeveloper ? "יציבות היזם והליכים משפטיים" : "רקע משפטי והליכים",
+      status:
+        hasActiveInsolvency || legalHighFindings.length > 0
+          ? "red"
+          : legalState === "found" || legalState === "incomplete"
+          ? "yellow"
+          : "green",
     },
   ];
 
-  // 8. Valuation Section
+  // 8. Valuation Section (no fabricated comparable deals; use honest city PSM baseline)
   let valuation: PropertyValuation | undefined = undefined;
   if (askingPriceNum > 0 || areaNum > 0) {
     const minValue = Math.round(floorAdjustedEstimatedVal * 0.94);
     const maxValue = Math.round(floorAdjustedEstimatedVal * 1.06);
-
-    const actualSqmPrice = areaNum > 0 ? Math.round(askingPriceNum / areaNum) : cityBasePsm;
 
     valuation = {
       estimatedValue: floorAdjustedEstimatedVal,
@@ -447,44 +566,36 @@ export function synthesizeFullReport(params: {
       priceDiffPercent: Math.abs(priceDiffPercent),
       dealFairness: priceDiffPercent > 5 ? "overpriced" : priceDiffPercent < -5 ? "underpriced" : "fair",
       fairnessLabel:
-        priceDiffPercent > 5
-          ? `מחיר המוכר (${askingPriceDisplay}) גבוה בכ-${priceDiffPercent}% ממחיר השוק המשוער בסביבה`
+        askingPriceNum === 0
+          ? "מחיר מבוקש לא הוזן — מוצגת הערכת ייחוס לפי ממוצע עירוני בלבד"
+          : priceDiffPercent > 5
+          ? `מחיר המוכר (${askingPriceDisplay}) גבוה בכ-${priceDiffPercent}% ממחיר הייחוס בסביבה`
           : priceDiffPercent < -5
-          ? `הזדמנות: מחיר המוכר נמוך בכ-${Math.abs(priceDiffPercent)}% ממחיר השוק המשוער`
-          : `מחיר המוכר (${askingPriceDisplay}) תואם את שווי השוק המשוער בסביבה`,
-      confidenceLevel: isFloorKnown && areaNum > 0 ? "high" : "medium",
-      confidenceReason: `מבוסס על נתוני עסקאות אמת מרשות המסים ב${city || "סביבה"} ומודל התאמת קומה ומעלית (${floorAdjustmentLabel}).`,
-      comparableDeals: [
-        {
-          dealDate: "12/05/2026",
-          address: `${street || "רחוב"} ${house ? Number(house) + 2 : "סמוך"}, ${city || "אזור"}`,
-          rooms: roomsDisplay,
-          sqm: areaNum > 0 ? areaNum : 90,
-          price: Math.round(floorAdjustedEstimatedVal * 0.98),
-          pricePerSqm: actualSqmPrice - 300,
-        },
-        {
-          dealDate: "03/03/2026",
-          address: `${street || "רחוב"} ${house && Number(house) > 2 ? Number(house) - 2 : "סמוך"}, ${city || "אזור"}`,
-          rooms: roomsDisplay,
-          sqm: areaNum > 0 ? areaNum + 3 : 95,
-          price: Math.round(floorAdjustedEstimatedVal * 1.02),
-          pricePerSqm: actualSqmPrice + 250,
-        },
-      ],
+          ? `מחיר המוכר נמוך בכ-${Math.abs(priceDiffPercent)}% ממחיר הייחוס בסביבה`
+          : `מחיר המוכר (${askingPriceDisplay}) תואם את טווח הייחוס בסביבה`,
+      confidenceLevel: isFloorKnown && areaNum > 0 ? "medium" : "low",
+      confidenceReason: `מבוסס על מדד ממוצע למ״ר ב${city || "אזור"} והתאמת קומה ומעלית (${floorAdjustmentLabel}). נדרש אימות אנליסט מול עסקאות השוואה פרטניות.`,
+      comparableDeals: [],
     };
   }
 
-  // 9. Madlan Insights
+  // 9. Neighborhood & Rental Data (Use entered rent only — never fabricate misleading rent figures)
+  const rawRentStr = String(caseRow.monthly_rent ?? caseRow.monthlyRent ?? deal.monthlyRent ?? "").replace(/[^0-9]/g, "");
+  const enteredMonthlyRent = rawRentStr ? Number(rawRentStr) : 0;
+  const calculatedYieldPercent =
+    enteredMonthlyRent > 0 && askingPriceNum > 0
+      ? Math.round(((enteredMonthlyRent * 12) / askingPriceNum) * 1000) / 10
+      : 0;
+
   const madlanInsights: MadlanInsights = {
     overallScore: 7.9,
-    neighborhoodName: `${city ? `שכונת מרכז ${city}` : "אזור הנכס"} · ניתוח סביבתי ונתוני שוק ממשלתיים`,
-    priceTrend5Years: "+21.4% ב-5 שנים אחרונות",
+    neighborhoodName: `${city ? `אזור ${city}` : "אזור הנכס"} · נתוני סביבה ותיק`,
+    priceTrend5Years: "דורש אימות מול עסקאות עדכניות",
     demandIndex: "high",
-    demandLabel: "ביקוש יציב עד גבוה על פי נתוני עסקאות אזוריים",
-    avgDaysOnMarket: 36,
-    estimatedMonthlyRent: askingPriceNum > 0 ? Math.round(askingPriceNum * 0.0023) : 5800,
-    estimatedYieldPercent: 3.1,
+    demandLabel: "בהתאם לנתוני השוק המקומי",
+    avgDaysOnMarket: 0,
+    estimatedMonthlyRent: enteredMonthlyRent,
+    estimatedYieldPercent: calculatedYieldPercent,
     ratings: {
       schools: 8.5,
       quietness: 8.2,
@@ -492,23 +603,53 @@ export function synthesizeFullReport(params: {
       renewalPotential: 8.8,
     },
     highlights: [
-      `מדד חברתי-כלכלי באזור: אשכול ממוצע עד גבוה לפי נתוני הלמ״ס`,
-      `קרבה למוסדות חינוך, תחבורה ציבורית וצירי תנועה מרכזיים ב${city || "עיר"}`,
       `התאמת קומה ומעלית: ${floorAdjustmentLabel}`,
-      `ביטחון נתונים: ${coveragePercent}% מנתוני המודל אומתו במאגרים הרשמיים`,
+      enteredMonthlyRent > 0
+        ? `שכר דירה שהוזן בתיק: ₪${enteredMonthlyRent.toLocaleString("he-IL")} בחודש${calculatedYieldPercent > 0 ? ` (תשואה ברוטו משוערת: ${calculatedYieldPercent}%)` : ""}`
+        : "לא הוזן שכר דירה בתיק — אין בסיס נתונים מספק להערכת שכירות אמינה",
+      `כיסוי בדיקות משוקלל בתיק: ${coveragePercent}%`,
     ],
   };
 
   // 10. Score Breakdown Bars
   const scoreBreakdown: ScoreBreakdownItem[] = [
-    { id: "ownership", label: "בעלות וזכויות", score: scoreDomain1Display, status: scoreDomain1 !== null && scoreDomain1 >= 80 ? "green" : "yellow", iconKey: "Scale" },
-    { id: "debts", label: "שעבודים ומשכונות (ממתין לחיבור)", score: scoreDomain2Display, status: scoreDomain2 !== null && scoreDomain2 >= 75 ? "green" : "yellow", iconKey: "Landmark" },
+    { id: "ownership", label: "בעלות וזכויות (טאבו)", score: scoreDomain1Display, status: scoreDomain1 !== null && scoreDomain1 >= 80 ? "green" : "yellow", iconKey: "Scale" },
+    {
+      id: "debts",
+      label:
+        pledgeState === "uploaded_pending"
+          ? "רשם המשכונות (ממתין לאישור ממצאים)"
+          : pledgeState === "incomplete"
+          ? "רשם המשכונות (הבדיקה לא הושלמה)"
+          : "רשם המשכונות ושעבודים",
+      score: scoreDomain2Display,
+      status:
+        pledgeState === "found_high"
+          ? "red"
+          : pledgeState === "clean" && scoreDomain2 !== null && scoreDomain2 >= 75
+          ? "green"
+          : "yellow",
+      iconKey: "Landmark",
+    },
     {
       id: "insolvency",
-      label: "חדלות פירעון (משרד המשפטים)",
-      score: hasActiveInsolvency ? 0 : insolvencyFinding || deal.insolvencyStatus ? 100 : 0,
-      status: hasActiveInsolvency ? "red" : insolvencyFinding || deal.insolvencyStatus ? "green" : "yellow",
+      label:
+        insolvencyState === "incomplete"
+          ? "חדלות פירעון (הבדיקה לא הושלמה)"
+          : "חדלות פירעון (משרד המשפטים)",
+      score: hasActiveInsolvency ? 0 : insolvencyState === "found" ? 45 : insolvencyState === "none_found" ? 100 : 0,
+      status: hasActiveInsolvency ? "red" : insolvencyState === "none_found" ? "green" : "yellow",
       iconKey: "Shield",
+    },
+    {
+      id: "legal",
+      label:
+        legalState === "incomplete"
+          ? "בדיקה משפטית (הבדיקה לא הושלמה)"
+          : "בדיקה משפטית והליכים",
+      score: legalHighFindings.length > 0 ? 35 : legalState === "found" ? 65 : legalState === "none_found" ? 100 : 0,
+      status: legalHighFindings.length > 0 ? "red" : legalState === "none_found" ? "green" : "yellow",
+      iconKey: "Scale",
     },
     { id: "building-state", label: "מצב הבניין והיתרים", score: scoreDomain4Display, status: scoreDomain4 !== null && scoreDomain4 >= 75 ? "green" : "yellow", iconKey: "Building" },
     { id: "market-price", label: "מחיר מול שוק וקומה", score: scoreDomain3Display, status: scoreDomain3 !== null && scoreDomain3 >= 75 ? "green" : "yellow", iconKey: "TrendingUp" },
@@ -557,48 +698,107 @@ export function synthesizeFullReport(params: {
   actionableItems.push({
     id: 4,
     title: "בדיקה חוזרת לפני מסירת חזקה",
-    description: "ביצוע סריקה חוזרת במרשם המשכונות ובנט המשפט לפני העברת יתרת התמורה הסופית.",
+    description: "ביצוע סריקה חוזרת במרשם המשכונות ובמאגרים המשפטיים לפני העברת יתרת התמורה הסופית.",
   });
 
-  // 12. Full 4 Pillars Data (Directly wired from this case)
+  // 12. Full 4 Pillars Data (Directly wired from verified case state — no fabricated green checks)
+  const tabuHighFindings = activeFindings.filter((f) => (f.category?.includes("זכויות") || f.category?.includes("טאבו")) && f.severity === "גבוהה");
+  const planningFindings = activeFindings.filter((f) => f.category?.includes("תכנון"));
+  const engineeringFindings = activeFindings.filter((f) => f.category?.includes("הנדס"));
+
   const pillars = {
     cadastral: {
       id: "cadastral",
-      title: "1. זכויות משפטיות וטאבו",
-      subtitle: "פנקסי מקרקעין, בעלות, משכנתאות ועיקולים",
+      title: "1. זכויות משפטיות, משכונות ובדיקה משפטית",
+      subtitle: "פנקסי מקרקעין, רשם המשכונות, חדלות פירעון והליכים",
       metrics: [
         {
-          label: "רישום בעלות וזכויות",
-          value: block !== "—" ? `רישום תקין (גוש ${block}, חלקה ${parcel})` : "פרטי גוש וחלקה טרם אומתו",
-          status: block !== "—" ? "green" : "yellow",
-          details: `מאומת מול GovMap ומרשם המקרקעין עבור ${address}.`,
-        },
-        {
-          label: "שעבודים ומשכנתאות",
-          value: "לא אותרו משכנתאות חריגות או עיקולים מגבילים",
-          status: "green",
-          details: "לא נמצאו מניעות משפטיות לביצוע עסקת המכר בפנקס הזכויות.",
+          label: "רישום בעלות וזכויות (טאבו)",
+          value: block !== "—" && hasTabuFindingOrDoc
+            ? `רישום מאומת (גוש ${block}, חלקה ${parcel})`
+            : block !== "—"
+            ? `גוש ${block}, חלקה ${parcel} — ממתין לאימות נסח טאבו`
+            : "פרטי גוש וחלקה טרם אומתו",
+          status: block !== "—" && hasTabuFindingOrDoc && tabuHighFindings.length === 0 ? "green" : tabuHighFindings.length > 0 ? "red" : "yellow",
+          details: tabuHighFindings.length > 0
+            ? tabuHighFindings.map((f) => f.title).join(" · ")
+            : `עבור ${address}.`,
         },
         {
           label: "מרשם המשכונות",
-          value: "בדיקה תקינה — אין משכונות רשומים",
-          status: "green",
-          details: "סריקה מול רשם המשכונות לא העלתה שעבודים פתוחים על זכויות המוכר.",
+          value:
+            pledgeState === "found_high"
+              ? `אותר משכון/שעבוד מהותי (${pledgeHighFindings.length})`
+              : pledgeState === "found_medium"
+              ? "אותר ממצא הדורש בירור ברשם המשכונות"
+              : pledgeState === "clean"
+              ? "הבדיקה הושלמה — לא אותרו משכונות פעילים"
+              : pledgeState === "uploaded_pending"
+              ? "הועלה מסמך רשם המשכונות — ממתין לאישור ממצאים"
+              : "הבדיקה לא הושלמה",
+          status:
+            pledgeState === "found_high"
+              ? "red"
+              : pledgeState === "clean"
+              ? "green"
+              : "yellow",
+          details:
+            pledgeFindings.length > 0
+              ? pledgeFindings.map((f) => `${f.title}: ${f.note}`).join(" | ")
+              : pledgeState === "uploaded_pending"
+              ? "המסמך שמור בתיק. יש לעבור עליו ולאשר את ממצאי האנליסט."
+              : "טרם הועלה דוח רשם המשכונות או תועד ממצא אנליסט.",
         },
         {
           label: "בדיקת חדלות פירעון (משרד המשפטים)",
-          value: hasActiveInsolvency ? "אותרו אינדיקציות להליך חדלות פירעון פעיל" : "לא אותר הליך חדלות פירעון במאגר שנבדק",
-          status: hasActiveInsolvency ? "red" : "green",
-          details: hasActiveInsolvency
-            ? "אותר הליך פעיל במאגר חדלות פירעון. הוחלה תקרת ציון 39."
-            : "בוצעה בדיקה במאגר חדלות פירעון של משרד המשפטים (insolvency.justice.gov.il) — לא נמצאו הליכים פעילים.",
+          value:
+            insolvencyState === "found"
+              ? hasActiveInsolvency
+                ? "נמצאו הליכי חדלות פירעון פעילים"
+                : "נמצאו הליכי חדלות פירעון הדורשים בירור"
+              : insolvencyState === "none_found"
+              ? "הבדיקה הושלמה — לא נמצאו הליכים במאגר שנבדק"
+              : "הבדיקה לא הושלמה",
+          status:
+            hasActiveInsolvency
+              ? "red"
+              : insolvencyState === "none_found"
+              ? "green"
+              : "yellow",
+          details:
+            insolvencyState === "found"
+              ? insolvencyFindings[0]?.note || insolvencyCheck?.note || "אותרו הליכים במאגר הממונה. יש לבחון את המסמכים בתיק."
+              : insolvencyState === "none_found"
+              ? insolvencyCheck?.note || insolvencyFindings[0]?.note || "הבדיקה בוצעה במאגר משרד המשפטים (insolvency.justice.gov.il) ולא אותרו הליכים."
+              : "טרם הושלמה בדיקת חדלות פירעון בתיק — אין לראות בכך אישור היעדר הליכים.",
+        },
+        {
+          label: "בדיקה משפטית והליכים (נבו / נט המשפט)",
+          value:
+            legalState === "found"
+              ? `נמצאו ממצאים משפטיים (${legalFindings.length || 1})`
+              : legalState === "none_found"
+              ? "הבדיקה הושלמה — לא נמצאו ממצאים רלוונטיים"
+              : hasLegalDoc
+              ? "הועלה מסמך משפטי — ממתין לאישור ממצאים"
+              : "הבדיקה לא הושלמה",
+          status:
+            legalHighFindings.length > 0
+              ? "red"
+              : legalState === "none_found"
+              ? "green"
+              : "yellow",
+          details:
+            legalFindings.length > 0
+              ? legalFindings.map((f) => `${f.title}: ${f.note}`).join(" | ")
+              : legalCheck?.note || (legalState === "incomplete" ? "טרם הושלמה הבדיקה המשפטית בתיק." : "הבדיקה תועדה כהושלמה ללא ממצאים רלוונטיים."),
         },
       ],
     },
     economic: {
       id: "economic",
-      title: "2. שווי נכס ומחירי עסקאות",
-      subtitle: "עסקאות השוואה ברשות המסים ומגמות שוק",
+      title: "2. שווי נכס ונתוני שכירות",
+      subtitle: "ייחוס מחיר למ״ר, התאמת קומה ונתוני שכירות",
       metrics: [
         {
           label: "התאמת מחיר לפי קומה ומעלית",
@@ -609,22 +809,22 @@ export function synthesizeFullReport(params: {
             : "חישוב ללא קנס סיכון בהתאם לכללי המודל לחוסר מידע.",
         },
         {
-          label: "מחיר ממוצע למ״ר בסביבה",
-          value: `₪${cityBasePsm.toLocaleString("he-IL")} למ״ר (ממוצע ${city || "אזורי"})`,
-          status: "green",
-          details: `מבוסס על עסקאות נדל״ן אמת מרשות המסים ב${city || "סביבה"}.`,
+          label: "מחיר ייחוס למ״ר בעיר",
+          value: `₪${cityBasePsm.toLocaleString("he-IL")} למ״ר (ייחוס ${city || "אזורי"})`,
+          status: "yellow",
+          details: `נתון ייחוס עירוני כללי ב${city || "סביבה"} — יש להצליב מול עסקאות השוואה פרטניות.`,
         },
         {
-          label: "פער מחיר העסקה מול השוק",
-          value: askingPriceNum > 0
-            ? Math.abs(priceDiffPercent) <= 5
-              ? "תמחור תואם שווי שוק משוער"
-              : priceDiffPercent > 0
-              ? `מחיר גבוה בכ-${priceDiffPercent}% משווי השוק המשוער`
-              : `מחיר נמוך בכ-${Math.abs(priceDiffPercent)}% משווי השוק המשוער`
-            : "מחיר לא צוין",
-          status: priceDiffPercent > 12 ? "yellow" : "green",
-          details: "פער המחיר חושב לאחר שקלול קומה, מעלית ומאפייני הדירה.",
+          label: "נתוני שכירות ותשואה",
+          value:
+            enteredMonthlyRent > 0
+              ? `₪${enteredMonthlyRent.toLocaleString("he-IL")} / חודש (לפי נתון שהוזן בתיק)${calculatedYieldPercent > 0 ? ` · ${calculatedYieldPercent}% תשואה` : ""}`
+              : "לא הוזן שכר דירה ואין מאגר שכירות מחובר",
+          status: enteredMonthlyRent > 0 ? "green" : "yellow",
+          details:
+            enteredMonthlyRent > 0
+              ? "הנתון מבוסס על שכר הדירה שהוזן בתיק ואינו מהווה הערכה חיצונית."
+              : "בהיעדר נתוני שכירות מוזנים או מאגר עסקאות שכירות פעיל, המערכת נמנעת מהצגת הערכת שכירות מטעה.",
         },
       ],
     },
@@ -634,16 +834,21 @@ export function synthesizeFullReport(params: {
       subtitle: "ועדות תכנון, תב״ע, פינוי-בינוי ותמ״א 38",
       metrics: [
         {
-          label: "תוכניות בניין עיר (XPLAN)",
-          value: "שקט תכנוני מאומת — אין מפגעים ברדיוס הנכס",
-          status: "green",
-          details: "נתוני מינהל התכנון מראים רצף תכנוני ללא שינויי ייעוד פוגעניים.",
-        },
-        {
-          label: "התחדשות עירונית / תמ״א 38",
-          value: "סריקה מול הרשות הממשלתית להתחדשות עירונית",
-          status: "green",
-          details: "מאומת מול מאגר data.gov.il והרשות להתחדשות עירונית.",
+          label: "תוכניות בניין עיר והתחדשות",
+          value:
+            planningFindings.length > 0
+              ? planningFindings.map((f) => f.title).join(" · ")
+              : "טרם תועדה בדיקת תכנון בתיק (דורש אימות אנליסט)",
+          status:
+            planningFindings.some((f) => f.severity === "גבוהה")
+              ? "red"
+              : planningFindings.length > 0 && !planningFindings.some((f) => f.severity === "בינונית")
+              ? "green"
+              : "yellow",
+          details:
+            planningFindings.length > 0
+              ? planningFindings.map((f) => f.note).join(" | ")
+              : "יש לבדוק תוכניות תב״ע וייעוד קרקע מול מערכות התכנון לפני חתימה.",
         },
       ],
     },
@@ -653,16 +858,21 @@ export function synthesizeFullReport(params: {
       subtitle: "תיק בניין עירוני, היתרים וחריגות בנייה",
       metrics: [
         {
-          label: "תיק בניין והיתרים שאותרו",
-          value: "היתר בנייה מאושר ברשות המקומית",
-          status: "green",
-          details: `בדיקה מול מאגר היתרי הבנייה הלאומי עבור ${address}.`,
-        },
-        {
-          label: "חריגות בנייה וצווי הריסה",
-          value: "לא אותרו חריגות בנייה או צווי הריסה פעילים",
-          status: "green",
-          details: "מאגר נתוני data.gov.il נקי מרישומי צווי הריסה שיפוטיים.",
+          label: "תיק בניין והיתרים",
+          value:
+            engineeringFindings.length > 0
+              ? engineeringFindings.map((f) => f.title).join(" · ")
+              : "טרם תועדה בדיקת היתרים בתיק (דורש אימות אנליסט)",
+          status:
+            engineeringFindings.some((f) => f.severity === "גבוהה")
+              ? "red"
+              : engineeringFindings.length > 0 && !engineeringFindings.some((f) => f.severity === "בינונית")
+              ? "green"
+              : "yellow",
+          details:
+            engineeringFindings.length > 0
+              ? engineeringFindings.map((f) => f.note).join(" | ")
+              : `נדרשת בדיקת תיק בניין והיתרי בנייה עבור ${address}.`,
         },
       ],
     },
@@ -702,7 +912,7 @@ export function synthesizeFullReport(params: {
       parkingStorage: caseRow.parkingStorage || (deal.hasParking ? "חניה רשומה" : "לא צוין"),
       askingPrice: askingPriceDisplay,
       askingPriceNum: askingPriceNum || undefined,
-      yearBuilt: isDeveloper ? "בבנייה (2026)" : "1998",
+      yearBuilt: isDeveloper ? "בבנייה (2026)" : "לא צוין",
     },
     top5Findings,
     quickRiskMap,
@@ -719,7 +929,9 @@ export function synthesizeFullReport(params: {
       text:
         hasActiveInsolvency
           ? "לעצור את העברת הכספים עד להסדרת ממצאי החוב וחדלות הפירעון מול הממונה, להגדיר נאמנות ייעודית לסילוק חובות, ולבקש מעורך הדין לבצע בדיקת עיקולים עדכנית סמוך לחתימה."
-          : `הבדיקה המשוקללת של SafeDeal עבור הנכס ב-${address} מצביעה על ציון בטיחות של ${safeScore}/100. מומלץ להתקדם לעסקה בליווי משפטי מלא, לבצע בדיקת נסח טאבו עדכני 24 שעות לפני חתימה ולוודא תשלום דרך נאמנות.`,
+          : testedWeightSum === 0
+          ? "טרם הושלמו בדיקות מאומתות מספיקות בתיק להפקת המלצה סופית. יש להשלים את הבדיקות החסרות ואישור הממצאים."
+          : `הבדיקה המשוקללת עבור הנכס ב-${address} מצביעה על ציון של ${safeScore}/100 (כיסוי ${coveragePercent}%). מומלץ להתקדם בליווי משפטי מלא ולהשלים אימותים חסרים טרם חתימה.`,
       score: safeScore,
     },
     valuation,

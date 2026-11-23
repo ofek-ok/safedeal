@@ -19,7 +19,7 @@ import { OperativeNextSteps } from "@/components/report/OperativeNextSteps";
 export const metadata: Metadata = {
   title: "דוח סיכונים רשמי | SafeDeal",
   description:
-    "דוח הערכת סיכונים מקיף מ-11 מקורות מידע רשמיים לרכישת דירה בישראל.",
+    "דוח הערכת סיכונים מקיף ממאגרי מידע רשמיים לרכישת דירה בישראל.",
 };
 
 export default function ReportPage() {

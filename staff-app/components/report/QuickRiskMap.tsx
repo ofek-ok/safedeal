@@ -17,36 +17,33 @@ const DEFAULT_CATEGORIES: QuickRiskCategory[] = [
 
 export function QuickRiskMap({ categories = DEFAULT_CATEGORIES }: QuickRiskMapProps) {
   return (
-    <div className="w-full bg-[#0B1528] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
-      <h3
-        className="text-lg font-bold text-white mb-2 border-b border-white/10 pb-3 flex flex-wrap items-center justify-between gap-2"
-        style={{ fontFamily: "var(--font-serif)" }}
-      >
+    <div className="w-full bg-[#0D1522] border border-white/10 rounded-[16px] p-6 space-y-4">
+      <h3 className="text-lg font-medium text-white mb-2 border-b border-white/10 pb-3 flex flex-wrap items-center justify-between gap-2">
         <span>מפת סיכונים מהירה</span>
-        <span className="text-xs text-slate-400 font-mono">תמונת מצב חזותית</span>
+        <span className="text-xs text-slate-400">תמונת מצב חזותית</span>
       </h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {categories.map((cat) => (
           <div
             key={cat.id}
-            className="flex items-center justify-between p-3.5 rounded-xl border border-white/5 bg-white/[0.02] gap-2"
+            className="flex items-center justify-between p-4 rounded-[12px] border border-white/[0.08] bg-white/[0.02] gap-2"
           >
             <span className="text-xs sm:text-sm font-medium text-slate-200">
               {cat.label}
             </span>
             <div className="flex items-center gap-2 shrink-0">
               <div
-                className={`w-3.5 h-3.5 rounded-full shadow-lg ${
+                className={`w-3 h-3 rounded-full ${
                   cat.status === "green"
-                    ? "bg-emerald-500 shadow-emerald-500/50"
+                    ? "bg-emerald-500"
                     : cat.status === "yellow"
-                    ? "bg-amber-400 shadow-amber-400/50"
-                    : "bg-red-500 shadow-red-500/50 opacity-90"
+                    ? "bg-amber-400"
+                    : "bg-red-500"
                 }`}
               />
               <span
-                className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${
+                className={`text-[11px] font-medium px-2 py-1 rounded-[8px] ${
                   cat.status === "green"
                     ? "text-emerald-400 bg-emerald-500/10"
                     : cat.status === "yellow"

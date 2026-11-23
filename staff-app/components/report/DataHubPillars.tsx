@@ -147,7 +147,7 @@ const PILLARS: Pillar[] = [
 function StatusBadge({ status }: { status: StatusType }) {
   if (status === "green") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider px-2.5 py-1 uppercase text-teal-300 border border-teal-500/40 rounded-full bg-teal-500/10 shrink-0">
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 text-teal-300 border border-teal-500/40 rounded-[8px] bg-teal-500/10 shrink-0">
         <CheckCircle2 size={13} className="text-teal-400" />
         תקין
       </span>
@@ -155,14 +155,14 @@ function StatusBadge({ status }: { status: StatusType }) {
   }
   if (status === "yellow") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider px-2.5 py-1 uppercase text-amber-300 border border-amber-500/40 rounded-full bg-amber-500/10 shrink-0">
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 text-amber-300 border border-amber-500/40 rounded-[8px] bg-amber-500/10 shrink-0">
         <AlertTriangle size={13} className="text-amber-400" />
         לתשומת לב
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider px-2.5 py-1 uppercase text-red-300 border border-red-500/40 rounded-full bg-red-500/10 shrink-0">
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 text-red-300 border border-red-500/40 rounded-[8px] bg-red-500/10 shrink-0">
       <XCircle size={13} className="text-red-400" />
       סיכון
     </span>
@@ -202,7 +202,7 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
           תוצאות בדיקת הנאותות (Due Diligence)
         </h2>
         <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-          סריקה רציפה ומצליבה מול 11 מאגרי מידע ממשלתיים, עירוניים ומשפטיים לקבלת תמונה מלאה ונהירה של הנכס.
+          ריכוז ממצאי הבדיקה לפי תחומי הבדיקה שנבחנו ואומתו בתיק הנכס.
         </p>
       </div>
 
@@ -278,46 +278,30 @@ export function DataHubPillars({ pillars: realPillars, sourceStatuses, warnings 
         </div>
       )}
 
-      {(() => {
-        const defaultSources = [
-          { sourceId: "govmap", sourceName: "GovMap (זיהוי קדסטרלי)", status: "success" as const },
-          { sourceId: "taxes", sourceName: "רשות המסים (עסקאות השוואה)", status: "success" as const },
-          { sourceId: "nadlan", sourceName: "נדל״ן ממשלתי (סטטיסטיקות)", status: "success" as const },
-          { sourceId: "xplan", sourceName: "XPLAN — מינהל התכנון", status: "success" as const },
-          { sourceId: "cbs", sourceName: "הלמ״ס (מדד חברתי-כלכלי)", status: "success" as const },
-          { sourceId: "urban_renewal", sourceName: "הרשות להתחדשות עירונית", status: "success" as const },
-          { sourceId: "tabu", sourceName: "נסח טאבו + Gemini OCR", status: "success" as const },
-          { sourceId: "permits", sourceName: "היתרי בנייה (כל ישראל)", status: "success" as const },
-          { sourceId: "companies", sourceName: "רשם החברות", status: "success" as const },
-          { sourceId: "pledges", sourceName: "רשם המשכונות", status: "success" as const },
-          { sourceId: "insolvency", sourceName: "חדלות פירעון (משרד המשפטים)", status: "success" as const },
-        ];
-        const list = (sourceStatuses && sourceStatuses.length > 0) ? sourceStatuses : defaultSources;
-        return (
-          <div className="pt-4 border-t border-white/[0.06]">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
-                <ShieldCheck size={13} className="text-teal-400" />
-                אימות מול 11 מאגרי מידע רשמיים
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {list.map((s) => (
-                <span
-                  key={s.sourceId}
-                  className={`text-[10px] px-2.5 py-1 rounded-lg border font-medium ${
-                    s.status === 'success'
-                      ? 'border-teal-500/30 text-teal-400 bg-teal-500/5'
-                      : 'border-amber-500/30 text-amber-400 bg-amber-500/5'
-                  }`}
-                >
-                  {s.sourceName}
-                </span>
-              ))}
-            </div>
+      {sourceStatuses && sourceStatuses.length > 0 && (
+        <div className="pt-4 border-t border-white/[0.06]">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
+              <ShieldCheck size={13} className="text-teal-400" />
+              מקורות שנבדקו בתיק
+            </span>
           </div>
-        );
-      })()}
+          <div className="flex flex-wrap gap-2">
+            {sourceStatuses.map((s) => (
+              <span
+                key={s.sourceId}
+                className={`text-[10px] px-2.5 py-1 rounded-lg border font-medium ${
+                  s.status === 'success'
+                    ? 'border-teal-500/30 text-teal-400 bg-teal-500/5'
+                    : 'border-amber-500/30 text-amber-400 bg-amber-500/5'
+                }`}
+              >
+                {s.sourceName}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

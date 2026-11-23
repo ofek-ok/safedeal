@@ -115,11 +115,18 @@ export function MadlanInsightsCard({ insights = DEFAULT_INSIGHTS }: MadlanInsigh
 
         <div className="p-4 rounded-xl border border-white/5 bg-white/[0.02] space-y-1">
           <span className="text-[11px] uppercase tracking-widest text-slate-400 block font-medium">
-            שכירות ותשואה משוערת
+            {estimatedMonthlyRent > 0 ? "שכר דירה שהוזן ותשואה מחושבת" : "נתוני שכירות"}
           </span>
-          <p className="text-sm font-bold text-teal-400 font-serif">
-            ₪{estimatedMonthlyRent.toLocaleString("he-IL")} / חודש ({estimatedYieldPercent}% תשואה)
-          </p>
+          {estimatedMonthlyRent > 0 ? (
+            <p className="text-sm font-bold text-teal-400 font-serif">
+              ₪{estimatedMonthlyRent.toLocaleString("he-IL")} / חודש
+              {estimatedYieldPercent > 0 ? ` (${estimatedYieldPercent}% תשואה)` : ""}
+            </p>
+          ) : (
+            <p className="text-xs font-medium text-amber-300 leading-relaxed">
+              לא הוזן שכר דירה ואין בסיס נתונים מספק להערכת שכירות אמינה.
+            </p>
+          )}
         </div>
       </div>
 

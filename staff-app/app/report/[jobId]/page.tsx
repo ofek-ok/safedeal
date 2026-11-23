@@ -43,7 +43,7 @@ export default async function PublicReportPage({ params }: { params: Promise<{ j
       .bind(caseId)
       .all<any>(),
     db.$client
-      .prepare(`SELECT filename, content_type AS contentType, size, uploaded_at AS uploadedAt FROM documents WHERE case_id = ?`)
+      .prepare(`SELECT filename, content_type AS contentType, size, uploaded_at AS uploadedAt, document_type AS documentType, source FROM documents WHERE case_id = ?`)
       .bind(caseId)
       .all<any>(),
   ]);

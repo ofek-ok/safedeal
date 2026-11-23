@@ -44,7 +44,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       .bind(id)
       .all<any>(),
     db.$client
-      .prepare(`SELECT filename, content_type AS contentType, size, uploaded_at AS uploadedAt FROM documents WHERE case_id = ?`)
+      .prepare(`SELECT filename, content_type AS contentType, size, uploaded_at AS uploadedAt, document_type AS documentType, source FROM documents WHERE case_id = ?`)
       .bind(id)
       .all<any>(),
   ]);
@@ -154,7 +154,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           score={r.bottomLine?.score || r.safeScore}
         />
 
-        {/* 4 Pillars with 11 Sources & Insolvency check */}
+        {/* 4 Pillars & Insolvency/Legal checks */}
         <DataHubPillars
           pillars={r.pillars}
           sourceStatuses={r.sourceStatuses}

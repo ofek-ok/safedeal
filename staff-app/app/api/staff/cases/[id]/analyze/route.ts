@@ -36,6 +36,8 @@ const safeDealRiskModel = {
     "משכון נכנס לניקוד רק כשהקשר לנכס ודאי או גבוה; שם בלבד או נכס אחר אינם מספיקים. למנוע ספירה כפולה של אותה בטוחה.",
     "משכנתה ראשונה יחידה לבנק אינה חריגה בפני עצמה. זוג בעלים בדיוק, חלוקה 50/50, שם משפחה דומה וללא ירושה אינו מורכבות בעלות.",
     "כללי סיכוני הרישום המעודכנים (עיקול פעיל, הפקעה, מגבלה, הערת מס, מורכבות בעלות, מוכר לא רשום, משכנתאות חריגות, משכונות וחברות) הם איתותים לבדיקה אנושית; אין להם משקל מספרי חדש בקובץ. אל תמציא להם משקל או השפעה על הציון.",
+    "סווג כל ממצא במפורש כאחד משלושה: [עובדה מתועדת], [הערכה/הסקת מערכת], או [דורש אימות אנושי]. אל תייצר דגלים אדומים או ממצאי סרק ללא בסיס במסמכים.",
+    "מסמך רשם המשכונות ומסמך משפטי שהועלו לתיק חייבים להיות מעובדים לפי תוכנם ומשמעותם העסקית ולהשתקף בממצאים ובשקלול הסיכון.",
     "המטריצה מכסה רק 0.6425 משקל ביד שנייה ו-0.4335 בקבלן, לעומת משקלי מסלולים שסכומם 1.0. חסרים כיסויי קטגוריות (כולל אזור/נגישות וחלק מבדיקות שוק ותכנון); לכן אין להציג את הציון כציון מלא או לדרג LOW/MEDIUM/HIGH בלי ספי סיווג מאושרים. הצג Coverage מוגבל ואזהרת מודל חלקי."
   ],
   outputRequirements: "החזר סיכום בעברית, רשימת ממצאים ממוספרת עם מקור/שם קובץ, ראיה קצרה, רמת חומרה 0-10, confidence, פעולה מומלצת וסטטוס Confirm/Edit/Reject/Investigate. דווח riskAssessment עם score (או null כשאין בסיס), coverage, override, modelCompletenessWarning, missingInformation. אין לקבוע ממצא משפטי/פלילי כעובדה ללא ראיה מפורשת במסמך. כל תוצאה היא טיוטה לבדיקה ואישור אנליסט."
@@ -77,8 +79,6 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
       amenities, intake_payload AS intakePayload FROM cases WHERE id = ?`).bind(id).first<Record<string, unknown>>();
     if (!caseRow) return jsonError("התיק לא נמצא.", 404);
     if (caseRow.status !== "מוכן לניתוח") return jsonError("סיימו את איסוף המסמכים וסמנו את התיק כמוכן לניתוח.", 409);
-    const reportsCollected = await db.$client.prepare(`SELECT completed FROM case_checklist WHERE case_id = ? AND item_key = 'reports_collected'`).bind(id).first<{ completed: number }>();
-    if (reportsCollected?.completed !== 1) return jsonError("סמנו בצ׳ק־ליסט שהדוחות הנדרשים נאספו או שתועד שאינם זמינים לפני הפעלת הניתוח.", 409);
 
     const bucket = getFilesBucket();
     if (!bucket) return jsonError("אחסון המסמכים אינו זמין כרגע.", 503);

@@ -1873,3 +1873,326 @@ html { scroll-behavior: smooth; }
     overflow-x: auto !important;
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   SafeDeal Architectural Design System (Clean, Tactile, Zero AI-Slop)
+   - Tinted Neutral: #F4F2ED | Elevated Surface: #FAF9F6 | Paper: #FFFFFF
+   - Single Accent: #145348 (Hover: #0F4037)
+   - Depth strictly via surfaces + 6–10% hairlines, zero glows/shadows
+   - Spacing: 4, 8, 12, 16, 24, 32, 48, 64px | Radius: 12–16px cards, 8–10px buttons
+   - Typography: Heebo, headings 400–500, sentence case, zero uppercase tracking
+─────────────────────────────────────────────────────────────────────────── */
+.staff-app {
+  --sd-bg: #F4F2ED;
+  --sd-surface: #FAF9F6;
+  --sd-paper: #FFFFFF;
+  --sd-ink: #161B1A;
+  --sd-muted: #4E5856;
+  --sd-accent: #145348;
+  --sd-accent-hover: #0F4037;
+  --sd-accent-soft: #E9F0EE;
+  --sd-line: rgba(22, 27, 26, 0.08);
+  --sd-line-strong: rgba(22, 27, 26, 0.10);
+  --sd-shadow: none;
+  font-family: "Heebo", system-ui, -apple-system, sans-serif;
+  background: var(--sd-bg);
+  color: var(--sd-ink);
+}
+
+.staff-app *,
+.staff-app *::before,
+.staff-app *::after {
+  box-shadow: none !important;
+  text-transform: none !important;
+}
+
+.staff-sidebar {
+  background: #151B1A !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 24px 16px !important;
+}
+
+.staff-mark {
+  border-radius: 8px !important;
+  background: var(--sd-accent) !important;
+  color: #FAF9F6 !important;
+  font-weight: 500 !important;
+}
+
+.side-link {
+  border-radius: 8px !important;
+  padding: 12px !important;
+  font-weight: 400 !important;
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1), color 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.side-link.active {
+  background: var(--sd-accent) !important;
+  color: #FAF9F6 !important;
+  font-weight: 500 !important;
+}
+
+.side-link span {
+  border-radius: 8px !important;
+  padding: 2px 8px !important;
+}
+
+.staff-topbar {
+  background: var(--sd-surface) !important;
+  border-bottom: 1px solid var(--sd-line) !important;
+  padding: 0 32px !important;
+  height: 64px !important;
+}
+
+.topbar-dot {
+  background: var(--sd-accent) !important;
+}
+
+.staff-content {
+  padding: 32px !important;
+  gap: 24px !important;
+}
+
+.staff-heading {
+  margin-bottom: 24px !important;
+}
+
+.staff-heading .eyebrow {
+  letter-spacing: 0 !important;
+  color: var(--sd-accent) !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  margin-bottom: 8px !important;
+}
+
+.staff-heading h1,
+.detail-top h2,
+.workflow-launch h3 {
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  color: var(--sd-ink) !important;
+}
+
+.staff-heading p {
+  color: var(--sd-muted) !important;
+}
+
+/* Surfaces & Cards (12–16px radius, 6–10% hairlines, no gradients/shadows) */
+.staff-metrics article,
+.dashboard-card,
+.tool-card,
+.team-panel,
+.case-list-new,
+.case-detail-new,
+.compliance-task,
+.compliance-resources,
+.client-card,
+.resource-card,
+.side-rail-card,
+.detail-section,
+.finding-form,
+.analyst-guide {
+  background: var(--sd-paper) !important;
+  border: 1px solid var(--sd-line) !important;
+  border-radius: 14px !important;
+  padding: 24px !important;
+}
+
+.staff-metrics {
+  gap: 16px !important;
+  margin-bottom: 24px !important;
+}
+
+.staff-metrics article {
+  min-height: 112px !important;
+  padding: 24px !important;
+}
+
+.staff-metrics b {
+  font-weight: 500 !important;
+  color: var(--sd-ink) !important;
+}
+
+.metric-label {
+  color: var(--sd-muted) !important;
+  font-weight: 500 !important;
+}
+
+.dashboard-grid {
+  gap: 24px !important;
+}
+
+/* Bright Product Moment: Active Attention Queue & Case Dossier */
+.attention-card,
+.case-detail-new,
+.workflow-focus-shell {
+  background: var(--sd-paper) !important;
+  border: 1px solid var(--sd-line-strong) !important;
+  border-top: 3px solid var(--sd-accent) !important;
+}
+
+.workflow-launch,
+.analysis-workflow {
+  background: var(--sd-surface) !important;
+  border: 1px solid var(--sd-line) !important;
+  border-radius: 16px !important;
+  padding: 24px !important;
+}
+
+.workflow-progress-track i,
+.status-bar-track i {
+  background: var(--sd-accent) !important;
+  transition: width 220ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.workflow-step {
+  background: var(--sd-paper) !important;
+  border: 1px solid var(--sd-line) !important;
+  border-radius: 12px !important;
+  padding: 24px !important;
+}
+
+.workflow-step.is-active {
+  background: var(--sd-paper) !important;
+  border-color: var(--sd-accent) !important;
+}
+
+/* Interactive Rows & Smooth Ease-Out Transitions */
+.case-row-new,
+.attention-row,
+.resource-card,
+.side-doc-row,
+.client-history-row {
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.case-row-new:hover,
+.attention-row:hover {
+  background: var(--sd-surface) !important;
+}
+
+.case-row-new.selected {
+  background: var(--sd-accent-soft) !important;
+  border-right: 3px solid var(--sd-accent) !important;
+}
+
+/* Buttons: One Primary (#145348) & Quiet Secondary (#FAF9F6 + hairline) */
+.button-primary,
+.workflow-action.strong,
+.report-create,
+.btn-send-client-email {
+  background: var(--sd-accent) !important;
+  color: #FAF9F6 !important;
+  border: 1px solid var(--sd-accent) !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 8px 16px !important;
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.button-primary:hover,
+.workflow-action.strong:hover,
+.report-create:hover,
+.btn-send-client-email:hover {
+  background: var(--sd-accent-hover) !important;
+  border-color: var(--sd-accent-hover) !important;
+  transform: none !important;
+}
+
+.outline-action,
+.workflow-action,
+.button-plain,
+.text-action,
+.property-copy-button,
+.case-back-btn,
+.dashboard-link,
+.report-open {
+  background: var(--sd-surface) !important;
+  color: var(--sd-ink) !important;
+  border: 1px solid var(--sd-line-strong) !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 8px 12px !important;
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.outline-action:hover,
+.workflow-action:hover,
+.button-plain:hover,
+.text-action:hover,
+.property-copy-button:hover,
+.case-back-btn:hover,
+.dashboard-link:hover,
+.report-open:hover {
+  background: #EAE6DF !important;
+  border-color: rgba(22, 27, 26, 0.16) !important;
+  transform: none !important;
+}
+
+/* Inputs & Selects (8px radius, 10% hairline, solid focus) */
+.staff-app input,
+.staff-app select,
+.staff-app textarea,
+.case-search {
+  border-radius: 8px !important;
+  border: 1px solid var(--sd-line-strong) !important;
+  background: var(--sd-surface) !important;
+  color: var(--sd-ink) !important;
+  transition: border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.staff-app input:focus,
+.staff-app select:focus,
+.staff-app textarea:focus,
+.case-search:focus-within {
+  border-color: var(--sd-accent) !important;
+  background: var(--sd-paper) !important;
+  outline: none !important;
+}
+
+/* Tags & Badges: 8px radius (no 999px pills), clean 500 weight */
+.status-tag,
+.workflow-status,
+.list-count,
+.attention-count,
+.gate-count,
+.finding-pill-btn {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+}
+
+.case-panel-nav button,
+.case-queue-filters button,
+.workflow-step-nav button {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.case-panel-nav button.active,
+.case-queue-filters button.active,
+.workflow-step-nav button.active {
+  background: var(--sd-accent-soft) !important;
+  color: var(--sd-accent) !important;
+  border-color: rgba(20, 83, 72, 0.25) !important;
+}
+
+/* Remove decorative icon tiles on attention rows */
+.attention-icon {
+  background: transparent !important;
+  border: none !important;
+  color: var(--sd-accent) !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 700px) {
+  .staff-content {
+    padding: 16px !important;
+  }
+  .staff-topbar {
+    padding: 0 16px !important;
+  }
+}

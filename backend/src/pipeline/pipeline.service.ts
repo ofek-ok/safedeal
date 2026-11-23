@@ -120,7 +120,7 @@ export class PipelineService {
 
     job.status = 'processing';
     job.percentComplete = 8;
-    job.currentStepMessage = 'מתחבר ל-11 מאגרי מידע ממשלתיים וסטטיסטיים...';
+    job.currentStepMessage = 'מתחבר למאגרי מידע ממשלתיים וסטטיסטיים...';
 
     let block = payload.location.block || '';
     let parcel = payload.location.parcel || '';
@@ -332,7 +332,7 @@ export class PipelineService {
     job.percentComplete = 72;
     job.completedSourcesCount = 11;
     job.currentStepMessage =
-      'מנוע AI Synthesis מעבד את 11 המקורות ומחשב SafeScore...';
+      'מנוע AI Synthesis מעבד את הנתונים ומחשב SafeScore...';
 
     const aggregatedData: AggregatedPipelineData = {
       jobId,

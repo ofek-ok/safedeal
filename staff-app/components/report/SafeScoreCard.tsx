@@ -41,24 +41,18 @@ export function SafeScoreCard({
   const ny = cy - needleLength * Math.sin(angleRad);
 
   return (
-    <div className="w-full bg-[#0B1528] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden">
-      {/* Background Glow Accent */}
-      <div
-        className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full blur-3xl opacity-15 pointer-events-none"
-        style={{ backgroundColor: accentColor }}
-      />
-
+    <div className="w-full bg-[#0D1522] border border-white/10 rounded-[16px] p-6 flex flex-col items-center justify-between text-center relative overflow-hidden">
       <div className="relative z-10 w-full space-y-3">
         {/* Title Badge & Coverage */}
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-2">
             <ShieldCheck size={18} className="text-teal-400" />
-            <span className="text-xs uppercase font-mono tracking-widest text-slate-300">
-              SAFE SCORE GAUGE
+            <span className="text-xs text-slate-300 font-medium">
+              מדד SafeScore
             </span>
           </div>
           {coveragePercent !== undefined && coveragePercent > 0 && (
-            <span className="text-[10px] font-mono text-teal-400 bg-teal-500/10 border border-teal-500/30 px-2 py-0.5 rounded-full">
+            <span className="text-[11px] text-teal-400 bg-teal-500/10 border border-teal-500/30 px-2 py-1 rounded-[8px]">
               כיסוי: {coveragePercent}%
             </span>
           )}
@@ -124,12 +118,12 @@ export function SafeScoreCard({
 
         {/* Risk Level & Recommendation Badges */}
         <div className="space-y-2 pt-2">
-          <div className="inline-block px-3 py-1 rounded-full text-xs font-semibold border bg-white/5 border-white/10 text-slate-300">
+          <div className="inline-block px-3 py-1 rounded-[8px] text-xs font-medium border bg-white/5 border-white/10 text-slate-300">
             {riskText}
           </div>
 
           <div
-            className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl border font-bold text-xs sm:text-sm shadow-md transition-all duration-300 text-center flex-wrap ${pillBgClass}`}
+            className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-[8px] border font-medium text-xs sm:text-sm transition-colors duration-200 ease-out text-center flex-wrap ${pillBgClass}`}
           >
             {isHigh ? (
               <ShieldCheck size={18} className="shrink-0" />

@@ -56,17 +56,13 @@ export async function PUT(_request: Request, context: { params: Promise<{ id: st
     const [caseRow, findingsResult, docsResult, latest, checklistResult] = await Promise.all([
       db.$client.prepare(`SELECT * FROM cases WHERE id = ?`).bind(id).first<Record<string, unknown>>(),
       db.$client.prepare(`SELECT id, category, title, note, severity, source, confidence, state, review_note AS reviewNote, reviewed_by AS reviewedBy, reviewed_at AS reviewedAt FROM findings WHERE case_id = ? ORDER BY created_at`).bind(id).all(),
-      db.$client.prepare(`SELECT filename, content_type AS contentType, size, uploaded_at AS uploadedAt FROM documents WHERE case_id = ? ORDER BY uploaded_at`).bind(id).all(),
+      db.$client.prepare(`SELECT filename, content_type AS contentType, size, uploaded_at AS uploadedAt, document_type AS documentType, source FROM documents WHERE case_id = ? ORDER BY uploaded_at`).bind(id).all(),
       db.$client.prepare(`SELECT MAX(version) AS version FROM reports WHERE case_id = ?`).bind(id).first<{ version: number | null }>(),
       db.$client.prepare(`SELECT item_key AS itemKey, completed FROM case_checklist WHERE case_id = ?`).bind(id).all<{ itemKey: string; completed: number }>(),
     ]);
     if (!caseRow) return jsonError("התיק לא נמצא.", 404);
 
     const now = new Date().toISOString();
-    const checklistMap = new Map((checklistResult.results ?? []).map((item) => [item.itemKey, item.completed === 1]));
-    if (["reports_collected", "data_reviewed", "data_verified", "ai_findings_reviewed"].some((key) => !checklistMap.get(key))) {
-      return jsonError("יש להשלים את כל סעיפי צ׳ק־ליסט האנליסט לפני הפקת הדוח.", 409);
-    }
 
     const findings = (findingsResult.results ?? []) as { id: string; category: string; title: string; note: string; severity: string; source: string | null; state: string; reviewNote?: string | null; reviewedBy?: string | null }[];
     const unreviewed = findings.filter((item) => item.state === "לבדיקה" || item.state === "לברור");
@@ -155,6 +151,51 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         if (!member) return jsonError("העובד לא נמצא ברשימת ה-Member הפעילים.", 400);
       }
       sets.push("analyst_user_id = ?", "analyst_email = ?"); values.push(member?.user_id ?? null, member?.email ?? null); notes.push(member ? `שויך ל-${member.email}` : "שיוך האנליסט הוסר");
+    }
+    const checkStatuses = new Set(["incomplete", "none_found", "found"]);
+    if (body.insolvencyCheck !== undefined || body.legalCheck !== undefined) {
+      const existingCase = await getDb().$client.prepare(`SELECT intake_payload FROM cases WHERE id = ?`).bind(id).first<{ intake_payload: string | null }>();
+      let intakeObj: Record<string, unknown> = {};
+      if (typeof existingCase?.intake_payload === "string" && existingCase.intake_payload.trim()) {
+        try {
+          const parsed = JSON.parse(existingCase.intake_payload) as unknown;
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) intakeObj = parsed as Record<string, unknown>;
+        } catch { /* Keep empty when older intake data is malformed. */ }
+      }
+      const existingChecks = (intakeObj.checks && typeof intakeObj.checks === "object" && !Array.isArray(intakeObj.checks))
+        ? { ...(intakeObj.checks as Record<string, unknown>) }
+        : {};
+      const nowIso = new Date().toISOString();
+
+      const applyCheck = (key: "insolvency" | "legal", raw: unknown, label: string) => {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return jsonError(`נתוני בדיקת ${label} אינם תקינים.`, 400);
+        const obj = raw as Record<string, unknown>;
+        const st = typeof obj.status === "string" ? obj.status : "";
+        if (!checkStatuses.has(st)) return jsonError(`סטטוס בדיקת ${label} לא תקין.`, 400);
+        const noteStr = typeof obj.note === "string" ? obj.note.trim().slice(0, 1000) : "";
+        existingChecks[key] = {
+          status: st,
+          note: noteStr,
+          updatedBy: staff.displayName,
+          updatedAt: nowIso,
+        };
+        const statusLabel = st === "found" ? "נמצאו ממצאים" : st === "none_found" ? "הושלמה — לא נמצאו ממצאים" : "הבדיקה לא הושלמה";
+        notes.push(`${label}: ${statusLabel}`);
+        return null;
+      };
+
+      if (body.insolvencyCheck !== undefined) {
+        const err = applyCheck("insolvency", body.insolvencyCheck, "חדלות פירעון");
+        if (err) return err;
+      }
+      if (body.legalCheck !== undefined) {
+        const err = applyCheck("legal", body.legalCheck, "בדיקה משפטית");
+        if (err) return err;
+      }
+
+      intakeObj.checks = existingChecks;
+      sets.push("intake_payload = ?");
+      values.push(JSON.stringify(intakeObj));
     }
     if (!sets.length) return jsonError("לא נשלחו שינויים לשמירה.", 400);
     sets.push("updated_at = ?"); values.push(new Date().toISOString(), id);

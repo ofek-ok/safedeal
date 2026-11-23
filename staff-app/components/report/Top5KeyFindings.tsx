@@ -37,15 +37,12 @@ const DEFAULT_FINDINGS: TopFindingItem[] = [
 
 export function Top5KeyFindings({ findings = DEFAULT_FINDINGS }: Top5KeyFindingsProps) {
   return (
-    <div className="w-full bg-[#0B1528] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
-      <h3
-        className="text-lg font-bold text-white mb-2 border-b border-white/10 pb-3 flex items-center justify-between"
-        style={{ fontFamily: "var(--font-serif)" }}
-      >
+    <div className="w-full bg-[#0D1522] border border-white/10 rounded-[16px] p-6 space-y-4">
+      <h3 className="text-lg font-medium text-white mb-2 border-b border-white/10 pb-3 flex items-center justify-between">
         <span className="flex items-center gap-2">
           <span>5 הדברים שחייבים לדעת</span>
         </span>
-        <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full font-bold">
+        <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-[8px] font-medium">
           ממצאים קריטיים
         </span>
       </h3>

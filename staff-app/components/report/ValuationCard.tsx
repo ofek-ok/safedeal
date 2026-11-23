@@ -80,30 +80,27 @@ export function ValuationCard({ valuation }: ValuationCardProps) {
   const style = getFairnessStyle();
 
   return (
-    <div className="p-8 rounded-2xl border border-white/[0.08] bg-[#060E1C]/80 backdrop-blur-md space-y-8 animate-fade-in-up">
+    <div className="p-8 rounded-[16px] border border-white/[0.08] bg-[#0D1522] space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-6 h-[1px] bg-[#00C896]" />
-            <span className="text-[10px] uppercase tracking-widest text-[#00C896] font-medium">
-              ניתוח שווי שוק & כדאיות עסקה
+            <span className="text-xs text-[#00C896] font-medium">
+              ניתוח שווי שוק וכדאיות עסקה
             </span>
           </div>
-          <h3
-            className="text-xl sm:text-2xl font-bold text-white tracking-wide flex items-center flex-wrap gap-2"
-            style={{ fontFamily: "var(--font-serif)" }}
-          >
+          <h3 className="text-xl sm:text-2xl font-medium text-white flex items-center flex-wrap gap-2">
             <span>הערכת שווי שוק משוערת</span>
             <SourceVerificationTooltip sourceName="רשות המסים — nadlan.gov.il" sourceUrl="https://www.nadlan.gov.il/" details="מבוסס על עסקאות השוואה חתומות בנדל''ן ממשלתי" />
           </h3>
         </div>
 
         {/* Confidence Badge */}
-        <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] px-3.5 py-1.5 rounded-full text-xs text-slate-300 self-start sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] px-3 py-2 rounded-[8px] text-xs text-slate-300 self-start sm:self-auto shrink-0">
           <TrendingUp size={14} className="text-[#00C896]" />
           <span>אמינות:</span>
-          <span className="font-semibold text-white uppercase tracking-wider">
+          <span className="font-medium text-white">
             {confidenceLevel === "high"
               ? "גבוהה"
               : confidenceLevel === "medium"
@@ -157,7 +154,7 @@ export function ValuationCard({ valuation }: ValuationCardProps) {
           <div className="absolute left-[15%] right-[15%] top-0 bottom-0 bg-[#00C896]/20 rounded-full border border-[#00C896]/40" />
 
           {/* Center Estimated Pin */}
-          <div className="absolute left-1/2 -top-1 -bottom-1 w-1 bg-[#00C896] rounded-full shadow-[0_0_10px_#00C896]" />
+          <div className="absolute left-1/2 -top-1 -bottom-1 w-1 bg-[#00C896] rounded-[8px]" />
 
           {/* Asking Price Marker */}
           {askingPrice > 0 && (

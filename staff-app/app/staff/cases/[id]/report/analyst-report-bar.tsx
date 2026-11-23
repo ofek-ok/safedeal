@@ -144,7 +144,7 @@ export function AnalystReportBar({
               type="button"
               disabled={busy}
               onClick={() => void handleSend()}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#00C896] px-4 py-2 text-xs font-black text-[#060E1C] hover:bg-[#2DD4BF] disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#145348] px-4 py-2 text-xs font-medium text-[#FAF9F6] hover:bg-[#0F4037] disabled:opacity-50 transition-colors duration-200 ease-out"
             >
               <Send size={14} />
               {busy ? "שולח..." : "שלח דוח ללקוח"}
@@ -198,7 +198,7 @@ export function AnalystReportBar({
               type="button"
               disabled={busy}
               onClick={() => void handleSave()}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#00C896] px-5 py-2 text-xs font-black text-[#060E1C] hover:bg-[#2DD4BF] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#145348] px-5 py-2 text-xs font-medium text-[#FAF9F6] hover:bg-[#0F4037] disabled:opacity-50 transition-colors duration-200 ease-out"
             >
               <Save size={14} />
               {busy ? "שומר..." : "שמירת שינויים בדוח"}

@@ -495,7 +495,7 @@ export class AiSynthesisService {
       executiveSummary: {
         title: dealType === 'new-developer' ? 'דוח סיכונים לרכישת דירה מקבלן' : 'דוח סיכונים לרכישת דירה יד שנייה',
         badgeText: score >= 80 ? 'נכס תקין — בכפוף לבירורים' : 'נמצאו ממצאים — נדרשת עדיפות',
-        overview: `נכס המגורים ב${fullAddress} נבדק מול 11 מקורות מידע ממשלתיים ומוסדיים. ציון SafeScore: ${score}/100 — ${riskText}.`,
+        overview: `נכס המגורים ב${fullAddress} נבדק מול מקורות המידע הזמינים בתיק. ציון SafeScore: ${score}/100 — ${riskText}.`,
         strengths: top5Findings.filter((f) => f.isPositive).map((f) => f.title),
         riskPoints: top5Findings.filter((f) => !f.isPositive).map((f) => f.title),
       },

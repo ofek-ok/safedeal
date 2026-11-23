@@ -428,16 +428,23 @@ export function synthesizeFullReport(params: {
     };
   }
 
+  const rawRentStr = String(deal.monthlyRent || "").replace(/[^0-9]/g, "");
+  const enteredMonthlyRent = rawRentStr ? Number(rawRentStr) : 0;
+  const calculatedYieldPercent =
+    enteredMonthlyRent > 0 && askingPriceNum > 0
+      ? Math.round(((enteredMonthlyRent * 12) / askingPriceNum) * 1000) / 10
+      : 0;
+
   // 9. Madlan Insights
   const madlanInsights: MadlanInsights = {
     overallScore: 7.9,
-    neighborhoodName: `${city ? `שכונת מרכז ${city}` : "אזור הנכס"} · ניתוח סביבתי ונתוני שוק ממשלתיים`,
-    priceTrend5Years: "+21.4% ב-5 שנים אחרונות",
+    neighborhoodName: `${city ? `אזור ${city}` : "אזור הנכס"} · נתוני סביבה ותיק`,
+    priceTrend5Years: "דורש אימות מול עסקאות עדכניות",
     demandIndex: "high",
-    demandLabel: "ביקוש יציב עד גבוה על פי נתוני עסקאות אזוריים",
-    avgDaysOnMarket: 36,
-    estimatedMonthlyRent: askingPriceNum > 0 ? Math.round(askingPriceNum * 0.0023) : 5800,
-    estimatedYieldPercent: 3.1,
+    demandLabel: "בהתאם לנתוני השוק המקומי",
+    avgDaysOnMarket: 0,
+    estimatedMonthlyRent: enteredMonthlyRent,
+    estimatedYieldPercent: calculatedYieldPercent,
     ratings: {
       schools: 8.5,
       quietness: 8.2,

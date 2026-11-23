@@ -43,31 +43,25 @@ export function MadlanInsightsCard({ insights = DEFAULT_INSIGHTS }: MadlanInsigh
   } = insights;
 
   return (
-    <div className="w-full bg-[#0B1528] border border-white/10 rounded-2xl p-6 shadow-xl space-y-6">
+    <div className="w-full bg-[#0D1522] border border-white/10 rounded-[16px] p-6 space-y-6">
       {/* Card Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 shrink-0">
-            <MapPin size={18} />
-          </div>
+        <div className="flex items-center gap-3">
           <div>
-            <h3
-              className="text-lg font-bold text-white flex items-center gap-2"
-              style={{ fontFamily: "var(--font-serif)" }}
-            >
+            <h3 className="text-lg font-medium text-white flex items-center gap-2">
               <span>מדד סביבתי ותובנות השכונה</span>
             </h3>
-            <p className="text-xs text-slate-400 font-mono">
-              {neighborhoodName} · ניתוח סביבתי ונתוני שוק ממשלתיים
+            <p className="text-xs text-slate-400">
+              {neighborhoodName}
             </p>
           </div>
         </div>
 
         {/* Overall Score Badge */}
-        <div className="flex items-center gap-2 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/30 px-3.5 py-1.5 rounded-xl self-start sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 bg-teal-500/10 border border-teal-500/30 px-3 py-2 rounded-[8px] self-start sm:self-auto shrink-0">
           <span className="text-xs text-slate-300 font-medium">ציון שכונה:</span>
-          <span className="text-lg font-bold text-teal-400 font-serif">{overallScore}</span>
-          <span className="text-xs text-slate-400 font-mono">/10</span>
+          <span className="text-lg font-medium text-teal-400">{overallScore}</span>
+          <span className="text-xs text-slate-400">/10</span>
         </div>
       </div>
 
@@ -115,11 +109,18 @@ export function MadlanInsightsCard({ insights = DEFAULT_INSIGHTS }: MadlanInsigh
 
         <div className="p-4 rounded-xl border border-white/5 bg-white/[0.02] space-y-1">
           <span className="text-[11px] uppercase tracking-widest text-slate-400 block font-medium">
-            שכירות ותשואה משוערת
+            {estimatedMonthlyRent > 0 ? "שכר דירה שהוזן ותשואה מחושבת" : "נתוני שכירות"}
           </span>
-          <p className="text-sm font-bold text-teal-400 font-serif">
-            ₪{estimatedMonthlyRent.toLocaleString("he-IL")} / חודש ({estimatedYieldPercent}% תשואה)
-          </p>
+          {estimatedMonthlyRent > 0 ? (
+            <p className="text-sm font-bold text-teal-400 font-serif">
+              ₪{estimatedMonthlyRent.toLocaleString("he-IL")} / חודש
+              {estimatedYieldPercent > 0 ? ` (${estimatedYieldPercent}% תשואה)` : ""}
+            </p>
+          ) : (
+            <p className="text-xs font-medium text-amber-300 leading-relaxed">
+              לא הוזן שכר דירה ואין בסיס נתונים מספק להערכת שכירות אמינה.
+            </p>
+          )}
         </div>
       </div>
 

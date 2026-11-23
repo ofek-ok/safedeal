@@ -24,12 +24,6 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   if (caseRow.status === "דוח נשלח") return jsonError("הדוח כבר נשלח ללקוח.", 409);
   if (caseRow.status !== "דוח מוכן") return jsonError("יש להפיק ולאשר דוח לפני שליחתו ללקוח.", 409);
 
-  const checklistResult = await db.$client.prepare(`SELECT item_key AS itemKey, completed FROM case_checklist WHERE case_id = ?`).bind(id).all<{ itemKey: string; completed: number }>();
-  const checklist = new Map((checklistResult.results ?? []).map((item) => [item.itemKey, item.completed === 1]));
-  if (["reports_collected", "data_reviewed", "data_verified", "ai_findings_reviewed"].some((key) => !checklist.get(key))) {
-    return jsonError("יש להשלים את צ׳ק־ליסט האנליסט לפני שליחת הדוח ללקוח.", 409);
-  }
-
   const latest = await db.$client.prepare(`SELECT id, version, snapshot FROM reports WHERE case_id = ? ORDER BY version DESC LIMIT 1`)
     .bind(id).first<{ id: string; version: number; snapshot: string }>();
   if (!latest) return jsonError("לא נמצא דוח מאושר לשליחה.", 409);

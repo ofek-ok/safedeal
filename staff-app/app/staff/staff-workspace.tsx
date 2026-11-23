@@ -52,6 +52,10 @@ const FINDING_MACROS = [
   { label: "חברה קבלנית פעילה", category: "מצב תאגידי", severity: "נמוכה", title: "היזם/קבלן רשום כחברה פעילה ולא מפרה", note: "אימות ח.פ. מול רשם החברות העלה כי החברה פעילה, בעלת ותק מספק ואינה מוגדרת כחברה מפרת חוק.", source: "רשם החברות" },
   { label: "חריגת מחיר מול שוק", category: "שוק ותמחור", severity: "בינונית", title: "המחיר המבוקש גבוה מממוצע עסקאות הסביבה", note: "בהשוואה לעסקאות מדווחות ברשות המסים באותו אזור ומאפיינים דומים, המחיר המבוקש גבוה בכ-10% מהממוצע. מומלץ לנהל מו״מ.", source: "רשות המסים / נדל״ן ממשלתי" },
   { label: "חדלות פירעון — תקין", category: "חדלות פירעון", severity: "נמוכה", title: "לא אותר הליך חדלות פירעון פעיל", note: "בוצעה בדיקה במאגר הממונה על הליכי חדלות פירעון במשרד המשפטים — לא אותר הליך פעיל על שם המוכר/היזם.", source: "משרד המשפטים — insolvency.justice.gov.il" },
+  { label: "רשם המשכונות — תקין", category: "רשם המשכונות", severity: "נמוכה", title: "לא אותרו משכונות פעילים על הנכס או המוכר", note: "בוצעה בדיקה בדוח רשם המשכונות שהופק לתיק — לא אותרו שעבודים או משכונות פעילים.", source: "רשם המשכונות והבטוחות" },
+  { label: "רשם המשכונות — אותר שעבוד", category: "רשם המשכונות", severity: "גבוהה", title: "אותר משכון/שעבוד פעיל ברשם המשכונות", note: "בדוח רשם המשכונות אותר משכון פעיל בעל זיקה לנכס או למוכר. נדרש מכתב החרגה או סילוק מפורש טרם העברת כספים.", source: "רשם המשכונות והבטוחות" },
+  { label: "מידע משפטי — תקין", category: "רקע משפטי", severity: "נמוכה", title: "הבדיקה המשפטית הושלמה — לא אותרו ממצאים רלוונטיים", note: "בוצעה בדיקה במאגרי הפסיקה וההליכים — לא אותרו תביעות או הליכים פתוחים המשפיעים על העסקה.", source: "נבו / נט המשפט" },
+  { label: "מידע משפטי — אותר הליך", category: "רקע משפטי", severity: "גבוהה", title: "אותר הליך משפטי רלוונטי המחייב בחינה", note: "בדוח המשפטי שהתקבל אותר הליך פתוח או פסק דין בעל השלכה אפשרית על הזכויות או העסקה. נדרשת בחינת עורך דין.", source: "נבו / נט המשפט" },
 ] as const;
 
 const WORKFLOW_STEP_GUIDES: ReadonlyArray<{ title: string; subtitle: string; bullets: readonly string[]; tip: string }> = [
@@ -94,19 +98,19 @@ const WORKFLOW_STEP_GUIDES: ReadonlyArray<{ title: string; subtitle: string; bul
     bullets: [
       "היכנס למאגר הממונה על הליכי חדלות פירעון (insolvency.justice.gov.il).",
       "בצע חיפוש מדויק לפי ת.ז. / ח.פ. ושם מלא לכל מוכר או יזם.",
-      "הליך פעיל או צו פתיחת הליכים = דגל STOP מיידי (תקרת SafeScore 39).",
-      "שמור צילום מסך של התוצאה והעלה תחת 'דוח חדלות פירעון'.",
+      "סמן את תוצאת הבדיקה: 'נמצאו הליכים', 'לא נמצאו הליכים' (אין צורך להעלות קובץ ריק), או השאר 'לא הושלמה' אם חסר מידע.",
+      "הליך פעיל או צו פתיחת הליכים = דגל STOP מיידי (תקרת SafeScore 39) והעלאת המסמך לתיק.",
     ],
-    tip: "הליך שנסגר ב-6 החודשים האחרונים דורש תיעוד כממצא בינוני לבירור.",
+    tip: "הבדל תמיד בין 'הבדיקה הושלמה — לא נמצאו הליכים' לבין 'הבדיקה לא הושלמה'.",
   },
   {
     title: "מה לעשות בשלב 05 — הליכים משפטיים",
     subtitle: "איתור תביעות וסכסוכים ב-Nevo / נט המשפט",
     bullets: [
       "חפש תיקים אזרחיים ופליליים רלוונטיים על שם המוכר או חברת היזם.",
-      "בעסקת קבלן: בדוק תביעות ליקויי בנייה, איחורי מסירה ותביעות חוזרות.",
-      "הבדל בין תיק סגור ללא הרשעה לבין תיק פתוח המאיים על הזכויות בנכס.",
-      "תעד כל ממצא מהותי בלשונית 'ממצאים' כולל מספר תיק ומקור.",
+      "סמן את תוצאת הבדיקה במנגנון האחיד: 'נמצאו ממצאים משפטיים', 'לא נמצאו ממצאים', או 'הבדיקה לא הושלמה'.",
+      "אם התקבל מסמך משפטי מהשירות החיצוני — העלה אותו לתיק ותעד ממצאים מהותיים.",
+      "הבדל בין עובדה מתועדת, השערה ומידע הדורש אימות אנושי.",
     ],
     tip: "אין לקבוע ממצא פלילי/משפטי כעובדה ללא אסמכתא מפורשת במסמך.",
   },
@@ -114,7 +118,7 @@ const WORKFLOW_STEP_GUIDES: ReadonlyArray<{ title: string; subtitle: string; bul
     title: "מה לעשות בשלב 06 — בקרת דוח ושליחה",
     subtitle: "אימות סופי לפני שהלקוח מקבל את הדוח",
     bullets: [
-      "ודא שכל 4 סעיפי הצ׳קליסט מסומנים ושאין ממצאים בסטטוס 'לבדיקה'.",
+      "ודא שאין ממצאים הממתינים בסטטוס 'לבדיקה'.",
       "לחץ 'הפקת דוח' ופתח את הדוח המלא לבדיקה ויזואלית.",
       "בסרגל האנליסט בראש הדוח: בדוק/ערוך ציון SafeScore והמלצת שורה תחתונה.",
       "לחץ 'שלח דוח ללקוח' — המייל יישלח עם קישור ישיר לדוח ולהורדת PDF.",
@@ -216,7 +220,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [inlineFindingTitle, setInlineFindingTitle] = useState("");
   const [inlineFindingNote, setInlineFindingNote] = useState("");
   const [reportScore, setReportScore] = useState<number>(84);
-  const [reportSummary, setReportSummary] = useState<string>("הנכס נבדק ב-11 מקורות מידע רשמיים. נתוני הרישום תואמים, לא אותרו עיקולים סותרים או הליכי חדלות פירעון. העסקה מדורגת ברמת סיכון נמוכה.");
+  const [reportSummary, setReportSummary] = useState<string>("נתוני הנכס והמסמכים נבדקו ואומתו במערכת האנליסטים. ממצאי הרישום, הבטוחות והבדיקות המשפטיות מסוכמים בדוח זה.");
   const [reportRecommendation, setReportRecommendation] = useState<string>("מומלץ להתקדם לחתימת הסכם מכר תוך בדיקת שומת מס רכישה ומכתב כוונות לסילוק המשכנתה הקיימת של המוכר.");
   const [showScoreOverrideInput, setShowScoreOverrideInput] = useState(false);
 
@@ -302,19 +306,55 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const sellerNamesValue = detail?.intakeData?.deal?.sellerNames;
   const sellerNames = Array.isArray(sellerNamesValue) ? sellerNamesValue.filter((name): name is string => typeof name === "string" && !!name.trim()) : [];
   const requiredDocumentTypes = ["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח חדלות פירעון (משרד המשפטים)", "דוח מתדיינים / הליכים משפטיים"];
-  const allReportsUploaded = requiredDocumentTypes.slice(0, 3).every(hasDocumentType);
+  const checksObj = (detail?.intakeData && typeof (detail.intakeData as Record<string, unknown>).checks === "object" && (detail.intakeData as Record<string, unknown>).checks !== null)
+    ? ((detail.intakeData as Record<string, unknown>).checks as Record<string, { status?: string; note?: string }>)
+    : {};
+  const insolvencyCheckStatus = (checksObj.insolvency?.status as "incomplete" | "none_found" | "found" | undefined) ??
+    (detail?.findings.some((f) => f.category.includes("חדלות") || f.title.includes("חדלות")) ? "found" : "incomplete");
+  const legalCheckStatus = (checksObj.legal?.status as "incomplete" | "none_found" | "found" | undefined) ??
+    (detail?.findings.some((f) => /משפטי|נבו|נט המשפט|מתדיינים/.test(`${f.category} ${f.title}`)) ? "found" : "incomplete");
+  const hasPledgeDoc = hasDocumentType(requiredDocumentTypes[1]);
+  const hasPledgeFinding = Boolean(detail?.findings.some((f) => f.state !== "נדחה" && /משכונות|משכון|שעבוד/.test(`${f.category} ${f.title} ${f.source ?? ""}`)));
+  const hasInsolvencyFinding = Boolean(detail?.findings.some((f) => f.state !== "נדחה" && /חדלות/.test(`${f.category} ${f.title}`)));
+  const hasLegalFinding = Boolean(detail?.findings.some((f) => f.state !== "נדחה" && /משפטי|נבו|נט המשפט|מתדיינים/.test(`${f.category} ${f.title}`)));
+  const allReportsUploaded = hasDocumentType(requiredDocumentTypes[0]) && hasPledgeDoc && (insolvencyCheckStatus !== "incomplete" || hasDocumentType(requiredDocumentTypes[2]));
   const workflowStepTitles = ["בדיקת פרטי הבקשה והזיהוי", "נסח טאבו ובעלי הזכויות", "מרשם המשכונות והבטוחות", "בדיקת חדלות פירעון", "הליכים משפטיים וסכסוכים", "ניתוח ובקרת דוח"];
   const workflowDone = [
-    Boolean(detail?.checklist?.data_reviewed?.completed && detail?.case?.block && detail?.case?.parcel),
+    Boolean(detail?.case?.block && detail?.case?.parcel),
     hasDocumentType(requiredDocumentTypes[0]),
-    hasDocumentType(requiredDocumentTypes[1]),
-    hasDocumentType(requiredDocumentTypes[2]) || Boolean(detail?.findings.some((f) => f.category.includes("חדלות") || f.title.includes("חדלות"))),
-    hasDocumentType(requiredDocumentTypes[3]) || Boolean(detail?.findings.some((f) => f.category.includes("משפטי") || f.title.includes("משפטי"))),
+    hasPledgeDoc && hasPledgeFinding,
+    insolvencyCheckStatus === "none_found" || (insolvencyCheckStatus === "found" && (hasDocumentType(requiredDocumentTypes[2]) || hasInsolvencyFinding)),
+    legalCheckStatus === "none_found" || (legalCheckStatus === "found" && (hasDocumentType(requiredDocumentTypes[3]) || hasLegalFinding)),
     Boolean(detail?.report || selectedCase?.status === "דוח מוכן" || selectedCase?.status === "דוח נשלח"),
   ];
   const workflowCurrentStep = workflowDone.findIndex((done) => !done);
   const workflowCompletedCount = workflowDone.filter(Boolean).length;
   const activeWorkflowStep = workflowStepOverride ?? (workflowCurrentStep >= 0 ? workflowCurrentStep : 5);
+
+  const saveCheckStatus = async (checkType: "insolvencyCheck" | "legalCheck", status: "incomplete" | "none_found" | "found", note?: string) => {
+    if (!selectedId) return;
+    setBusy(true);
+    try {
+      await request(`/api/staff/cases/${selectedId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ [checkType]: { status, note: note ?? "" } }),
+      });
+      await loadDetail(selectedId);
+      await loadCases();
+      const label = checkType === "insolvencyCheck" ? "בדיקת חדלות הפירעון" : "הבדיקה המשפטית";
+      setNotice(
+        status === "none_found"
+          ? `${label} סומנה כהושלמה — לא נמצאו ממצאים (אין צורך בהעלאת קובץ ריק).`
+          : status === "found"
+          ? `${label} סומנה כ'נמצאו ממצאים' — יש לצרף מסמך ולתעד ממצא בתיק.`
+          : `${label} סומנה כ'לא הושלמה'.`
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "לא הצלחנו לשמור את סטטוס הבדיקה.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const setDocumentForUpload = (type: string) => {
     setUploadDocumentType(type);
@@ -654,25 +694,91 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
               <div className="detail-controls detail-controls-compact"><label>סטטוס<select value={selectedCase.status} disabled={busy} onChange={(e) => void updateCase({ status: e.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select></label>{staff.role === "admin" && <label>Member אחראי<select value={selectedCase.analystEmail ?? ""} disabled={busy} onChange={(e) => void updateCase({ analystEmail: e.target.value })}><option value="">לא משויך</option>{team.filter((member) => member.active && member.role === "member").map((member) => <option key={member.email} value={member.email}>{member.displayName}</option>)}</select></label>}{staff.role === "admin" && <label>תאריך יעד<input type="date" value={selectedCase.dueAt ? new Date(selectedCase.dueAt).toISOString().slice(0, 10) : ""} disabled={busy} onChange={(e) => void updateCase({ dueAt: e.target.value ? new Date(`${e.target.value}T23:59:00`).toISOString() : null })} /></label>}<div className="compact-meta-pills"><span><small>גוש</small><b>{propertyIds.block || "—"}</b></span><span><small>חלקה</small><b>{propertyIds.parcel || "—"}</b></span>{sellerNames.length > 0 && <span><small>מוכר</small><b>{sellerNames.join(" · ")}</b></span>}</div></div>
               <nav className="case-panel-nav" aria-label="אזורי התיק">{([{ id: "workflow", label: "תהליך עבודה" }, { id: "intake", label: "פרטי הבקשה" }, { id: "documents", label: `מסמכים (${detail.documents.length})` }, { id: "findings", label: `ממצאים ודוח (${detail.findings.length})` }, { id: "activity", label: "היסטוריה" }] as const).map((item) => <button type="button" key={item.id} className={casePanel === item.id ? "active" : ""} aria-current={casePanel === item.id ? "page" : undefined} onClick={() => setCasePanel(item.id)}>{item.label}</button>)}</nav>
               {casePanel === "workflow" && (selectedCase.status === "חדש" ? <section className="workflow-launch"><div><span className="workflow-kicker">התחלת טיפול</span><h3>התיק מוכן למעבר לאנליסט</h3><p>נעבור יחד על פרטי הבקשה, נאסוף את המסמכים ונכין את התיק לניתוח.</p></div><button className="button-primary" disabled={busy} onClick={() => void updateCase({ status: "באיסוף מידע" })}><Activity size={16} />תחילת תהליך אנליזה</button></section> : <section className="analysis-workflow workflow-focus-shell" aria-label="מסלול אנליזה"><div className="workflow-progress" aria-label={`הושלמו ${workflowCompletedCount} מתוך 6 שלבים`}><div className="workflow-progress-copy"><b>{workflowCurrentStep >= 0 ? `השלב הבא: ${workflowStepTitles[workflowCurrentStep]}` : "כל שלבי העבודה הושלמו"}</b><span>{workflowCompletedCount} מתוך 6 שלבים הושלמו</span></div><div className="workflow-progress-track"><i style={{ width: `${workflowCompletedCount / 6 * 100}%` }} /></div></div><nav className="workflow-step-nav workflow-step-nav-horizontal" aria-label="שלבי הבדיקה">{workflowStepTitles.map((title, index) => <button key={title} type="button" className={`${activeWorkflowStep === index ? "active" : ""} ${workflowDone[index] ? "done" : ""}`} aria-current={activeWorkflowStep === index ? "step" : undefined} onClick={() => setWorkflowStepOverride(index)}><span>{workflowDone[index] ? <Check size={13} /> : String(index + 1).padStart(2, "0")}</span><b>{title}</b></button>)}</nav><div className="workflow-focus-grid"><div className="workflow-stage"><div className="workflow-grid">
-                <article hidden={activeWorkflowStep !== 0} className={["workflow-step", workflowDone[0] ? "is-done" : "", workflowCurrentStep === 0 ? "is-active" : ""].filter(Boolean).join(" ")}><span className="workflow-step-number">01</span><div className="workflow-step-content"><b>בדיקת פרטי הלקוח והנכס</b><p>בדוק שהטופס מלא. גוש וחלקה נדרשים לפני הפקת נסח; תת־חלקה נשארת אופציונלית.</p><div className="cadastral-entry"><label>גוש<input inputMode="numeric" value={propertyIds.block} onChange={(event) => setPropertyIds((current) => ({ ...current, block: event.target.value }))} placeholder="מספר גוש" /></label><label>חלקה<input inputMode="numeric" value={propertyIds.parcel} onChange={(event) => setPropertyIds((current) => ({ ...current, parcel: event.target.value }))} placeholder="מספר חלקה" /></label><label>תת־חלקה <small>אופציונלי</small><input inputMode="numeric" value={propertyIds.subParcel} onChange={(event) => setPropertyIds((current) => ({ ...current, subParcel: event.target.value }))} placeholder="אם ידוע" /></label></div><div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginTop: "6px" }}><button type="button" className="workflow-action" disabled={busy} onClick={() => void lookupCadastralAuto()}>⚡ איתור גוש/חלקה אוטומטי מ-GovMap</button><a className="workflow-source-link" href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html" target="_blank" rel="noopener noreferrer">איתור ידני באתר gov.il <ChevronLeft size={14} /></a></div><div className="workflow-step-actions"><button type="button" className="workflow-action strong" disabled={busy || !propertyIds.block.trim() || !propertyIds.parcel.trim()} onClick={() => void completeAddressReview()}>{busy ? "שומר…" : workflowDone[0] ? "עדכון גוש וחלקה" : "שמירת פרטים והמשך"}</button><button type="button" className="workflow-action" onClick={() => setCasePanel("intake")}>הצגת הטופס המלא</button></div></div><span className="workflow-check">{workflowDone[0] ? <Check size={16} /> : "1"}</span></article>
+                <article hidden={activeWorkflowStep !== 0} className={["workflow-step", workflowDone[0] ? "is-done" : "", workflowCurrentStep === 0 ? "is-active" : ""].filter(Boolean).join(" ")}><span className="workflow-step-number">01</span><div className="workflow-step-content"><b>בדיקת פרטי הלקוח והנכס</b><p>בדוק שהטופס מלא. גוש וחלקה נדרשים לפני הפקת נסח; תת־חלקה נשארת אופציונלית.</p><div className="cadastral-entry"><label>גוש<input inputMode="numeric" value={propertyIds.block} onChange={(event) => setPropertyIds((current) => ({ ...current, block: event.target.value }))} placeholder="מספר גוש" /></label><label>חלקה<input inputMode="numeric" value={propertyIds.parcel} onChange={(event) => setPropertyIds((current) => ({ ...current, parcel: event.target.value }))} placeholder="מספר חלקה" /></label><label>תת־חלקה <small>אופציונלי</small><input inputMode="numeric" value={propertyIds.subParcel} onChange={(event) => setPropertyIds((current) => ({ ...current, subParcel: event.target.value }))} placeholder="אם ידוע" /></label></div><div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", marginTop: "8px" }}><button type="button" className="workflow-action" disabled={busy} onClick={() => void lookupCadastralAuto()}>איתור גוש/חלקה אוטומטי מ-GovMap</button><a className="workflow-source-link" href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html" target="_blank" rel="noopener noreferrer">איתור ידני באתר gov.il <ChevronLeft size={14} /></a></div><div className="workflow-step-actions"><button type="button" className="workflow-action strong" disabled={busy || !propertyIds.block.trim() || !propertyIds.parcel.trim()} onClick={() => void completeAddressReview()}>{busy ? "שומר…" : workflowDone[0] ? "עדכון גוש וחלקה" : "שמירת פרטים והמשך"}</button><button type="button" className="workflow-action" onClick={() => setCasePanel("intake")}>הצגת הטופס המלא</button></div></div><span className="workflow-check">{workflowDone[0] ? <Check size={16} /> : "1"}</span></article>
                 <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח בתיק. בדוק כתובת, גוש וחלקה, תת־חלקה ובעלי זכויות." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, ואז העלה אותו לתיק."}</p>{sellerNames.length > 0 && <small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small>}<a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a><button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[0]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[0])}>{hasDocumentType(requiredDocumentTypes[0]) ? "בדיקת הנסח בתיק" : "העלאת נסח טאבו"}</button></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
-                <article hidden={activeWorkflowStep !== 2} className={`workflow-step ${workflowDone[2] ? "is-done" : ""} ${workflowCurrentStep === 2 ? "is-active" : ""}`}><span className="workflow-step-number">03</span><div><b>מרשם המשכונות והבטוחות</b><p>השתמש בשם ובתעודת הזהות של כל בעל/ת זכויות כפי שמופיעים בנסח. אם יש כמה בעלים, בדוק כל אחד בנפרד ואמת התאמת זהות לפני החיפוש.</p><small className="workflow-sellers">מומלץ שחילוץ AI של שמות ומספרי זהות יישמר כטיוטה; האנליסט יאשר אותם מול הנסח לפני שימוש.</small><a className="workflow-action workflow-link" href="https://ica.justice.gov.il/SearchPledge/PledgeBrowse?grdPledgeBrowse-sort=State-asc" target="_blank" rel="noopener noreferrer">פתיחת מרשם הבטוחות</a><button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[1]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[1])}>{hasDocumentType(requiredDocumentTypes[1]) ? "צפייה בנסח שהועלה" : "העלאת נסח המשכונות"}</button></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[1]) ? <Check size={16} /> : "3"}</span></article>
+                <article hidden={activeWorkflowStep !== 2} className={`workflow-step ${workflowDone[2] ? "is-done" : ""} ${workflowCurrentStep === 2 ? "is-active" : ""}`}>
+                  <span className="workflow-step-number">03</span>
+                  <div>
+                    <b>מרשם המשכונות והבטוחות</b>
+                    <p>השתמש בשם ובתעודת הזהות של כל בעל/ת זכויות כפי שמופיעים בנסח. אם יש כמה בעלים, בדוק כל אחד בנפרד ואמת התאמת זהות לפני החיפוש.</p>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", margin: "8px 0" }}>
+                      <span style={{ fontSize: "12px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: hasPledgeDoc ? "#ecfdf5" : "#fffbeb", color: hasPledgeDoc ? "#065f46" : "#92400e", border: `1px solid ${hasPledgeDoc ? "#a7f3d0" : "#fde68a"}` }}>
+                        {hasPledgeDoc ? "✓ מסמך רשם המשכונות הועלה לתיק" : "טרם הועלה מסמך רשם המשכונות"}
+                      </span>
+                      <span style={{ fontSize: "12px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: hasPledgeFinding ? "#ecfdf5" : "#fffbeb", color: hasPledgeFinding ? "#065f46" : "#92400e", border: `1px solid ${hasPledgeFinding ? "#a7f3d0" : "#fde68a"}` }}>
+                        {hasPledgeFinding ? "✓ ממצא רשם המשכונות משולב בתיק ובשקלול" : "ממתין לתיעוד ממצא לשקלול הסיכון"}
+                      </span>
+                    </div>
+                    {hasPledgeDoc && !hasPledgeFinding && (
+                      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#92400e" }}>
+                        <b>שים לב:</b> המסמך הועלה לתיק, אך טרם תועד ממצא משוקלל. יש לתעד ממצא (תקין או שעבוד פעיל) כדי שישפיע על שקלול הסיכון והדוח.
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
+                      <a className="workflow-action workflow-link" href="https://ica.justice.gov.il/SearchPledge/PledgeBrowse?grdPledgeBrowse-sort=State-asc" target="_blank" rel="noopener noreferrer">פתיחת מרשם הבטוחות</a>
+                      <button type="button" className="workflow-action" onClick={() => hasPledgeDoc ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[1])}>{hasPledgeDoc ? "צפייה במסמך שהועלה" : "העלאת דוח רשם המשכונות"}</button>
+                      <button type="button" className="workflow-action strong" onClick={() => { setFinding({ category: "רשם המשכונות", title: "", note: "", severity: "בינונית", source: "רשם המשכונות והבטוחות" }); setFindingForm(true); setCasePanel("findings"); }}>תיעוד ממצא משכונות</button>
+                    </div>
+                  </div>
+                  <span className="workflow-check">{workflowDone[2] ? <Check size={16} /> : "3"}</span>
+                </article>
                 <article hidden={activeWorkflowStep !== 3} className={`workflow-step ${workflowDone[3] ? "is-done" : ""} ${workflowCurrentStep === 3 ? "is-active" : ""}`}>
                   <span className="workflow-step-number">04</span>
                   <div>
                     <b>בדיקת חדלות פירעון (משרד המשפטים)</b>
-                    <p>איתור תיקי חדלות פירעון ופשיטת רגל של המוכר/היזם במאגר הממונה. הליך פעיל מפעיל תקרת ציון 39 ועוצר את העסקה (STOP).</p>
-                    <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#92400e" }}>
-                      <b>הנחיית ניסוח מחייבת:</b> לעולם אין לרשום ״אין חובות״. יש לרשום ״לא אותר הליך חדלות פירעון במאגר שנבדק״.
+                    <p>איתור תיקי חדלות פירעון ופשיטת רגל של המוכר/היזם במאגר הממונה. בחר את מצב הבדיקה המדויק — אין צורך לצרף מסמך ריק כאשר לא נמצאו הליכים.</p>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", margin: "10px 0" }}>
+                      {([
+                        { key: "found", label: "נמצאו הליכים", bg: "#fef2f2", color: "#991b1b", border: "#fecaca" },
+                        { key: "none_found", label: "לא נמצאו הליכים (הושלמה)", bg: "#ecfdf5", color: "#065f46", border: "#a7f3d0" },
+                        { key: "incomplete", label: "הבדיקה לא הושלמה", bg: "#fffbeb", color: "#92400e", border: "#fde68a" },
+                      ] as const).map((opt) => {
+                        const active = insolvencyCheckStatus === opt.key;
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void saveCheckStatus("insolvencyCheck", opt.key)}
+                            style={{
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              padding: "6px 12px",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              border: `1.5px solid ${active ? opt.border : "#e2e8f0"}`,
+                              background: active ? opt.bg : "#fff",
+                              color: active ? opt.color : "#475569",
+                            }}
+                          >
+                            {active ? "✓ " : ""}{opt.label}
+                          </button>
+                        );
+                      })}
                     </div>
+                    {insolvencyCheckStatus === "incomplete" && (
+                      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#92400e" }}>
+                        <b>סטטוס: הבדיקה לא הושלמה.</b> המערכת לא תציג מצב זה כאילו לא נמצאו הליכים. יש להשלים את הבדיקה ולעדכן את הסטטוס.
+                      </div>
+                    )}
+                    {insolvencyCheckStatus === "found" && (
+                      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#991b1b" }}>
+                        <b>נמצאו הליכים:</b> יש להעלות את המסמך הרלוונטי לתיק ולתעד ממצא בלשונית הממצאים כדי שישוקלל בסיכון (הליך פעיל מפעיל תקרת ציון 39).
+                      </div>
+                    )}
                     {sellerNames.length > 0 && <small className="workflow-sellers">בדיקה לפי שמות המוכרים: {sellerNames.join(" · ")}</small>}
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
                       <a className="workflow-action workflow-link" href="https://insolvency.justice.gov.il/" target="_blank" rel="noopener noreferrer">
                         פתיחת מאגר חדלות פירעון <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
                       </a>
                       <button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[2]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[2])}>
-                        {hasDocumentType(requiredDocumentTypes[2]) ? "צפייה בדוח חדלות פירעון" : "העלאת דוח/צילום מסך"}
+                        {hasDocumentType(requiredDocumentTypes[2]) ? "צפייה בדוח חדלות פירעון" : "העלאת מסמך (במידת הצורך)"}
                       </button>
+                      {insolvencyCheckStatus === "found" && (
+                        <button type="button" className="workflow-action strong" onClick={() => { setFinding({ category: "חדלות פירעון", title: "", note: "", severity: "גבוהה", source: "משרד המשפטים — insolvency.justice.gov.il" }); setFindingForm(true); setCasePanel("findings"); }}>
+                          תיעוד ממצא חדלות פירעון
+                        </button>
+                      )}
                     </div>
                   </div>
                   <span className="workflow-check">{workflowDone[3] ? <Check size={16} /> : "4"}</span>
@@ -682,15 +788,59 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                   <span className="workflow-step-number">05</span>
                   <div>
                     <b>הליכים משפטיים וסכסוכים</b>
-                    <p>בדוק ב-Nevo / נט המשפט הליכים ותיקים רלוונטיים על שם המוכרים ובעלי הזכויות, ותעד בתיק את הממצאים והמקור.</p>
+                    <p>בדוק ב-Nevo / נט המשפט הליכים ותיקים רלוונטיים על שם המוכרים ובעלי הזכויות, וסמן את מצב הבדיקה באותו מנגנון.</p>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", margin: "10px 0" }}>
+                      {([
+                        { key: "found", label: "נמצאו ממצאים משפטיים", bg: "#fef2f2", color: "#991b1b", border: "#fecaca" },
+                        { key: "none_found", label: "לא נמצאו ממצאים (הושלמה)", bg: "#ecfdf5", color: "#065f46", border: "#a7f3d0" },
+                        { key: "incomplete", label: "הבדיקה לא הושלמה", bg: "#fffbeb", color: "#92400e", border: "#fde68a" },
+                      ] as const).map((opt) => {
+                        const active = legalCheckStatus === opt.key;
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void saveCheckStatus("legalCheck", opt.key)}
+                            style={{
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              padding: "6px 12px",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              border: `1.5px solid ${active ? opt.border : "#e2e8f0"}`,
+                              background: active ? opt.bg : "#fff",
+                              color: active ? opt.color : "#475569",
+                            }}
+                          >
+                            {active ? "✓ " : ""}{opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {legalCheckStatus === "incomplete" && (
+                      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#92400e" }}>
+                        <b>סטטוס: הבדיקה לא הושלמה.</b> חסר אימות משפטי — יש להשלים את הבדיקה או להעלות את המסמך מהשירות החיצוני.
+                      </div>
+                    )}
+                    {legalCheckStatus === "found" && (
+                      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#991b1b" }}>
+                        <b>נמצאו ממצאים משפטיים:</b> יש להעלות את המסמך המשפטי שהתקבל ולתעד את הממצאים בתיק לשקלול בדוח.
+                      </div>
+                    )}
                     {sellerNames.length > 0 && <small className="workflow-sellers">מומלץ לחפש כל בעל/ת זכויות בנפרד לפי השם המלא שמופיע בנסח: {sellerNames.join(" · ")}</small>}
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
                       <a className="workflow-action workflow-link" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer">
                         פתיחת מאגר נבו <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
                       </a>
                       <button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[3]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[3])}>
-                        {hasDocumentType(requiredDocumentTypes[3]) ? "צפייה בדוח המשפטי" : "העלאת דוח משפטי"}
+                        {hasDocumentType(requiredDocumentTypes[3]) ? "צפייה בדוח המשפטי" : "העלאת מסמך משפטי"}
                       </button>
+                      {legalCheckStatus === "found" && (
+                        <button type="button" className="workflow-action strong" onClick={() => { setFinding({ category: "רקע משפטי", title: "", note: "", severity: "בינונית", source: "נבו / נט המשפט" }); setFindingForm(true); setCasePanel("findings"); }}>
+                          תיעוד ממצא משפטי
+                        </button>
+                      )}
                     </div>
                   </div>
                   <span className="workflow-check">{workflowDone[4] ? <Check size={16} /> : "5"}</span>
@@ -714,7 +864,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                             disabled={busy}
                             onClick={() => void generateReport()}
                           >
-                            {busy ? "מפיק דוח טיוטה…" : "⚡ הפקת דוח (Generate Report)"}
+                            {busy ? "מפיק דוח טיוטה…" : "הפקת דוח (Generate Report)"}
                           </button>
                           <button type="button" className="workflow-action" onClick={() => setCasePanel("findings")}>
                             צפייה בממצאים קיימים
@@ -1029,23 +1179,6 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                     <small style={{ color: "#64748b", fontSize: "12px" }}>אין עדיין מסמכים בתיק.</small>
                   )}
                 </div>
-                <div className="side-rail-card">
-                  <div className="side-rail-head">
-                    <b>צ׳קליסט בקרה</b>
-                    <span className="list-count">{checklistItems.filter((item) => detail.checklist?.[item.key]?.completed).length}/{checklistItems.length}</span>
-                  </div>
-                  <div className="side-checklist-list">
-                    {checklistItems.map((item) => {
-                      const checked = Boolean(detail.checklist?.[item.key]?.completed);
-                      return (
-                        <label key={item.key} className={`side-check-row ${checked ? "done" : ""}`}>
-                          <input type="checkbox" checked={checked} disabled={busy || item.automatic} onChange={(event) => void updateChecklist(item.key, event.target.checked)} />
-                          <span>{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
               </aside>
               </div></section>)}
               
@@ -1056,11 +1189,11 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                 {detail.documents.length ? <div className="documents-grid">{detail.documents.map((doc) => <div key={doc.id} className="document-item" style={{ cursor: "default", alignItems: "center" }}><span className="document-icon"><FileText size={18} /></span><span style={{ flex: 1, minWidth: 0 }}><b>{doc.filename}</b><small>{doc.documentType} · {doc.source}</small><small>{Math.max(1, Math.round(doc.size / 1024))} KB · נאסף {new Date(doc.collectedAt).toLocaleDateString("he-IL")}</small></span><div style={{ display: "flex", gap: "6px", flexShrink: 0 }}><button type="button" className="text-action" title="תצוגה מהירה" onClick={() => setPreviewDoc({ id: doc.id, filename: doc.filename, contentType: doc.contentType })}><Eye size={15} />צפייה</button><button type="button" className="text-action" title="הורדת מסמך" onClick={() => void download(doc.id)}><ArrowDownToLine size={15} /></button></div></div>)}</div> : <div className="inline-empty">לא צורפו מסמכים. העלו כאן את החומרים שנאספו במהלך הבדיקה.</div>}
               </div>
               <div hidden={casePanel !== "findings"} className="detail-section" id="case-findings"><div className="section-title"><div><b>ממצאים ובקרת אנליסט</b><small>{detail.findings.length} ממצאים · כל ממצא דורש החלטת צוות</small></div><button className="text-action" onClick={() => setFindingForm((v) => !v)}><Plus size={16} />הוספת ממצא</button></div>
-                {findingForm && <form className="finding-form" onSubmit={addFinding}><div style={{ marginBottom: "12px" }}><small style={{ display: "block", color: "#64748b", marginBottom: "6px", fontWeight: 700 }}>תבניות ממצאים מהירות (לחיצה אחת למילוי):</small><div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>{FINDING_MACROS.map((macro) => <button key={macro.label} type="button" onClick={() => setFinding({ category: macro.category, severity: macro.severity, title: macro.title, note: macro.note, source: macro.source })} style={{ fontSize: "12px", padding: "5px 10px", borderRadius: "999px", border: "1px solid #cbd5e1", background: "#f8fafc", color: "#0f172a", cursor: "pointer", fontWeight: 600 }}>⚡ {macro.label}</button>)}</div></div><div className="form-grid"><label>תחום<input value={finding.category} onChange={(e) => setFinding({ ...finding, category: e.target.value })} required /></label><label>חומרה<select value={finding.severity} onChange={(e) => setFinding({ ...finding, severity: e.target.value })}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select></label><label className="span-two">כותרת<input value={finding.title} onChange={(e) => setFinding({ ...finding, title: e.target.value })} required /></label><label className="span-two">תיאור<textarea rows={3} value={finding.note} onChange={(e) => setFinding({ ...finding, note: e.target.value })} required /></label><label className="span-two">מקור / מסמך<input value={finding.source} onChange={(e) => setFinding({ ...finding, source: e.target.value })} /></label></div><div className="form-actions"><button className="button-primary" disabled={busy}>שמירת ממצא</button><button type="button" className="button-plain" onClick={() => setFindingForm(false)}>ביטול</button></div></form>}
+                {findingForm && <form className="finding-form" onSubmit={addFinding}><div style={{ marginBottom: "12px" }}><small style={{ display: "block", color: "#4E5856", marginBottom: "8px", fontWeight: 500 }}>תבניות ממצאים מהירות (לחיצה אחת למילוי):</small><div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>{FINDING_MACROS.map((macro) => <button key={macro.label} type="button" onClick={() => setFinding({ category: macro.category, severity: macro.severity, title: macro.title, note: macro.note, source: macro.source })} style={{ fontSize: "12px", padding: "6px 12px", borderRadius: "8px", border: "1px solid rgba(22,27,26,0.1)", background: "#FAF9F6", color: "#161B1A", cursor: "pointer", fontWeight: 500 }}>{macro.label}</button>)}</div></div><div className="form-grid"><label>תחום<input value={finding.category} onChange={(e) => setFinding({ ...finding, category: e.target.value })} required /></label><label>חומרה<select value={finding.severity} onChange={(e) => setFinding({ ...finding, severity: e.target.value })}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select></label><label className="span-two">כותרת<input value={finding.title} onChange={(e) => setFinding({ ...finding, title: e.target.value })} required /></label><label className="span-two">תיאור<textarea rows={3} value={finding.note} onChange={(e) => setFinding({ ...finding, note: e.target.value })} required /></label><label className="span-two">מקור / מסמך<input value={finding.source} onChange={(e) => setFinding({ ...finding, source: e.target.value })} /></label></div><div className="form-actions"><button className="button-primary" disabled={busy}>שמירת ממצא</button><button type="button" className="button-plain" onClick={() => setFindingForm(false)}>ביטול</button></div></form>}
                 {detail.findings.length ? <div className="finding-list">{detail.findings.map((item) => <article className="finding-row" key={item.id}>{editingFindingId === item.id ? <form className="finding-form" onSubmit={saveFindingEdit}><div className="form-grid"><label>תחום<input value={findingEdit.category} onChange={(event) => setFindingEdit({ ...findingEdit, category: event.target.value })} required /></label><label>חומרה<select value={findingEdit.severity} onChange={(event) => setFindingEdit({ ...findingEdit, severity: event.target.value })}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select></label><label className="span-two">כותרת<input value={findingEdit.title} onChange={(event) => setFindingEdit({ ...findingEdit, title: event.target.value })} required /></label><label className="span-two">תיאור<textarea rows={4} value={findingEdit.note} onChange={(event) => setFindingEdit({ ...findingEdit, note: event.target.value })} required /></label><label className="span-two">מקור / מסמך<input value={findingEdit.source} onChange={(event) => setFindingEdit({ ...findingEdit, source: event.target.value })} /></label></div><div className="form-actions"><button className="button-primary" disabled={busy}>שמירת תיקון</button><button type="button" className="button-plain" onClick={() => setEditingFindingId(null)}>ביטול</button></div></form> : <><div className="finding-severity"><i className={`severity-dot sev-${item.severity === "גבוהה" ? "high" : item.severity === "נמוכה" ? "low" : "mid"}`} />{item.severity}</div><h3>{item.title}</h3><p>{item.note}</p><div className="finding-meta"><span>{item.category}</span>{item.source && <span>מקור: {item.source}</span>}{item.confidence !== null && <span>ביטחון AI: {item.confidence}%</span>}</div>{item.state === "לבדיקה" ? <div className="finding-review"><span>ממתין לבקרה</span><button onClick={() => void editFinding(item)} disabled={busy}><Pencil size={14} />עריכה</button><button onClick={() => void reviewFinding(item.id, "אושר")} disabled={busy}><Check size={15} />אישור</button><button onClick={() => void reviewFinding(item.id, "לברור")} disabled={busy}>העברה לבירור</button><button onClick={() => void reviewFinding(item.id, "נדחה")} disabled={busy}><X size={15} />דחייה</button></div> : <div className="reviewed-tag"><Check size={14} />{item.state}{item.reviewedBy ? ` · ${item.reviewedBy}` : ""}{item.reviewNote ? ` · ${item.reviewNote}` : ""}<button className="button-plain" disabled={busy} onClick={() => void editFinding(item)}><Pencil size={13} />עריכה</button></div>}</>}</article>)}</div> : <div className="inline-empty">לא נוספו ממצאים לתיק. ניתן להוסיף ממצאים לאחר בדיקת המסמכים והמקורות.</div>}
               </div>
               <div hidden={casePanel !== "activity"} className="detail-section"><div className="section-title"><div><b>היסטוריית תיק</b><small>פעולות ועדכונים</small></div></div>{detail.activity.length ? <div className="activity-list">{detail.activity.map((event) => <div className="activity-item" key={event.id}><span className="activity-dot" /><span><b>{event.action}</b><small>{event.detail}</small><em>{event.actorName} · {new Date(event.createdAt).toLocaleString("he-IL")}</em></span></div>)}</div> : <div className="inline-empty">אין עדיין עדכונים.</div>}</div>
-              <div hidden={casePanel !== "findings"} className="report-gate"><ShieldCheck size={19} /><span><b>בקרת ממצאים לפני דוח</b><small>{detail.findings.some((item) => item.state === "לבדיקה" || item.state === "לברור") ? "יש להשלים בדיקה של כל ממצא לפני הכנת הדוח." : detail.report ? `דוח גרסה ${detail.report.version} הופק. אפשר לפתוח אותו לפני השליחה ללקוח.` : "כל הממצאים נבדקו. ניתן להפיק דוח לשמירה או להדפסה."}</small></span><span className="gate-count">{detail.findings.filter((item) => item.state === "לבדיקה" || item.state === "לברור").length} לבדיקה</span>{!detail.findings.some((item) => item.state === "לבדיקה" || item.state === "לברור") && <><button className="report-create" disabled={busy || checklistItems.filter((item) => !item.automatic).some((item) => !detail.checklist?.[item.key]?.completed)} onClick={() => void generateReport()}>{detail.report ? "גרסה חדשה" : "הפקת דוח"}</button>{detail.report && <a className="report-open" href={`/staff/cases/${selectedId}/report`} target="_blank">פתיחת דוח {detail.report.version}</a>}{detail.report && selectedCase.status === "דוח מוכן" && <button className="report-create" disabled={busy || checklistItems.filter((item) => !item.automatic).some((item) => !detail.checklist?.[item.key]?.completed)} onClick={() => void sendReport()}>שליחת דוח ללקוח</button>}</>}</div>
+              <div hidden={casePanel !== "findings"} className="report-gate"><ShieldCheck size={19} /><span><b>בקרת ממצאים לפני דוח</b><small>{detail.findings.some((item) => item.state === "לבדיקה" || item.state === "לברור") ? "יש להשלים בדיקה של כל ממצא לפני הכנת הדוח." : detail.report ? `דוח גרסה ${detail.report.version} הופק. אפשר לפתוח אותו לפני השליחה ללקוח.` : "כל הממצאים נבדקו. ניתן להפיק דוח לשמירה או להדפסה."}</small></span><span className="gate-count">{detail.findings.filter((item) => item.state === "לבדיקה" || item.state === "לברור").length} לבדיקה</span>{!detail.findings.some((item) => item.state === "לבדיקה" || item.state === "לברור") && <><button className="report-create" disabled={busy} onClick={() => void generateReport()}>{detail.report ? "גרסה חדשה" : "הפקת דוח"}</button>{detail.report && <a className="report-open" href={`/staff/cases/${selectedId}/report`} target="_blank">פתיחת דוח {detail.report.version}</a>}{detail.report && selectedCase.status === "דוח מוכן" && <button className="report-create" disabled={busy} onClick={() => void sendReport()}>שליחת דוח ללקוח</button>}</>}</div>
             </>}</div>
           </section>
         </> : section === "clients" ? <>
@@ -1109,10 +1242,8 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
         <div style={{ background: "#ffffff", borderRadius: "16px", maxWidth: "520px", width: "100%", padding: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)", border: "1px solid #e2e8f0", textAlign: "right" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f0fdfa", color: "#0d766e", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Mail size={20} />
-              </div>
-              <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "bold", color: "#0f172a" }}>
+              <Mail size={18} style={{ color: "#145348", flexShrink: 0 }} />
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 500, color: "#161B1A" }}>
                 אישור שליחת דוח בדיקת נאותות ללקוח
               </h3>
             </div>

@@ -176,7 +176,7 @@ export default function HomePage() {
               איך זה עובד
             </a>
             <a href="#sources" className="hover:text-white transition-colors duration-200 ease-out">
-              11 המאגרים
+              מקורות המידע
             </a>
             <a href="#comparison" className="hover:text-white transition-colors duration-200 ease-out">
               השוואה
@@ -209,7 +209,7 @@ export default function HomePage() {
       <section className="px-6 py-16 sm:py-24 max-w-6xl mx-auto">
         <div className="max-w-3xl text-right">
           <p className="text-sm font-medium text-[#00C896] mb-4">
-            בדיקת נאותות לנדל״ן בישראל · 11 מאגרי מידע רשמיים
+            בדיקת נאותות לנדל״ן בישראל · הצלבת מאגרי מידע רשמיים
           </p>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-medium leading-[1.15] text-white mb-6">
@@ -221,7 +221,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed mb-8 font-normal">
-            הצלבת נתונים מ-11 מאגרים ממשלתיים ומשפטיים לאיתור שעבודים, עיקולים, הליכי חדלות פירעון, פערי שווי והערות אזהרה — בדוח נאותות אחד עם ציון SafeScore, לפני שמתחייבים לעסקה.
+            הצלבת נתונים ממאגרים ממשלתיים ומשפטיים לאיתור שעבודים, עיקולים, הליכי חדלות פירעון, פערי שווי והערות אזהרה — בדוח נאותות אחד עם ציון SafeScore, לפני שמתחייבים לעסקה.
           </p>
 
           {/* Fast Address Search Box — Single Primary CTA on Page */}
@@ -341,7 +341,7 @@ export default function HomePage() {
               },
               {
                 step: "02",
-                title: "הצלבת 11 מאגרי מידע רשמיים",
+                title: "הצלבת מאגרי מידע רשמיים",
                 desc: "איסוף והצלבה של נתוני טאבו, רשם המשכונות, תיקי חדלות פירעון, עסקאות רשות המסים, תוכניות XPLAN ותביעות משפטיות.",
               },
               {
@@ -374,7 +374,7 @@ export default function HomePage() {
         </p>
 
         <h2 className="text-3xl sm:text-4xl font-medium leading-[1.2] mb-4 text-white">
-          11 מאגרי מידע לאומיים — במקום אחד
+          מאגרי המידע המרכזיים — במקום אחד
         </h2>
 
         <p className="text-base text-slate-300 max-w-2xl mb-12 leading-relaxed font-normal">

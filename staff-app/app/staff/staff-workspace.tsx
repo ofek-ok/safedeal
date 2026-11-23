@@ -332,6 +332,10 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const hasDocumentType = (type: string) => Boolean(detail?.documents.some((document) => document.documentType === type));
   const sellerNamesValue = detail?.intakeData?.deal?.sellerNames;
   const sellerNames = Array.isArray(sellerNamesValue) ? sellerNamesValue.filter((name): name is string => typeof name === "string" && !!name.trim()) : [];
+  const tabuOwnersRaw = detail?.intakeData?.deal?.tabuOwners;
+  const tabuOwners = Array.isArray(tabuOwnersRaw)
+    ? tabuOwnersRaw.filter((o): o is { name: string; idNumber?: string } => Boolean(o && typeof o === "object" && typeof (o as { name?: unknown }).name === "string" && (o as { name: string }).name.trim()))
+    : [];
   const requiredDocumentTypes = ["נסח טאבו / אישור זכויות", "דוח מרשם המשכונות", "דוח חדלות פירעון (משרד המשפטים)", "דוח מתדיינים / הליכים משפטיים"];
   const checksObj = (detail?.intakeData && typeof (detail.intakeData as Record<string, unknown>).checks === "object" && (detail.intakeData as Record<string, unknown>).checks !== null)
     ? ((detail.intakeData as Record<string, unknown>).checks as Record<string, { status?: string; note?: string }>)
@@ -406,17 +410,53 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
     catch { setNotice("לא ניתן להעתיק אוטומטית. אפשר לסמן ולהעתיק את פרטי הנכס שמופיעים בכרטיס."); }
   };
 
-  const copySellerNames = async () => {
-    const devName = typeof detail?.intakeData?.deal?.developerName === "string" ? detail.intakeData.deal.developerName.trim() : "";
-    const devReg = typeof detail?.intakeData?.deal?.developerRegNumber === "string" ? detail.intakeData.deal.developerRegNumber.trim() : "";
-    const text = sellerNames.length > 0 ? sellerNames.join(" | ") : [devName, devReg].filter(Boolean).join(" ");
-    if (!text) { setNotice("אין שמות מוכרים או יזם שמורים בטופס."); return; }
+  const copyTextValue = async (text: string, label?: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setNotice(`הועתק ללוח: ${text}`);
+      setNotice(label ? `${label} הועתק ללוח: ${text}` : `הועתק ללוח: ${text}`);
     } catch {
       setNotice("לא ניתן להעתיק אוטומטית מהדפדפן.");
     }
+  };
+
+  const renderExtractedOwnersCard = () => {
+    if (!tabuOwners.length) return null;
+    return (
+      <div style={{ background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: "10px", padding: "10px 12px", margin: "8px 0", display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          <b style={{ fontSize: "12.5px", color: "#134e4a" }}>בעלי זכויות ות.ז./ח.פ. שחולצו מנסח הטאבו:</b>
+          <button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={() => void copySellerNames()}>
+            <Copy size={12} /> העתק הכול
+          </button>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          {tabuOwners.map((owner, idx) => (
+            <div key={`${owner.name}-${idx}`} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#FFFFFF", border: "1px solid rgba(20,83,72,0.18)", borderRadius: "8px", padding: "4px 8px", fontSize: "12px" }}>
+              <button type="button" onClick={() => void copyTextValue(owner.name, "שם בעל הזכויות")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontWeight: 600, color: "#161B1A" }} title="לחץ להעתקת השם">
+                {owner.name}
+              </button>
+              {owner.idNumber && (
+                <button type="button" onClick={() => void copyTextValue(owner.idNumber!, "מספר זיהוי")} style={{ background: "#e6f2ef", border: "1px solid rgba(20,83,72,0.2)", borderRadius: "6px", padding: "2px 6px", cursor: "pointer", fontFamily: "monospace", fontSize: "11.5px", fontWeight: 700, color: "#145348" }} title="לחץ להעתקת ת.ז. / ח.פ.">
+                  ת.ז. {owner.idNumber}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const copySellerNames = async () => {
+    const devName = typeof detail?.intakeData?.deal?.developerName === "string" ? detail.intakeData.deal.developerName.trim() : "";
+    const devReg = typeof detail?.intakeData?.deal?.developerRegNumber === "string" ? detail.intakeData.deal.developerRegNumber.trim() : "";
+    const text = tabuOwners.length > 0
+      ? tabuOwners.map((o) => o.idNumber ? `${o.name} (${o.idNumber})` : o.name).join(" | ")
+      : sellerNames.length > 0
+      ? sellerNames.join(" | ")
+      : [devName, devReg].filter(Boolean).join(" ");
+    if (!text) { setNotice("אין שמות מוכרים או יזם שמורים בטופס."); return; }
+    await copyTextValue(text);
   };
 
   const classifyDroppedDocument = (file: File): { documentType: string; source: string } => {
@@ -838,13 +878,14 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
               <nav className="case-panel-nav" aria-label="אזורי התיק">{([{ id: "workflow", label: "תהליך עבודה" }, { id: "intake", label: "פרטי הבקשה" }, { id: "documents", label: `מסמכים (${detail.documents.length})` }, { id: "findings", label: `ממצאים ודוח (${detail.findings.length})` }, { id: "activity", label: "היסטוריה" }] as const).map((item) => <button type="button" key={item.id} className={casePanel === item.id ? "active" : ""} aria-current={casePanel === item.id ? "page" : undefined} onClick={() => setCasePanel(item.id)}>{item.label}</button>)}</nav>
               {casePanel === "workflow" && (selectedCase.status === "חדש" ? <section className="workflow-launch"><div><span className="workflow-kicker">התחלת טיפול</span><h3>התיק מוכן למעבר לאנליסט</h3><p>נעבור יחד על פרטי הבקשה, נאסוף את המסמכים ונכין את התיק לניתוח.</p></div><button className="button-primary" disabled={busy} onClick={() => void updateCase({ status: "באיסוף מידע" })}><Activity size={16} />תחילת תהליך אנליזה</button></section> : <section className="analysis-workflow workflow-focus-shell" aria-label="מסלול אנליזה"><div className="workflow-progress" aria-label={`הושלמו ${workflowCompletedCount} מתוך 5 שלבים`}><div className="workflow-progress-copy"><b>{workflowCurrentStep >= 0 ? `השלב הבא: ${workflowStepTitles[workflowCurrentStep]}` : "כל שלבי העבודה הושלמו"}</b><span>{workflowCompletedCount} מתוך 5 שלבים הושלמו</span></div><div className="workflow-progress-track"><i style={{ width: `${workflowCompletedCount / 5 * 100}%` }} /></div></div><nav className="workflow-step-nav workflow-step-nav-horizontal" aria-label="שלבי הבדיקה">{workflowStepTitles.map((title, index) => <button key={title} type="button" className={`${activeWorkflowStep === index ? "active" : ""} ${workflowDone[index] ? "done" : ""}`} aria-current={activeWorkflowStep === index ? "step" : undefined} onClick={() => setWorkflowStepOverride(index)}><span>{workflowDone[index] ? <Check size={13} /> : String(index + 1).padStart(2, "0")}</span><b>{title}</b></button>)}</nav><div className="workflow-focus-grid"><div className="workflow-stage"><div className="workflow-grid">
                 <article hidden={activeWorkflowStep !== 0} className={["workflow-step", workflowDone[0] ? "is-done" : "", workflowCurrentStep === 0 ? "is-active" : ""].filter(Boolean).join(" ")}><span className="workflow-step-number">01</span><div className="workflow-step-content"><b>בדיקת פרטי הלקוח והנכס</b><p>בדוק שהטופס מלא. גוש וחלקה נדרשים לפני הפקת נסח; תת־חלקה נשארת אופציונלית.</p><div className="cadastral-entry"><label>גוש<input inputMode="numeric" value={propertyIds.block} onChange={(event) => setPropertyIds((current) => ({ ...current, block: event.target.value }))} placeholder="מספר גוש" /></label><label>חלקה<input inputMode="numeric" value={propertyIds.parcel} onChange={(event) => setPropertyIds((current) => ({ ...current, parcel: event.target.value }))} placeholder="מספר חלקה" /></label><label>תת־חלקה <small>אופציונלי</small><input inputMode="numeric" value={propertyIds.subParcel} onChange={(event) => setPropertyIds((current) => ({ ...current, subParcel: event.target.value }))} placeholder="אם ידוע" /></label></div><div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", marginTop: "8px" }}><button type="button" className="workflow-action" disabled={busy} onClick={() => void lookupCadastralAuto()}>איתור גוש/חלקה אוטומטי מ-GovMap</button><a className="workflow-source-link" href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html" target="_blank" rel="noopener noreferrer">איתור ידני באתר gov.il <ChevronLeft size={14} /></a></div><div className="workflow-step-actions"><button type="button" className="workflow-action strong" disabled={busy || !propertyIds.block.trim() || !propertyIds.parcel.trim()} onClick={() => void completeAddressReview()}>{busy ? "שומר…" : workflowDone[0] ? "עדכון גוש וחלקה" : "שמירת פרטים והמשך"}</button><button type="button" className="workflow-action" onClick={() => setCasePanel("intake")}>הצגת הטופס המלא</button></div></div><span className="workflow-check">{workflowDone[0] ? <Check size={16} /> : "1"}</span></article>
-                <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח הועלה לתיק ונותח אוטומטית לפי אלגוריתם SafeDeal." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, והעלה אותו כאן לניתוח אוטומטי."}</p>{sellerNames.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}><small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small><button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={() => void copySellerNames()}><Copy size={12} /> העתק שמות</button></div>}<div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}><a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a>{renderStepUploader(requiredDocumentTypes[0], "הרשם המקרקעין / טאבו", "העלאת נסח טאבו")}</div></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
+                <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div style={{ width: "100%" }}><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח הועלה לתיק ונותח אוטומטית לפי אלגוריתם SafeDeal." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, והעלה אותו כאן לניתוח אוטומטי."}</p>{renderExtractedOwnersCard()}{sellerNames.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}><small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small><button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={() => void copySellerNames()}><Copy size={12} /> העתק שמות</button></div>}<div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}><a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a>{renderStepUploader(requiredDocumentTypes[0], "הרשם המקרקעין / טאבו", "העלאת נסח טאבו")}</div></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
                 <article hidden={activeWorkflowStep !== 2} className={`workflow-step ${workflowDone[2] ? "is-done" : ""} ${workflowCurrentStep === 2 ? "is-active" : ""}`}>
                   <span className="workflow-step-number">03</span>
                   <div style={{ width: "100%" }}>
                     <b>מרשם המשכונות והבטוחות</b>
                     <p>בעת העלאת דוח רשם המשכונות המערכת קוראת את המסמך אוטומטית, מחלצת ממצאים ומשקללת את הסיכון לפי אלגוריתם SafeDeal.</p>
-                    {sellerNames.length > 0 && (
+                    {renderExtractedOwnersCard()}
+                    {!tabuOwners.length && sellerNames.length > 0 && (
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "6px" }}>
                         <small className="workflow-sellers">חיפוש לפי: {sellerNames.join(" · ")}</small>
                         <button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={() => void copySellerNames()}><Copy size={12} /> העתק שמות</button>
@@ -885,8 +926,9 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                   <span className="workflow-step-number">04</span>
                   <div style={{ width: "100%" }}>
                     <b>בדיקות רקע: חדלות פירעון והליכים משפטיים</b>
-                    <p>העתק את שמות המוכרים ובדוק בשני המאגרים. אם נמצאו נתונים — העלה את הדוח לניתוח אוטומטי; אם אין — סמן שאין ממצאים.</p>
-                    {sellerNames.length > 0 && (
+                    <p>העתק את שמות המוכרים ומספרי הזיהוי ובדוק בשני המאגרים. אם נמצאו נתונים — העלה את הדוח לניתוח אוטומטי; אם אין — סמן שאין ממצאים.</p>
+                    {renderExtractedOwnersCard()}
+                    {!tabuOwners.length && sellerNames.length > 0 && (
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
                         <small className="workflow-sellers">בדיקה לפי שמות: {sellerNames.join(" · ")}</small>
                         <button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={() => void copySellerNames()}><Copy size={12} /> העתק שמות</button>

@@ -1,5 +1,5 @@
 import { getDb } from "../../db";
-import { analyzeWithBuiltInPdfParser } from "./pdf-risk-parser";
+import { analyzeWithBuiltInPdfParser, extractTabuOwnersFromText, extractTextFromPdfBuffer, type ExtractedOwner } from "./pdf-risk-parser";
 import { getFilesBucket } from "./storage";
 
 export const safeDealRiskModel = {
@@ -60,6 +60,7 @@ type AnalysisFinding = {
 type AnalysisResponsePayload = {
   summary?: unknown;
   missingInformation?: unknown;
+  extractedOwners?: unknown;
   findings?: unknown;
   riskAssessment?: unknown;
 };
@@ -81,7 +82,7 @@ async function analyzeWithGeminiDirect(params: {
 
   const parts: Array<Record<string, unknown>> = [
     {
-      text: `אתה אנליסט סיכוני נדל"ן של SafeDeal. נתח את המסמכים המצורפים בהתאם למודל הסיכונים של SafeDeal (safeDealRiskModel) ונתוני התיק הבאים:\n${JSON.stringify(params.caseData)}\n\nהחזר JSON תקין בלבד (ללא markdown) במבנה הבא:\n{\n  "summary": "סיכום קצר בעברית",\n  "missingInformation": ["מידע חסר אם יש"],\n  "riskAssessment": { "score": number | null, "coverage": number, "override": "NONE" | "STOP" | "HOLD", "modelCompletenessWarning": "הערה" },\n  "findings": [\n    {\n      "category": "רשם המשכונות / זכויות / חדלות פירעון / רקע משפטי / תכנון והנדסה",\n      "title": "כותרת תמציתית",\n      "note": "פירוט הממצא ומשמעותו העסקית",\n      "severity": "גבוהה" | "בינונית" | "נמוכה",\n      "source": "שם הקובץ והמקור",\n      "evidence": "ראיה מתוך המסמך",\n      "recommendation": "פעולה מומלצת",\n      "confidence": 0-100\n    }\n  ]\n}\n\nחשוב: אם הועלה דוח רשם המשכונות, קרא את תוכנו המלא — אם אותרו משכונות פעילים פרט אותם עם חומרה מתאימה (גבוהה/בינונית); אם הבדיקה נקייה ולא אותרו משכונות, צור ממצא 'רשם המשכונות' בחומרה 'נמוכה' המתעד שבדוח שהועלה לא אותרו משכונות פעילים.`,
+      text: `אתה אנליסט סיכוני נדל"ן של SafeDeal. נתח את המסמכים המצורפים בהתאם למודל הסיכונים של SafeDeal (safeDealRiskModel) ונתוני התיק הבאים:\n${JSON.stringify(params.caseData)}\n\nהחזר JSON תקין בלבד (ללא markdown) במבנה הבא:\n{\n  "summary": "סיכום קצר בעברית",\n  "missingInformation": ["מידע חסר אם יש"],\n  "extractedOwners": [{ "name": "שם הבעלים המלא מנסח הטאבו", "idNumber": "מספר ת.ז. או ח.פ. (ספרות בלבד)" }],\n  "riskAssessment": { "score": number | null, "coverage": number, "override": "NONE" | "STOP" | "HOLD", "modelCompletenessWarning": "הערה" },\n  "findings": [\n    {\n      "category": "רשם המשכונות / זכויות / חדלות פירעון / רקע משפטי / תכנון והנדסה",\n      "title": "כותרת תמציתית",\n      "note": "פירוט הממצא ומשמעותו העסקית",\n      "severity": "גבוהה" | "בינונית" | "נמוכה",\n      "source": "שם הקובץ והמקור",\n      "evidence": "ראיה מתוך המסמך",\n      "recommendation": "פעולה מומלצת",\n      "confidence": 0-100\n    }\n  ]\n}\n\nחשוב:\n1. אם הועלה נסח טאבו, חלץ במדויק את כל בעלי הזכויות ואת מספר ת.ז. / ח.פ. שלהם לתוך "extractedOwners".\n2. אם הועלה דוח רשם המשכונות, קרא את תוכנו המלא — אם אותרו משכונות פעילים פרט אותם עם חומרה מתאימה (גבוהה/בינונית); אם הבדיקה נקייה ולא אותרו משכונות, צור ממצא 'רשם המשכונות' בחומרה 'נמוכה' המתעד שבדוח שהועלה לא אותרו משכונות פעילים.`,
     },
   ];
 
@@ -369,9 +370,50 @@ export async function runCaseDocumentAnalysis(params: {
   const missingInformation = Array.isArray(analysis.missingInformation)
     ? analysis.missingInformation.filter((item): item is string => typeof item === "string").slice(0, 20).map((item) => item.slice(0, 200))
     : [];
+
+  const extractedOwners: ExtractedOwner[] = [];
+  if (Array.isArray(analysis.extractedOwners)) {
+    for (const raw of analysis.extractedOwners) {
+      if (!raw || typeof raw !== "object") continue;
+      const rec = raw as { name?: unknown; idNumber?: unknown };
+      const name = asText(rec.name, 80);
+      const idNumber = typeof rec.idNumber === "string" ? rec.idNumber.replace(/\D/g, "").slice(0, 12) : "";
+      if (name && !extractedOwners.some((o) => (idNumber && o.idNumber === idNumber) || o.name === name)) {
+        extractedOwners.push(idNumber ? { name, idNumber } : { name });
+      }
+      if (extractedOwners.length >= 10) break;
+    }
+  }
+  if (extractedOwners.length === 0) {
+    for (const f of loadedFiles) {
+      if (f.contentType === "application/pdf" && /טאבו|tabu|זכויות/i.test(`${f.documentType} ${f.filename}`)) {
+        const parsedOwners = extractTabuOwnersFromText(extractTextFromPdfBuffer(f.bytes));
+        for (const o of parsedOwners) {
+          if (!extractedOwners.some((existing) => (o.idNumber && existing.idNumber === o.idNumber) || existing.name === o.name)) {
+            extractedOwners.push(o);
+          }
+          if (extractedOwners.length >= 10) break;
+        }
+      }
+    }
+  }
+
+  let updatedIntakeJson: string | null = null;
+  if (extractedOwners.length > 0) {
+    const updatedPayload = {
+      ...intakePayload,
+      deal: {
+        ...intakeDeal,
+        tabuOwners: extractedOwners,
+      },
+    };
+    updatedIntakeJson = JSON.stringify(updatedPayload);
+  }
+
   const activityText = [
     `קריאת מסמכים אוטומטית הסתיימה ונוצרו ${findings.length} ממצאים לפי אלגוריתם SafeDeal.`,
     summary,
+    extractedOwners.length ? `בעלי זכויות שזוהו בנסח: ${extractedOwners.map((o) => o.idNumber ? `${o.name} (${o.idNumber})` : o.name).join(", ")}.` : "",
     missingInformation.length ? `מידע נוסף שנדרש: ${missingInformation.join("; ")}` : "",
   ]
     .filter(Boolean)
@@ -385,9 +427,15 @@ export async function runCaseDocumentAnalysis(params: {
       )
       .bind("הוחלף בקריאת מסמכים חדשה.", staff.displayName, createdAt, caseId)
   );
-  statements.push(
-    db.$client.prepare(`UPDATE cases SET status = 'בבדיקת אנליסט', updated_at = ? WHERE id = ?`).bind(createdAt, caseId)
-  );
+  if (updatedIntakeJson) {
+    statements.push(
+      db.$client.prepare(`UPDATE cases SET status = 'בבדיקת אנליסט', intake_payload = ?, updated_at = ? WHERE id = ?`).bind(updatedIntakeJson, createdAt, caseId)
+    );
+  } else {
+    statements.push(
+      db.$client.prepare(`UPDATE cases SET status = 'בבדיקת אנליסט', updated_at = ? WHERE id = ?`).bind(createdAt, caseId)
+    );
+  }
   statements.push(
     db.$client
       .prepare(`INSERT INTO activity (id, case_id, actor_user_id, actor_name, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
@@ -401,6 +449,7 @@ export async function runCaseDocumentAnalysis(params: {
     findingsCreated: findings.length,
     summary,
     missingInformation,
+    extractedOwners,
     riskAssessment,
   };
 }

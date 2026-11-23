@@ -1,8 +1,14 @@
 import { inflateSync } from "node:zlib";
 
+export type ExtractedOwner = {
+  name: string;
+  idNumber?: string;
+};
+
 export type BuiltInAnalysisPayload = {
   summary: string;
   missingInformation: string[];
+  extractedOwners?: ExtractedOwner[];
   riskAssessment: {
     score: number | null;
     coverage: number;
@@ -20,6 +26,46 @@ export type BuiltInAnalysisPayload = {
     confidence: number;
   }>;
 };
+
+export function extractTabuOwnersFromText(text: string): ExtractedOwner[] {
+  const owners: ExtractedOwner[] = [];
+  const seen = new Set<string>();
+  const normalized = text.replace(/\s+/g, " ");
+
+  const pushOwner = (rawName: string, rawId?: string) => {
+    const cleanName = rawName
+      .replace(/^[\s,.:;\-–—()]+|[\s,.:;\-–—()]+$/g, "")
+      .replace(/\b(בעלים|בעלות|חכירה|זכות|מכוח|שטר|חלק|בנכס|ת\.?ז\.?|ח\.?פ\.?)\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const idNumber = rawId ? rawId.replace(/\D/g, "") : "";
+    if (!cleanName || cleanName.length < 2 || cleanName.length > 60) return;
+    if (/^\d+$/.test(cleanName)) return;
+    const key = idNumber || cleanName;
+    if (seen.has(key)) return;
+    seen.add(key);
+    owners.push(idNumber ? { name: cleanName, idNumber } : { name: cleanName });
+  };
+
+  // Pattern 1: "שם הבעלים ת.ז. 012345678" or "שם חברה ח.פ. 512345678"
+  const nameThenId = /([א-ת][א-ת\s"׳״'\-]{2,45}?)\s*(?:ת\.?\s*ז\.?|תעודת זהות|ח\.?\s*פ\.?|מספר זיהוי|מס׳ זיהוי|דרכון)\s*[:\-]?\s*(\d{6,9})/g;
+  let m: RegExpExecArray | null;
+  while ((m = nameThenId.exec(normalized)) !== null) {
+    pushOwner(m[1], m[2]);
+    if (owners.length >= 10) break;
+  }
+
+  // Pattern 2: "ת.ז. 012345678 שם הבעלים" (if RTL visual order reversed label & name)
+  if (owners.length === 0) {
+    const idThenName = /(?:ת\.?\s*ז\.?|תעודת זהות|ח\.?\s*פ\.?)\s*[:\-]?\s*(\d{6,9})\s+([א-ת][א-ת\s"׳״'\-]{2,40})/g;
+    while ((m = idThenName.exec(normalized)) !== null) {
+      pushOwner(m[2], m[1]);
+      if (owners.length >= 10) break;
+    }
+  }
+
+  return owners;
+}
 
 export function extractTextFromPdfBuffer(bytes: ArrayBuffer): string {
   const buf = Buffer.from(bytes);
@@ -70,6 +116,7 @@ export function analyzeWithBuiltInPdfParser(
   loadedFiles: Array<{ filename: string; contentType: string; bytes: ArrayBuffer; documentType: string }>
 ): BuiltInAnalysisPayload | null {
   const findings: BuiltInAnalysisPayload["findings"] = [];
+  const extractedOwners: ExtractedOwner[] = [];
   let extractedAnyText = false;
 
   for (const file of loadedFiles) {
@@ -133,10 +180,19 @@ export function analyzeWithBuiltInPdfParser(
       });
     } else if (/טאבו|tabu|זכויות/i.test(docType)) {
       const hasAlert = /עיקול|צו מניעה|הפקעה/.test(text);
+      const tabuOwners = extractTabuOwnersFromText(text);
+      for (const owner of tabuOwners) {
+        if (!extractedOwners.some((o) => (o.idNumber && o.idNumber === owner.idNumber) || o.name === owner.name)) {
+          extractedOwners.push(owner);
+        }
+      }
+      const ownersSummary = tabuOwners.length
+        ? ` בעלי זכויות שזוהו בנסח: ${tabuOwners.map((o) => o.idNumber ? `${o.name} (ת.ז./ח.פ. ${o.idNumber})` : o.name).join(" · ")}.`
+        : "";
       findings.push({
         category: "זכויות ורישום",
         title: hasAlert ? "[עובדה מתועדת] אותרו הערות/עיקולים בנסח הטאבו" : "[עובדה מתועדת] נסח הטאבו נקרא ואומת בתיק",
-        note: hasAlert ? "בקריאת נסח הטאבו אותרו מונחי עיקול/צו מניעה/הפקעה — נדרשת בחינה דחופה." : "נסח הטאבו נקרא אוטומטית ללא אינדיקציות עיקול חריגות.",
+        note: (hasAlert ? "בקריאת נסח הטאבו אותרו מונחי עיקול/צו מניעה/הפקעה — נדרשת בחינה דחופה." : "נסח הטאבו נקרא אוטומטית ללא אינדיקציות עיקול חריגות.") + ownersSummary,
         severity: hasAlert ? "גבוהה" : "נמוכה",
         source: `${file.filename} (קריאת PDF אוטומטית)`,
         evidence: snippet,
@@ -150,6 +206,7 @@ export function analyzeWithBuiltInPdfParser(
   return {
     summary: `הושלמה קריאת PDF אוטומטית של ${findings.length} מסמכים ושקלולם לפי אלגוריתם SafeDeal.`,
     missingInformation: [],
+    ...(extractedOwners.length > 0 ? { extractedOwners } : {}),
     riskAssessment: {
       score: null,
       coverage: 0,

@@ -58,7 +58,7 @@ const FINDING_MACROS = [
   { label: "מידע משפטי — אותר הליך", category: "רקע משפטי", severity: "גבוהה", title: "אותר הליך משפטי רלוונטי המחייב בחינה", note: "בדוח המשפטי שהתקבל אותר הליך פתוח או פסק דין בעל השלכה אפשרית על הזכויות או העסקה. נדרשת בחינת עורך דין.", source: "נבו / נט המשפט" },
 ] as const;
 
-const WORKFLOW_STEP_GUIDES: ReadonlyArray<{ title: string; subtitle: string; bullets: readonly string[]; tip: string }> = [
+const WORKFLOW_STEP_GUIDES: ReadonlyArray<{ title: string; subtitle: string; bullets: readonly string[]; tip: string; developerTip: string; secondHandTip: string }> = [
   {
     title: "מה לעשות בשלב 01 — זיהוי הנכס",
     subtitle: "אימות כתובת, גוש/חלקה ופרטי מוכר",
@@ -69,61 +69,57 @@ const WORKFLOW_STEP_GUIDES: ReadonlyArray<{ title: string; subtitle: string; bul
       "הצץ ב'פרטי הבקשה' וודא שהמחיר, השטח והקומה הגיוניים ללא טעות הקלדה.",
     ],
     tip: "לא מתקדמים להפקת נסח לפני שגוש וחלקה מאומתים ונשמרו בתיק.",
+    developerTip: "בעסקת קבלן/יזם ודא שהוזנו שם החברה המבצעת וח.פ. מדויק כדי שהבדיקות הבאות יהיו אמינות.",
+    secondHandTip: "בעסקת יד שנייה ודא ששמות כל המוכרים מופיעים במדויק לצורך הצלבה עם נסח הטאבו.",
   },
   {
     title: "מה לעשות בשלב 02 — נסח טאבו",
     subtitle: "אימות בעלות, הצמדות ועיקולים",
     bullets: [
-      "פתח את נסח הטאבו ב'צפייה' ובדוק שתאריך ההפקה עדכני (עד 14 יום).",
-      "הצלב שמות בעלי זכויות ומספרי ת.ז. מול המוכרים שהוזנו בטופס.",
-      "בדוק עיקולים, צווי מניעה, הפקעות והערות אזהרה סותרות (דגל STOP!).",
-      "בדוק משכנתאות קיימות, שטח רשום והצמדות (חניה, מחסן, מרפסת/גג).",
+      "העלה את נסח הטאבו או גרור אותו לאזור הגרירה — המערכת תקרא אותו אוטומטית.",
+      "אמת ששם המוכר בבקשה תואם לבעלי הזכויות הרשומים בנסח.",
+      "בדוק עיקולים, צווי מניעה, הפקעות והערות אזהרה סותרות.",
+      "וודא הצמדות (חניה, מחסן, מרפסת/גג) ושטח רשום.",
     ],
-    tip: "כל סתירה בין המוכר לבעלים הרשומים מחייבת ממצא בחומרה גבוהה.",
+    tip: "כל סתירה בין המוכר לבעלים הרשומים מחייבת תשומת לב מיוחדת.",
+    developerTip: "בעסקת קבלן בדוק הערת אזהרה לטובת הבנק המלווה ורישום קרקע על שם היזם/חברה משכנת.",
+    secondHandTip: "ביד שנייה בדוק בעלות פרטית נקייה, משכנתא קיימת והיעדר עיקולים או צווי מניעה.",
   },
   {
     title: "מה לעשות בשלב 03 — מרשם המשכונות",
     subtitle: "איתור שעבודים חוזיים על כל מוכר",
     bullets: [
-      "פתח את מרשם המשכונות וחפש לפי ת.ז. / ח.פ. של כל בעל זכויות בנפרד.",
-      "אמת שהתוצאה שייכת לאותו אדם/נכס (שם דומה ללא ת.ז. אינו מספיק).",
-      "שמור PDF או צילום מסך של התוצאה והעלה לתיק — גם אם אין משכונות!",
-      "משכון פעיל בעל זיקה לנכס ללא מכתב החרגה = תעד כממצא גבוה.",
+      "העתק את שמות המוכרים בלחיצה ופתח את מרשם המשכונות.",
+      "העלה את הדוח שהורדת — המערכת מחלצת ממנו שעבודים ומשקללת סיכון אוטומטית.",
+      "העלה תיעוד גם כאשר התוצאה נקייה להוכחת ביצוע הבדיקה.",
     ],
-    tip: "העלאת תיעוד חיפוש נקי מגנה משפטית ומוכיחה שהבדיקה בוצעה בפועל.",
+    tip: "ברגע שהדוח עולה, האלגוריתם קורא אותו אוטומטית ומעדכן את הממצאים.",
+    developerTip: "על יזם/קבלן חשוב לוודא שאין משכון צף או שעבוד ספציפי ללא מכתב החרגה.",
+    secondHandTip: "ביד שנייה חפש שעבודים פרטיים או הלוואות חוץ-בנקאיות הרשומות על שם המוכר.",
   },
   {
-    title: "מה לעשות בשלב 04 — חדלות פירעון",
-    subtitle: "בדיקת כשירות משפטית במשרד המשפטים",
+    title: "מה לעשות בשלב 04 — בדיקות רקע",
+    subtitle: "חדלות פירעון והליכים משפטיים במקום אחד",
     bullets: [
-      "היכנס למאגר הממונה על הליכי חדלות פירעון (insolvency.justice.gov.il).",
-      "בצע חיפוש מדויק לפי ת.ז. / ח.פ. ושם מלא לכל מוכר או יזם.",
-      "סמן את תוצאת הבדיקה: 'נמצאו הליכים', 'לא נמצאו הליכים' (אין צורך להעלות קובץ ריק), או השאר 'לא הושלמה' אם חסר מידע.",
-      "הליך פעיל או צו פתיחת הליכים = דגל STOP מיידי (תקרת SafeScore 39) והעלאת המסמך לתיק.",
+      "העתק את שמות המוכרים ובדוק במקביל בחדלות פירעון ובמאגר נבו.",
+      "אם נמצאו נתונים — העלה את המסמך ישירות כאן לניתוח אוטומטי.",
+      "אם הבדיקה נקייה — סמן 'לא נמצאו הליכים' / 'לא נמצאו ממצאים' והמשך.",
     ],
-    tip: "הבדל תמיד בין 'הבדיקה הושלמה — לא נמצאו הליכים' לבין 'הבדיקה לא הושלמה'.",
+    tip: "אין צורך להעלות קבצים ריקים כשהבדיקה נקייה — סימון אחד משלים את השלב.",
+    developerTip: "בחברת יזמות בדוק חדלות פירעון ותביעות ליקויי בנייה או סכסוכי קבלנים.",
+    secondHandTip: "במוכר פרטי ודא שאין צו כינוס/חדלות פירעון (תקרת SafeScore 39) או תביעה על הנכס.",
   },
   {
-    title: "מה לעשות בשלב 05 — הליכים משפטיים",
-    subtitle: "איתור תביעות וסכסוכים ב-Nevo / נט המשפט",
+    title: "מה לעשות בשלב 05 — הפקת דוח וסיום",
+    subtitle: "הפקה אוטומטית, תצוגה מקדימה וסימון כטופל",
     bullets: [
-      "חפש תיקים אזרחיים ופליליים רלוונטיים על שם המוכר או חברת היזם.",
-      "סמן את תוצאת הבדיקה במנגנון האחיד: 'נמצאו ממצאים משפטיים', 'לא נמצאו ממצאים', או 'הבדיקה לא הושלמה'.",
-      "אם התקבל מסמך משפטי מהשירות החיצוני — העלה אותו לתיק ותעד ממצאים מהותיים.",
-      "הבדל בין עובדה מתועדת, השערה ומידע הדורש אימות אנושי.",
+      "לחץ 'הפקת דוח' — המערכת משקללת את כל הממצאים לפי אלגוריתם SafeDeal.",
+      "פתח תצוגה מקדימה של דוח הלקוח לבקרה מהירה.",
+      "שלח את הדוח במייל ללקוח או לחץ 'סימון כטופל ✓' להעברת התיק להושלמו.",
     ],
-    tip: "אין לקבוע ממצא פלילי/משפטי כעובדה ללא אסמכתא מפורשת במסמך.",
-  },
-  {
-    title: "מה לעשות בשלב 06 — בקרת דוח ושליחה",
-    subtitle: "אימות סופי לפני שהלקוח מקבל את הדוח",
-    bullets: [
-      "ודא שאין ממצאים הממתינים בסטטוס 'לבדיקה'.",
-      "לחץ 'הפקת דוח' ופתח את הדוח המלא לבדיקה ויזואלית.",
-      "בסרגל האנליסט בראש הדוח: בדוק/ערוך ציון SafeScore והמלצת שורה תחתונה.",
-      "לחץ 'שלח דוח ללקוח' — המייל יישלח עם קישור ישיר לדוח ולהורדת PDF.",
-    ],
-    tip: "לאחר השליחה הסטטוס מתעדכן אוטומטית ל'דוח נשלח' והקישור נפתח ללקוח.",
+    tip: "לחיצה על 'סימון כטופל ✓' סוגרת את הטיפול ומעבירה את התיק ללשונית 'הושלמו'.",
+    developerTip: "ודא שהמלצת השורה התחתונה מזכירה בדיקת ערבויות חוק מכר ובנק מלווה.",
+    secondHandTip: "ודא שמופיעה התייחסות למכתב כוונות לסילוק משכנתא קיימת במידת הצורך.",
   },
 ];
 
@@ -193,6 +189,8 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [mobileCaseOpen, setMobileCaseOpen] = useState(false);
   const [casePanel, setCasePanel] = useState<"workflow" | "intake" | "documents" | "findings" | "activity">("workflow");
   const [workflowStepOverride, setWorkflowStepOverride] = useState<number | null>(null);
+  const [guideCollapsed, setGuideCollapsed] = useState(false);
+  const [smartDropActive, setSmartDropActive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -262,6 +260,18 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
     catch (error) { setDetail(null); setNotice(error instanceof Error ? error.message : "לא הצלחנו לפתוח את התיק."); }
   }, []);
 
+  useEffect(() => {
+    try {
+      setGuideCollapsed(window.localStorage.getItem("safedeal_guide_collapsed") === "1");
+    } catch { /* ignore storage restrictions */ }
+  }, []);
+  const toggleGuideCollapsed = () => {
+    setGuideCollapsed((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem("safedeal_guide_collapsed", next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
   useEffect(() => { void loadCases(false); if (staff.role === "admin") void loadTeam(); }, [loadCases, loadTeam, staff.role]);
   useEffect(() => { void loadDetail(selectedId); }, [loadDetail, selectedId]);
   useEffect(() => {
@@ -335,18 +345,20 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const hasInsolvencyFinding = Boolean(detail?.findings.some((f) => f.state !== "נדחה" && /חדלות/.test(`${f.category} ${f.title}`)));
   const hasLegalFinding = Boolean(detail?.findings.some((f) => f.state !== "נדחה" && /משפטי|נבו|נט המשפט|מתדיינים/.test(`${f.category} ${f.title}`)));
   const allReportsUploaded = hasDocumentType(requiredDocumentTypes[0]) && hasPledgeDoc && (insolvencyCheckStatus !== "incomplete" || hasDocumentType(requiredDocumentTypes[2]));
-  const workflowStepTitles = ["בדיקת פרטי הבקשה והזיהוי", "נסח טאבו ובעלי הזכויות", "מרשם המשכונות והבטוחות", "בדיקת חדלות פירעון", "הליכים משפטיים וסכסוכים", "ניתוח ובקרת דוח"];
+  const dealType = String(detail?.intakeData?.deal?.dealType ?? "");
+  const isDeveloperDeal = /קבלן|יזם|חדש|תמ״א|פינוי/.test(dealType);
+  const workflowStepTitles = ["בדיקת פרטי הבקשה והזיהוי", "נסח טאבו ובעלי הזכויות", "מרשם המשכונות והבטוחות", "בדיקות רקע: חדלות פירעון ומשפטי", "הפקת דוח וסיום"];
   const workflowDone = [
     Boolean(detail?.case?.block && detail?.case?.parcel),
     hasDocumentType(requiredDocumentTypes[0]),
     hasPledgeDoc && hasPledgeFinding,
-    insolvencyCheckStatus === "none_found" || hasDocumentType(requiredDocumentTypes[2]) || hasInsolvencyFinding,
-    legalCheckStatus === "none_found" || hasDocumentType(requiredDocumentTypes[3]) || hasLegalFinding,
+    (insolvencyCheckStatus === "none_found" || hasDocumentType(requiredDocumentTypes[2]) || hasInsolvencyFinding) &&
+      (legalCheckStatus === "none_found" || hasDocumentType(requiredDocumentTypes[3]) || hasLegalFinding),
     Boolean(detail?.report || selectedCase?.status === "דוח מוכן" || selectedCase?.status === "דוח נשלח"),
   ];
   const workflowCurrentStep = workflowDone.findIndex((done) => !done);
   const workflowCompletedCount = workflowDone.filter(Boolean).length;
-  const activeWorkflowStep = workflowStepOverride ?? (workflowCurrentStep >= 0 ? workflowCurrentStep : 5);
+  const activeWorkflowStep = workflowStepOverride ?? (workflowCurrentStep >= 0 ? workflowCurrentStep : 4);
 
   const saveCheckStatus = async (checkType: "insolvencyCheck" | "legalCheck", status: "incomplete" | "none_found" | "found", note?: string) => {
     if (!selectedId) return;
@@ -392,6 +404,48 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
     ].filter(Boolean).join("\n");
     try { await navigator.clipboard.writeText(context); setNotice("פרטי הנכס הועתקו — אפשר להדביק אותם באתר החיצוני."); }
     catch { setNotice("לא ניתן להעתיק אוטומטית. אפשר לסמן ולהעתיק את פרטי הנכס שמופיעים בכרטיס."); }
+  };
+
+  const copySellerNames = async () => {
+    const devName = typeof detail?.intakeData?.deal?.developerName === "string" ? detail.intakeData.deal.developerName.trim() : "";
+    const devReg = typeof detail?.intakeData?.deal?.developerRegNumber === "string" ? detail.intakeData.deal.developerRegNumber.trim() : "";
+    const text = sellerNames.length > 0 ? sellerNames.join(" | ") : [devName, devReg].filter(Boolean).join(" ");
+    if (!text) { setNotice("אין שמות מוכרים או יזם שמורים בטופס."); return; }
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice(`הועתק ללוח: ${text}`);
+    } catch {
+      setNotice("לא ניתן להעתיק אוטומטית מהדפדפן.");
+    }
+  };
+
+  const classifyDroppedDocument = (file: File): { documentType: string; source: string } => {
+    const name = file.name.toLowerCase();
+    if (/נסח|טאבו|tabu|nesah|זכויות/.test(name)) {
+      return { documentType: requiredDocumentTypes[0], source: "הרשם המקרקעין / טאבו" };
+    }
+    if (/משכונ|משכון|pledge|mashkon/.test(name)) {
+      return { documentType: requiredDocumentTypes[1], source: "רשם המשכונות — משרד המשפטים" };
+    }
+    if (/חדלות|פירעון|insolvency|hadlut|ממונה/.test(name)) {
+      return { documentType: requiredDocumentTypes[2], source: "משרד המשפטים — insolvency.justice.gov.il" };
+    }
+    if (/משפטי|נבו|נט המשפט|מתדיינים|nevo|legal|court/.test(name)) {
+      return { documentType: requiredDocumentTypes[3], source: "נבו / נט המשפט" };
+    }
+    if (activeWorkflowStep === 1) return { documentType: requiredDocumentTypes[0], source: "הרשם המקרקעין / טאבו" };
+    if (activeWorkflowStep === 2) return { documentType: requiredDocumentTypes[1], source: "רשם המשכונות — משרד המשפטים" };
+    if (activeWorkflowStep === 3) return { documentType: requiredDocumentTypes[2], source: "משרד המשפטים — insolvency.justice.gov.il" };
+    return { documentType: "אחר", source: "העלאה מהירה" };
+  };
+
+  const handleSmartDrop = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0 || !selectedId) return;
+    const files = Array.from(fileList);
+    for (const file of files) {
+      const { documentType, source } = classifyDroppedDocument(file);
+      await uploadStepDocument(file, documentType, source);
+    }
   };
 
   const completeAddressReview = async () => {
@@ -782,14 +836,20 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
               <div className="detail-top detail-top-compact"><div><h2>{selectedCase.clientName}</h2><p>{selectedCase.assetType} · {selectedCase.street} {selectedCase.house}, {selectedCase.city}</p></div><button type="button" className="property-copy-button" aria-label="העתקת הכתובת, הגוש, החלקה ושמות המוכרים" onClick={() => void copyPropertyContext()}><Copy size={15} />העתק פרטי נכס</button></div>
               <div className="detail-controls detail-controls-compact"><label>סטטוס<select value={selectedCase.status} disabled={busy} onChange={(e) => void updateCase({ status: e.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select></label>{staff.role === "admin" && <label>Member אחראי<select value={selectedCase.analystEmail ?? ""} disabled={busy} onChange={(e) => void updateCase({ analystEmail: e.target.value })}><option value="">לא משויך</option>{team.filter((member) => member.active && member.role === "member").map((member) => <option key={member.email} value={member.email}>{member.displayName}</option>)}</select></label>}{staff.role === "admin" && <label>תאריך יעד<input type="date" value={selectedCase.dueAt ? new Date(selectedCase.dueAt).toISOString().slice(0, 10) : ""} disabled={busy} onChange={(e) => void updateCase({ dueAt: e.target.value ? new Date(`${e.target.value}T23:59:00`).toISOString() : null })} /></label>}<div className="compact-meta-pills"><span><small>גוש</small><b>{propertyIds.block || "—"}</b></span><span><small>חלקה</small><b>{propertyIds.parcel || "—"}</b></span>{sellerNames.length > 0 && <span><small>מוכר</small><b>{sellerNames.join(" · ")}</b></span>}</div></div>
               <nav className="case-panel-nav" aria-label="אזורי התיק">{([{ id: "workflow", label: "תהליך עבודה" }, { id: "intake", label: "פרטי הבקשה" }, { id: "documents", label: `מסמכים (${detail.documents.length})` }, { id: "findings", label: `ממצאים ודוח (${detail.findings.length})` }, { id: "activity", label: "היסטוריה" }] as const).map((item) => <button type="button" key={item.id} className={casePanel === item.id ? "active" : ""} aria-current={casePanel === item.id ? "page" : undefined} onClick={() => setCasePanel(item.id)}>{item.label}</button>)}</nav>
-              {casePanel === "workflow" && (selectedCase.status === "חדש" ? <section className="workflow-launch"><div><span className="workflow-kicker">התחלת טיפול</span><h3>התיק מוכן למעבר לאנליסט</h3><p>נעבור יחד על פרטי הבקשה, נאסוף את המסמכים ונכין את התיק לניתוח.</p></div><button className="button-primary" disabled={busy} onClick={() => void updateCase({ status: "באיסוף מידע" })}><Activity size={16} />תחילת תהליך אנליזה</button></section> : <section className="analysis-workflow workflow-focus-shell" aria-label="מסלול אנליזה"><div className="workflow-progress" aria-label={`הושלמו ${workflowCompletedCount} מתוך 6 שלבים`}><div className="workflow-progress-copy"><b>{workflowCurrentStep >= 0 ? `השלב הבא: ${workflowStepTitles[workflowCurrentStep]}` : "כל שלבי העבודה הושלמו"}</b><span>{workflowCompletedCount} מתוך 6 שלבים הושלמו</span></div><div className="workflow-progress-track"><i style={{ width: `${workflowCompletedCount / 6 * 100}%` }} /></div></div><nav className="workflow-step-nav workflow-step-nav-horizontal" aria-label="שלבי הבדיקה">{workflowStepTitles.map((title, index) => <button key={title} type="button" className={`${activeWorkflowStep === index ? "active" : ""} ${workflowDone[index] ? "done" : ""}`} aria-current={activeWorkflowStep === index ? "step" : undefined} onClick={() => setWorkflowStepOverride(index)}><span>{workflowDone[index] ? <Check size={13} /> : String(index + 1).padStart(2, "0")}</span><b>{title}</b></button>)}</nav><div className="workflow-focus-grid"><div className="workflow-stage"><div className="workflow-grid">
+              {casePanel === "workflow" && (selectedCase.status === "חדש" ? <section className="workflow-launch"><div><span className="workflow-kicker">התחלת טיפול</span><h3>התיק מוכן למעבר לאנליסט</h3><p>נעבור יחד על פרטי הבקשה, נאסוף את המסמכים ונכין את התיק לניתוח.</p></div><button className="button-primary" disabled={busy} onClick={() => void updateCase({ status: "באיסוף מידע" })}><Activity size={16} />תחילת תהליך אנליזה</button></section> : <section className="analysis-workflow workflow-focus-shell" aria-label="מסלול אנליזה"><div className="workflow-progress" aria-label={`הושלמו ${workflowCompletedCount} מתוך 5 שלבים`}><div className="workflow-progress-copy"><b>{workflowCurrentStep >= 0 ? `השלב הבא: ${workflowStepTitles[workflowCurrentStep]}` : "כל שלבי העבודה הושלמו"}</b><span>{workflowCompletedCount} מתוך 5 שלבים הושלמו</span></div><div className="workflow-progress-track"><i style={{ width: `${workflowCompletedCount / 5 * 100}%` }} /></div></div><nav className="workflow-step-nav workflow-step-nav-horizontal" aria-label="שלבי הבדיקה">{workflowStepTitles.map((title, index) => <button key={title} type="button" className={`${activeWorkflowStep === index ? "active" : ""} ${workflowDone[index] ? "done" : ""}`} aria-current={activeWorkflowStep === index ? "step" : undefined} onClick={() => setWorkflowStepOverride(index)}><span>{workflowDone[index] ? <Check size={13} /> : String(index + 1).padStart(2, "0")}</span><b>{title}</b></button>)}</nav><div className="workflow-focus-grid"><div className="workflow-stage"><div className="workflow-grid">
                 <article hidden={activeWorkflowStep !== 0} className={["workflow-step", workflowDone[0] ? "is-done" : "", workflowCurrentStep === 0 ? "is-active" : ""].filter(Boolean).join(" ")}><span className="workflow-step-number">01</span><div className="workflow-step-content"><b>בדיקת פרטי הלקוח והנכס</b><p>בדוק שהטופס מלא. גוש וחלקה נדרשים לפני הפקת נסח; תת־חלקה נשארת אופציונלית.</p><div className="cadastral-entry"><label>גוש<input inputMode="numeric" value={propertyIds.block} onChange={(event) => setPropertyIds((current) => ({ ...current, block: event.target.value }))} placeholder="מספר גוש" /></label><label>חלקה<input inputMode="numeric" value={propertyIds.parcel} onChange={(event) => setPropertyIds((current) => ({ ...current, parcel: event.target.value }))} placeholder="מספר חלקה" /></label><label>תת־חלקה <small>אופציונלי</small><input inputMode="numeric" value={propertyIds.subParcel} onChange={(event) => setPropertyIds((current) => ({ ...current, subParcel: event.target.value }))} placeholder="אם ידוע" /></label></div><div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", marginTop: "8px" }}><button type="button" className="workflow-action" disabled={busy} onClick={() => void lookupCadastralAuto()}>איתור גוש/חלקה אוטומטי מ-GovMap</button><a className="workflow-source-link" href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html" target="_blank" rel="noopener noreferrer">איתור ידני באתר gov.il <ChevronLeft size={14} /></a></div><div className="workflow-step-actions"><button type="button" className="workflow-action strong" disabled={busy || !propertyIds.block.trim() || !propertyIds.parcel.trim()} onClick={() => void completeAddressReview()}>{busy ? "שומר…" : workflowDone[0] ? "עדכון גוש וחלקה" : "שמירת פרטים והמשך"}</button><button type="button" className="workflow-action" onClick={() => setCasePanel("intake")}>הצגת הטופס המלא</button></div></div><span className="workflow-check">{workflowDone[0] ? <Check size={16} /> : "1"}</span></article>
-                <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח הועלה לתיק ונותח אוטומטית לפי אלגוריתם SafeDeal." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, והעלה אותו כאן לניתוח אוטומטי."}</p>{sellerNames.length > 0 && <small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small>}<div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}><a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a>{renderStepUploader(requiredDocumentTypes[0], "הרשם המקרקעין / טאבו", "העלאת נסח טאבו")}</div></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
+                <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח הועלה לתיק ונותח אוטומטית לפי אלגוריתם SafeDeal." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, והעלה אותו כאן לניתוח אוטומטי."}</p>{sellerNames.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}><small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small><button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={() => void copySellerNames()}><Copy size={12} /> העתק שמות</button></div>}<div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}><a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a>{renderStepUploader(requiredDocumentTypes[0], "הרשם המקרקעין / טאבו", "העלאת נסח טאבו")}</div></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
                 <article hidden={activeWorkflowStep !== 2} className={`workflow-step ${workflowDone[2] ? "is-done" : ""} ${workflowCurrentStep === 2 ? "is-active" : ""}`}>
                   <span className="workflow-step-number">03</span>
                   <div style={{ width: "100%" }}>
                     <b>מרשם המשכונות והבטוחות</b>
                     <p>בעת העלאת דוח רשם המשכונות המערכת קוראת את המסמך אוטומטית, מחלצת ממצאים ומשקללת את הסיכון לפי אלגוריתם SafeDeal.</p>
+                    {sellerNames.length > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "6px" }}>
+                        <small className="workflow-sellers">חיפוש לפי: {sellerNames.join(" · ")}</small>
+                        <button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={() => void copySellerNames()}><Copy size={12} /> העתק שמות</button>
+                      </div>
+                    )}
                     {(() => {
                       const pledgeFindingsList = (detail?.findings ?? []).filter((f) => f.state !== "נדחה" && f.state !== "הוחלף" && /משכונות|משכון|שעבוד/.test(`${f.category} ${f.title} ${f.source ?? ""}`));
                       return (
@@ -823,24 +883,52 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                 </article>
                 <article hidden={activeWorkflowStep !== 3} className={`workflow-step ${workflowDone[3] ? "is-done" : ""} ${workflowCurrentStep === 3 ? "is-active" : ""}`}>
                   <span className="workflow-step-number">04</span>
-                  <div>
-                    <b>בדיקת חדלות פירעון (משרד המשפטים)</b>
-                    <p>איתור תיקי חדלות פירעון ופשיטת רגל של המוכר/היזם במאגר הממונה. אם נמצאו נתונים — העלה כאן את הדוח לניתוח אוטומטי; אם אין — סמן שלא נמצאו הליכים.</p>
-                    {sellerNames.length > 0 && <small className="workflow-sellers">בדיקה לפי שמות המוכרים: {sellerNames.join(" · ")}</small>}
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
-                      <a className="workflow-action workflow-link" href="https://insolvency.justice.gov.il/" target="_blank" rel="noopener noreferrer">
-                        פתיחת מאגר חדלות פירעון <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
-                      </a>
-                      {renderStepUploader(requiredDocumentTypes[2], "משרד המשפטים — insolvency.justice.gov.il", "העלאת דוח חדלות פירעון")}
-                      <button
-                        type="button"
-                        disabled={busy}
-                        className="workflow-action"
-                        onClick={() => void saveCheckStatus("insolvencyCheck", insolvencyCheckStatus === "none_found" ? "incomplete" : "none_found")}
-                        style={insolvencyCheckStatus === "none_found" ? { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" } : undefined}
-                      >
-                        {insolvencyCheckStatus === "none_found" ? "✓ לא נמצאו הליכים" : "לא נמצאו הליכים"}
-                      </button>
+                  <div style={{ width: "100%" }}>
+                    <b>בדיקות רקע: חדלות פירעון והליכים משפטיים</b>
+                    <p>העתק את שמות המוכרים ובדוק בשני המאגרים. אם נמצאו נתונים — העלה את הדוח לניתוח אוטומטי; אם אין — סמן שאין ממצאים.</p>
+                    {sellerNames.length > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+                        <small className="workflow-sellers">בדיקה לפי שמות: {sellerNames.join(" · ")}</small>
+                        <button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={() => void copySellerNames()}><Copy size={12} /> העתק שמות</button>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
+                      <div style={{ padding: "12px", borderRadius: "10px", border: "1px solid rgba(22,27,26,0.1)", background: "#FFFFFF" }}>
+                        <b style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>א. חדלות פירעון (משרד המשפטים)</b>
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                          <a className="workflow-action workflow-link" href="https://insolvency.justice.gov.il/" target="_blank" rel="noopener noreferrer">
+                            פתיחת מאגר חדלות פירעון <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
+                          </a>
+                          {renderStepUploader(requiredDocumentTypes[2], "משרד המשפטים — insolvency.justice.gov.il", "העלאת דוח חדלות פירעון")}
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="workflow-action"
+                            onClick={() => void saveCheckStatus("insolvencyCheck", insolvencyCheckStatus === "none_found" ? "incomplete" : "none_found")}
+                            style={insolvencyCheckStatus === "none_found" ? { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" } : undefined}
+                          >
+                            {insolvencyCheckStatus === "none_found" ? "✓ לא נמצאו הליכים" : "לא נמצאו הליכים"}
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ padding: "12px", borderRadius: "10px", border: "1px solid rgba(22,27,26,0.1)", background: "#FFFFFF" }}>
+                        <b style={{ fontSize: "13px", display: "block", marginBottom: "8px" }}>ב. הליכים משפטיים וסכסוכים (נבו / נט המשפט)</b>
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                          <a className="workflow-action workflow-link" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer">
+                            פתיחת מאגר נבו <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
+                          </a>
+                          {renderStepUploader(requiredDocumentTypes[3], "נבו / נט המשפט", "העלאת מסמך משפטי")}
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="workflow-action"
+                            onClick={() => void saveCheckStatus("legalCheck", legalCheckStatus === "none_found" ? "incomplete" : "none_found")}
+                            style={legalCheckStatus === "none_found" ? { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" } : undefined}
+                          >
+                            {legalCheckStatus === "none_found" ? "✓ לא נמצאו ממצאים" : "לא נמצאו ממצאים"}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <span className="workflow-check">{workflowDone[3] ? <Check size={16} /> : "4"}</span>
@@ -848,31 +936,6 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
 
                 <article hidden={activeWorkflowStep !== 4} className={`workflow-step ${workflowDone[4] ? "is-done" : ""} ${workflowCurrentStep === 4 ? "is-active" : ""}`}>
                   <span className="workflow-step-number">05</span>
-                  <div>
-                    <b>הליכים משפטיים וסכסוכים</b>
-                    <p>בדוק ב-Nevo / נט המשפט הליכים ותיקים רלוונטיים על שם המוכרים ובעלי הזכויות. אם נמצאו נתונים — העלה כאן את המסמך לניתוח אוטומטי; אם אין — סמן שלא נמצאו ממצאים.</p>
-                    {sellerNames.length > 0 && <small className="workflow-sellers">מומלץ לחפש כל בעל/ת זכויות בנפרד לפי השם המלא שמופיע בנסח: {sellerNames.join(" · ")}</small>}
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
-                      <a className="workflow-action workflow-link" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer">
-                        פתיחת מאגר נבו <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
-                      </a>
-                      {renderStepUploader(requiredDocumentTypes[3], "נבו / נט המשפט", "העלאת מסמך משפטי")}
-                      <button
-                        type="button"
-                        disabled={busy}
-                        className="workflow-action"
-                        onClick={() => void saveCheckStatus("legalCheck", legalCheckStatus === "none_found" ? "incomplete" : "none_found")}
-                        style={legalCheckStatus === "none_found" ? { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" } : undefined}
-                      >
-                        {legalCheckStatus === "none_found" ? "✓ לא נמצאו ממצאים" : "לא נמצאו ממצאים"}
-                      </button>
-                    </div>
-                  </div>
-                  <span className="workflow-check">{workflowDone[4] ? <Check size={16} /> : "5"}</span>
-                </article>
-
-                <article hidden={activeWorkflowStep !== 5} className={`workflow-step ${workflowDone[5] ? "is-done" : ""} ${workflowCurrentStep === 5 ? "is-active" : ""}`}>
-                  <span className="workflow-step-number">06</span>
                   <div style={{ width: "100%" }}>
                     <b>ניתוח, הפקת דוח ובקרת אנליסט</b>
                     
@@ -1147,14 +1210,14 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                       </div>
                     )}
                   </div>
-                  <span className="workflow-check">{detail.report ? <Check size={16} /> : "6"}</span>
+                  <span className="workflow-check">{detail.report ? <Check size={16} /> : "5"}</span>
                 </article>
               </div>
               <div className="workflow-pager">
                 <button type="button" className="workflow-action" disabled={activeWorkflowStep <= 0} onClick={() => setWorkflowStepOverride(Math.max(0, activeWorkflowStep - 1))}>→ השלב הקודם</button>
-                <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>שלב {activeWorkflowStep + 1} מתוך 6</span>
-                {activeWorkflowStep < 5 ? (
-                  <button type="button" className="workflow-action strong" onClick={() => setWorkflowStepOverride(Math.min(5, activeWorkflowStep + 1))}>השלב הבא ←</button>
+                <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>שלב {activeWorkflowStep + 1} מתוך 5</span>
+                {activeWorkflowStep < 4 ? (
+                  <button type="button" className="workflow-action strong" onClick={() => setWorkflowStepOverride(Math.min(4, activeWorkflowStep + 1))}>השלב הבא ←</button>
                 ) : selectedCase.status === "דוח נשלח" ? (
                   <span style={{ fontSize: "12px", fontWeight: 700, color: "#065f46", background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "7px 14px", borderRadius: "8px" }}>✓ התיק טופל</span>
                 ) : (
@@ -1169,28 +1232,76 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                   const guide = WORKFLOW_STEP_GUIDES[activeWorkflowStep] ?? WORKFLOW_STEP_GUIDES[0];
                   return (
                     <div className="side-rail-card side-guide-card">
-                      <div className="side-rail-head" style={{ borderBottomColor: "#ccfbf1" }}>
+                      <div className="side-rail-head" style={{ borderBottomColor: guideCollapsed ? "transparent" : "#ccfbf1" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <Info size={15} style={{ color: "#0d766e", flexShrink: 0 }} />
+                          <Info size={15} style={{ color: "#145348", flexShrink: 0 }} />
                           <b>{guide.title}</b>
                         </div>
-                        <span style={{ fontSize: "10px", fontWeight: 800, color: "#0f766e", background: "#ccfbf1", padding: "2px 7px", borderRadius: "999px" }}>מדריך שלב</span>
+                        <button type="button" className="text-action" style={{ fontSize: "11px" }} onClick={toggleGuideCollapsed}>
+                          {guideCollapsed ? "הצג מדריך" : "הסתר מדריך"}
+                        </button>
                       </div>
-                      <small style={{ display: "block", color: "#475569", fontSize: "11px", marginBottom: "8px" }}>{guide.subtitle}</small>
-                      <ul className="side-guide-list">
-                        {guide.bullets.map((bullet, idx) => (
-                          <li key={idx}>
-                            <span className="guide-bullet-num">{idx + 1}</span>
-                            <span>{bullet}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="side-guide-tip">
-                        <b>דגש לאנליסט:</b> {guide.tip}
-                      </div>
+                      {!guideCollapsed && (
+                        <>
+                          <small style={{ display: "block", color: "#475569", fontSize: "11px", marginBottom: "8px" }}>
+                            {guide.subtitle} · {isDeveloperDeal ? "עסקת קבלן/יזם" : "עסקת יד שנייה"}
+                          </small>
+                          <div style={{ background: "#F4F2ED", border: "1px solid rgba(22,27,26,0.08)", borderRadius: "8px", padding: "8px 10px", marginBottom: "8px", fontSize: "11.5px", color: "#161B1A" }}>
+                            <b>מיקוד לעסקה זו:</b> {isDeveloperDeal ? guide.developerTip : guide.secondHandTip}
+                          </div>
+                          <ul className="side-guide-list">
+                            {guide.bullets.map((bullet, idx) => (
+                              <li key={idx}>
+                                <span className="guide-bullet-num">{idx + 1}</span>
+                                <span>{bullet}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="side-guide-tip">
+                            <b>דגש לאנליסט:</b> {guide.tip}
+                          </div>
+                        </>
+                      )}
                     </div>
                   );
                 })()}
+                <label
+                  onDragOver={(e) => { e.preventDefault(); setSmartDropActive(true); }}
+                  onDragLeave={() => setSmartDropActive(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setSmartDropActive(false);
+                    void handleSmartDrop(e.dataTransfer.files);
+                  }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "14px 12px",
+                    borderRadius: "12px",
+                    border: `1.5px dashed ${smartDropActive ? "#145348" : "rgba(22,27,26,0.18)"}`,
+                    background: smartDropActive ? "#e6f2ef" : "#FFFFFF",
+                    textAlign: "center",
+                    cursor: busy ? "wait" : "pointer",
+                  }}
+                >
+                  <input
+                    type="file"
+                    multiple
+                    accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    style={{ display: "none" }}
+                    disabled={busy}
+                    onChange={(e) => {
+                      void handleSmartDrop(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                  <UploadCloud size={18} style={{ color: "#145348" }} />
+                  <b style={{ fontSize: "12.5px", color: "#161B1A" }}>זריקת מסמכים חכמה (Drag &amp; Drop)</b>
+                  <small style={{ fontSize: "11px", color: "#4E5856" }}>גרור או בחר קבצים — המערכת תסווג ותנתח אוטומטית</small>
+                </label>
                 <div className="side-rail-card">
                   <div className="side-rail-head">
                     <b>מסמכי התיק ({detail.documents.length})</b>

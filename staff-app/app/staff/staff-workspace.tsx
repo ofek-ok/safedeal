@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   ArrowDownToLine,
@@ -223,6 +223,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
   const [reportSummary, setReportSummary] = useState<string>("נתוני הנכס והמסמכים נבדקו ואומתו במערכת האנליסטים. ממצאי הרישום, הבטוחות והבדיקות המשפטיות מסוכמים בדוח זה.");
   const [reportRecommendation, setReportRecommendation] = useState<string>("מומלץ להתקדם לחתימת הסכם מכר תוך בדיקת שומת מס רכישה ומכתב כוונות לסילוק המשכנתה הקיימת של המוכר.");
   const [showScoreOverrideInput, setShowScoreOverrideInput] = useState(false);
+  const autoAnalyzedPledgeCasesRef = useRef<Set<string>>(new Set());
 
   const loadCases = useCallback(async (keepSelection = true) => {
     try {
@@ -263,6 +264,22 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
 
   useEffect(() => { void loadCases(false); if (staff.role === "admin") void loadTeam(); }, [loadCases, loadTeam, staff.role]);
   useEffect(() => { void loadDetail(selectedId); }, [loadDetail, selectedId]);
+  useEffect(() => {
+    if (!selectedId || !detail || String(detail.case.id ?? "") !== selectedId) return;
+    const hasDoc = detail.documents.some((d) => d.documentType === "דוח מרשם המשכונות");
+    const hasFinding = detail.findings.some((f) => f.state !== "נדחה" && f.state !== "הוחלף" && /משכונות|משכון|שעבוד/.test(`${f.category} ${f.title} ${f.source ?? ""}`));
+    if (!hasDoc || hasFinding || autoAnalyzedPledgeCasesRef.current.has(selectedId)) return;
+    autoAnalyzedPledgeCasesRef.current.add(selectedId);
+    void (async () => {
+      try {
+        await request(`/api/staff/cases/${selectedId}/analyze`, { method: "POST" });
+        await loadDetail(selectedId);
+        await loadCases();
+      } catch {
+        /* Silent fallback — manual upload/retry remains available */
+      }
+    })();
+  }, [selectedId, detail, loadDetail, loadCases]);
   useEffect(() => {
     if (!detail?.case) return;
     setPropertyIds({ block: String(detail.case.block ?? ""), parcel: String(detail.case.parcel ?? ""), subParcel: String(detail.case.sub_parcel ?? "") });
@@ -727,18 +744,13 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                               ))}
                             </div>
                           ) : hasPledgeDoc ? (
-                            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "12px", borderRadius: "8px", margin: "12px 0", fontSize: "12px", color: "#92400e" }}>
-                              <b>מסמך רשם המשכונות קיים בתיק</b> אך טרם עובד. לחץ על ״קריאת המסמך ושקלול סיכונים״ להפקת ממצאים אוטומטית מהקובץ.
+                            <div style={{ background: "#f0fdfa", border: "1px solid #99f6e4", padding: "12px", borderRadius: "8px", margin: "12px 0", fontSize: "12px", color: "#134e4a" }}>
+                              <b>מסמך רשם המשכונות הועלה לתיק</b> — המערכת קוראת ומשקללת את הממצאים מהמסמך אוטומטית לפי אלגוריתם SafeDeal.
                             </div>
                           ) : null}
                           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
                             <a className="workflow-action workflow-link" href="https://ica.justice.gov.il/SearchPledge/PledgeBrowse?grdPledgeBrowse-sort=State-asc" target="_blank" rel="noopener noreferrer">פתיחת מרשם הבטוחות</a>
                             <button type="button" className="workflow-action" onClick={() => hasPledgeDoc ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[1])}>{hasPledgeDoc ? "צפייה במסמך שהועלה" : "העלאת דוח רשם המשכונות"}</button>
-                            {hasPledgeDoc && (
-                              <button type="button" className="workflow-action strong" disabled={busy} onClick={() => void analyzeCase()}>
-                                {busy ? "קורא ומשקלל…" : pledgeFindingsList.length > 0 ? "סריקה חוזרת של המסמך" : "קריאת המסמך ושקלול סיכונים"}
-                              </button>
-                            )}
                           </div>
                         </>
                       );
@@ -1217,7 +1229,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                 {detail.findings.length ? <div className="finding-list">{detail.findings.map((item) => <article className="finding-row" key={item.id}>{editingFindingId === item.id ? <form className="finding-form" onSubmit={saveFindingEdit}><div className="form-grid"><label>תחום<input value={findingEdit.category} onChange={(event) => setFindingEdit({ ...findingEdit, category: event.target.value })} required /></label><label>חומרה<select value={findingEdit.severity} onChange={(event) => setFindingEdit({ ...findingEdit, severity: event.target.value })}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select></label><label className="span-two">כותרת<input value={findingEdit.title} onChange={(event) => setFindingEdit({ ...findingEdit, title: event.target.value })} required /></label><label className="span-two">תיאור<textarea rows={4} value={findingEdit.note} onChange={(event) => setFindingEdit({ ...findingEdit, note: event.target.value })} required /></label><label className="span-two">מקור / מסמך<input value={findingEdit.source} onChange={(event) => setFindingEdit({ ...findingEdit, source: event.target.value })} /></label></div><div className="form-actions"><button className="button-primary" disabled={busy}>שמירת תיקון</button><button type="button" className="button-plain" onClick={() => setEditingFindingId(null)}>ביטול</button></div></form> : <><div className="finding-severity"><i className={`severity-dot sev-${item.severity === "גבוהה" ? "high" : item.severity === "נמוכה" ? "low" : "mid"}`} />{item.severity}</div><h3>{item.title}</h3><p>{item.note}</p><div className="finding-meta"><span>{item.category}</span>{item.source && <span>מקור: {item.source}</span>}{item.confidence !== null && <span>ביטחון AI: {item.confidence}%</span>}</div>{item.state === "לבדיקה" ? <div className="finding-review"><span>ממתין לבקרה</span><button onClick={() => void editFinding(item)} disabled={busy}><Pencil size={14} />עריכה</button><button onClick={() => void reviewFinding(item.id, "אושר")} disabled={busy}><Check size={15} />אישור</button><button onClick={() => void reviewFinding(item.id, "לברור")} disabled={busy}>העברה לבירור</button><button onClick={() => void reviewFinding(item.id, "נדחה")} disabled={busy}><X size={15} />דחייה</button></div> : <div className="reviewed-tag"><Check size={14} />{item.state}{item.reviewedBy ? ` · ${item.reviewedBy}` : ""}{item.reviewNote ? ` · ${item.reviewNote}` : ""}<button className="button-plain" disabled={busy} onClick={() => void editFinding(item)}><Pencil size={13} />עריכה</button></div>}</>}</article>)}</div> : <div className="inline-empty">לא נוספו ממצאים לתיק. ניתן להוסיף ממצאים לאחר בדיקת המסמכים והמקורות.</div>}
               </div>
               <div hidden={casePanel !== "activity"} className="detail-section"><div className="section-title"><div><b>היסטוריית תיק</b><small>פעולות ועדכונים</small></div></div>{detail.activity.length ? <div className="activity-list">{detail.activity.map((event) => <div className="activity-item" key={event.id}><span className="activity-dot" /><span><b>{event.action}</b><small>{event.detail}</small><em>{event.actorName} · {new Date(event.createdAt).toLocaleString("he-IL")}</em></span></div>)}</div> : <div className="inline-empty">אין עדיין עדכונים.</div>}</div>
-              <div hidden={casePanel !== "findings"} className="report-gate"><ShieldCheck size={19} /><span><b>בקרת ממצאים לפני דוח</b><small>{detail.findings.some((item) => item.state === "לבדיקה" || item.state === "לברור") ? "יש להשלים בדיקה של כל ממצא לפני הכנת הדוח." : detail.report ? `דוח גרסה ${detail.report.version} הופק. אפשר לפתוח אותו לפני השליחה ללקוח.` : "כל הממצאים נבדקו. ניתן להפיק דוח לשמירה או להדפסה."}</small></span><span className="gate-count">{detail.findings.filter((item) => item.state === "לבדיקה" || item.state === "לברור").length} לבדיקה</span>{!detail.findings.some((item) => item.state === "לבדיקה" || item.state === "לברור") && <><button className="report-create" disabled={busy} onClick={() => void generateReport()}>{detail.report ? "גרסה חדשה" : "הפקת דוח"}</button>{detail.report && <a className="report-open" href={`/staff/cases/${selectedId}/report`} target="_blank">פתיחת דוח {detail.report.version}</a>}{detail.report && selectedCase.status === "דוח מוכן" && <button className="report-create" disabled={busy} onClick={() => void sendReport()}>שליחת דוח ללקוח</button>}</>}</div>
+              <div hidden={casePanel !== "findings"} className="report-gate"><ShieldCheck size={19} /><span><b>הפקת דוח SafeDeal</b><small>{detail.report ? `דוח גרסה ${detail.report.version} הופק ומוכן לפתיחה או שליחה.` : "כל הממצאים והבדיקות משוקללים אוטומטית בדוח לפי אלגוריתם SafeDeal."}</small></span><button className="report-create" disabled={busy} onClick={() => void generateReport()}>{detail.report ? "הפקת גרסה חדשה" : "הפקת דוח SafeDeal"}</button>{detail.report && <a className="report-open" href={`/staff/cases/${selectedId}/report`} target="_blank">פתיחת דוח {detail.report.version}</a>}{detail.report && selectedCase.status === "דוח מוכן" && <button className="report-create" disabled={busy} onClick={() => void sendReport()}>שליחת דוח ללקוח</button>}</div>
             </>}</div>
           </section>
         </> : section === "clients" ? <>

@@ -361,7 +361,7 @@ export async function runCaseDocumentAnalysis(params: {
     return db.$client
       .prepare(
         `INSERT INTO findings (id, case_id, category, title, note, severity, source, confidence, state, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'לבדיקה', ?)`
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'אושר', ?)`
       )
       .bind(crypto.randomUUID(), caseId, category, title, note, severity, `ניתוח AI: ${source}`.slice(0, 240), confidence, createdAt);
   });

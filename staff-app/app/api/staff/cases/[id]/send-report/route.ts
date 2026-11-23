@@ -27,14 +27,11 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   const latest = await db.$client.prepare(`SELECT id, version, snapshot FROM reports WHERE case_id = ? ORDER BY version DESC LIMIT 1`)
     .bind(id).first<{ id: string; version: number; snapshot: string }>();
   if (!latest) return jsonError("לא נמצא דוח מאושר לשליחה.", 409);
-  const unresolved = await db.$client.prepare(`SELECT COUNT(*) AS count FROM findings WHERE case_id = ? AND state IN ('לבדיקה', 'לברור')`)
-    .bind(id).first<{ count: number }>();
-  if ((unresolved?.count ?? 0) > 0) return jsonError("יש להשלים את בקרת הממצאים לפני השליחה.", 409);
 
   let report: { findings?: Array<Record<string, unknown>>; case?: Record<string, unknown>; generatedAt?: string };
   try { report = JSON.parse(latest.snapshot) as typeof report; }
   catch { return jsonError("תוכן הדוח אינו תקין. צרו גרסה חדשה לפני השליחה.", 409); }
-  const findings = (report.findings ?? []).filter((finding) => finding.state === "אושר");
+  const findings = (report.findings ?? []).filter((finding) => finding.state !== "נדחה" && finding.state !== "הוחלף");
   const address = [caseRow.street, caseRow.house, caseRow.city].filter(Boolean).join(" ");
   const findingRows = findings.length ? findings.map((finding) => `<tr><td style="padding:14px;border-bottom:1px solid #e6ecee"><strong>${escapeHtml(finding.title)}</strong><div style="margin-top:6px;color:#586d75;line-height:1.7">${escapeHtml(finding.note).replace(/\n/g, "<br>")}</div><div style="margin-top:8px;color:#70848b;font-size:13px">${escapeHtml(finding.category)} · רמת חומרה: ${escapeHtml(finding.severity)}${finding.source ? ` · מקור: ${escapeHtml(finding.source)}` : ""}</div></td></tr>`).join("")
     : `<tr><td style="padding:14px;color:#586d75">לא נותרו ממצאים שאושרו לאחר בקרת האנליסט. הדוח כולל את פרטי הבדיקה והמסמכים שנבדקו.</td></tr>`;

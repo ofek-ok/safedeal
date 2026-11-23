@@ -65,20 +65,12 @@ export async function PUT(_request: Request, context: { params: Promise<{ id: st
     const now = new Date().toISOString();
 
     const findings = (findingsResult.results ?? []) as { id: string; category: string; title: string; note: string; severity: string; source: string | null; state: string; reviewNote?: string | null; reviewedBy?: string | null }[];
-    const unreviewed = findings.filter((item) => item.state === "לבדיקה" || item.state === "לברור");
-    if (unreviewed.length > 0) {
-      return jsonError(`נותרו ${unreviewed.length} ממצאים שממתינים לבקרת אנליסט (אישור/דחייה) לפני הפקת הדוח.`, 409);
-    }
-
-    const approvedFindings = findings.filter((item) => item.state === "אושר");
-    if (approvedFindings.length === 0) {
-      return jsonError("יש לאשר לפחות ממצא מאומת אחד לפני הפקת דוח (המערכת אינה מייצרת ממצאים פיקטיביים).", 409);
-    }
+    const includedFindings = findings.filter((item) => item.state !== "נדחה" && item.state !== "הוחלף");
     const reportId = crypto.randomUUID();
     const version = (latest?.version ?? 0) + 1;
     const snapshot = JSON.stringify({
       case: caseRow,
-      findings: approvedFindings,
+      findings: includedFindings,
       documents: docsResult.results ?? [],
       generatedBy: staff.displayName,
       generatedAt: now,

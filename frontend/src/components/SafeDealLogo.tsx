@@ -13,14 +13,14 @@ interface SafeDealLogoProps {
 }
 
 const SIZES = {
-  xs: { icon: 24, text: "text-base",  gap: "gap-1.5" },
-  sm: { icon: 32, text: "text-xl",    gap: "gap-2"   },
-  md: { icon: 40, text: "text-2xl",   gap: "gap-2.5" },
-  lg: { icon: 52, text: "text-3xl",   gap: "gap-3"   },
-  xl: { icon: 68, text: "text-4xl",   gap: "gap-4"   },
+  xs: { icon: 24, text: "text-base",  gap: "gap-2" },
+  sm: { icon: 32, text: "text-xl",    gap: "gap-2" },
+  md: { icon: 40, text: "text-2xl",   gap: "gap-3" },
+  lg: { icon: 52, text: "text-3xl",   gap: "gap-3" },
+  xl: { icon: 68, text: "text-4xl",   gap: "gap-4" },
 };
 
-/** SVG shield + checkmark — matches the provided brand logo exactly */
+/** SVG shield + checkmark — solid product accent without gradients */
 function ShieldIcon({ size }: { size: number }) {
   return (
     <svg
@@ -31,32 +31,16 @@ function ShieldIcon({ size }: { size: number }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* Shield outer fill */}
       <path
         d="M50 5 L90 22 L90 55 C90 78 72 97 50 105 C28 97 10 78 10 55 L10 22 Z"
-        fill="#0A1628"
-      />
-
-      {/* Shield teal gradient border */}
-      <defs>
-        <linearGradient id="sd-shield-grad" x1="10" y1="5" x2="90" y2="105" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#2DD4BF" />
-          <stop offset="60%"  stopColor="#00C896" />
-          <stop offset="100%" stopColor="#00866A" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M50 5 L90 22 L90 55 C90 78 72 97 50 105 C28 97 10 78 10 55 L10 22 Z"
-        fill="none"
-        stroke="url(#sd-shield-grad)"
+        fill="#0D1522"
+        stroke="#00C896"
         strokeWidth="5"
         strokeLinejoin="round"
       />
-
-      {/* Checkmark */}
       <path
         d="M28 54 L43 70 L72 38"
-        stroke="url(#sd-shield-grad)"
+        stroke="#00C896"
         strokeWidth="8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -77,11 +61,10 @@ export function SafeDealLogo({ size = "md", iconOnly = false, className = "" }: 
     <div className={`inline-flex items-center ${gap} ${className}`} aria-label="SafeDeal">
       <ShieldIcon size={icon} />
       <span
-        className={`font-black tracking-tight leading-none ${text}`}
-        style={{ letterSpacing: "-0.02em" }}
+        className={`font-medium tracking-normal leading-none ${text}`}
       >
-        <span style={{ color: "#f8fafc" }}>SAFE</span>
-        <span style={{ color: "#00C896" }}>DEAL</span>
+        <span style={{ color: "#f8fafc" }}>Safe</span>
+        <span style={{ color: "#00C896" }}>Deal</span>
       </span>
     </div>
   );

@@ -34,32 +34,13 @@
   --radius-xl: 0.75rem;
   --radius-2xl: 1rem;
 
-  /* Animations */
-  --animate-fade-in-up: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  --animate-spin-slow: spin-slow 1.5s linear infinite;
-  --animate-pulse-border: pulse-border 2s ease-in-out infinite;
-  --animate-reveal: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  --animate-reveal-slow: reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Animations — interaction-only ease-out */
+  --animate-fade-in-up: fade-in-up 0.2s ease-out forwards;
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes reveal {
-  from { opacity: 0; transform: translateY(32px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-@keyframes pulse-border {
-  0%, 100% { border-color: rgba(0, 200, 150, 0.4); }
-  50%       { border-color: rgba(0, 200, 150, 0.9); }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -89,23 +70,11 @@
   }
 
   body {
-    background-color: #060E1C;
+    background-color: #080D16;
     color: #f8fafc;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* Mesh background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 75% 55% at 15% -5%, rgba(0, 200, 150, 0.09) 0%, transparent 55%),
-      radial-gradient(ellipse 55% 45% at 85% 105%, rgba(30, 68, 120, 0.38) 0%, transparent 55%);
-    pointer-events: none;
-    z-index: 0;
   }
 
   /* Scrollbar */
@@ -275,79 +244,64 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 14px 32px;
-    background: linear-gradient(135deg, #00C896 0%, #2DD4BF 100%);
-    color: #060E1C;
+    gap: 8px;
+    padding: 12px 24px;
+    background-color: #00C896;
+    color: #080D16;
     font-size: 0.9375rem;
-    font-weight: 800;
+    font-weight: 500;
     font-family: "Heebo", system-ui, sans-serif;
-    border: none;
-    border-radius: 0.875rem;
+    border: 1px solid #00C896;
+    border-radius: 8px;
     cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background-color 0.2s ease-out, border-color 0.2s ease-out, transform 0.2s ease-out;
     white-space: nowrap;
-    box-shadow: 0 6px 24px rgba(0, 200, 150, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     user-select: none;
     position: relative;
-    overflow: hidden;
   }
 
   .sd-btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 32px rgba(0, 200, 150, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-    filter: brightness(1.08);
+    background-color: #00B085;
+    border-color: #00B085;
   }
 
   .sd-btn-primary:active {
-    transform: translateY(0.5px) scale(0.985);
-    box-shadow: 0 3px 12px rgba(0, 200, 150, 0.25);
-    filter: brightness(0.96);
+    transform: translateY(1px);
   }
 
   .sd-btn-primary:disabled {
     opacity: 0.4;
     cursor: not-allowed;
     transform: none;
-    box-shadow: none;
-    filter: none;
   }
 
-  /* ── Ghost Button (Enhanced High Contrast) ── */
+  /* ── Ghost Button (Quiet Secondary) ── */
   .sd-btn-ghost {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 13px 26px;
-    background: rgba(255, 255, 255, 0.03);
+    padding: 12px 24px;
+    background: transparent;
     color: #e2e8f0;
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: 500;
     font-family: "Heebo", system-ui, sans-serif;
-    border: 1.5px solid rgba(255, 255, 255, 0.18);
-    border-radius: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     cursor: pointer;
-    transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease-out, color 0.2s ease-out, background-color 0.2s ease-out;
     user-select: none;
-    backdrop-filter: blur(10px);
   }
 
   .sd-btn-ghost:hover {
-    border-color: rgba(0, 200, 150, 0.4);
+    border-color: rgba(255, 255, 255, 0.2);
     color: #ffffff;
-    background: rgba(0, 200, 150, 0.08);
-    box-shadow: 0 4px 20px rgba(0, 200, 150, 0.15);
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .sd-btn-ghost:active {
-    transform: scale(0.985);
-  }
-
-  .sd-btn-ghost:active {
-    transform: scale(0.985);
+    transform: translateY(1px);
   }
 
   .sd-btn-ghost:disabled {

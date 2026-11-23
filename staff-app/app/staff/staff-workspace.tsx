@@ -587,6 +587,64 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
     finally { setBusy(false); }
   };
 
+  const uploadStepDocument = async (file: File, documentType: string, defaultSource: string) => {
+    if (!selectedId) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("documentType", documentType);
+    formData.append("source", defaultSource);
+    formData.append("collectedAt", new Date().toISOString().slice(0, 10));
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/staff/cases/${selectedId}/documents`, { method: "POST", body: formData });
+      const data = await response.json().catch(() => ({})) as {
+        error?: string;
+        analysis?: { ran?: boolean; findingsCreated?: number; error?: string };
+      };
+      if (!response.ok) throw new Error(data.error || "לא הצלחנו לשמור את המסמך.");
+      await loadDetail(selectedId);
+      await loadCases();
+      if (data.analysis?.ran) {
+        setNotice(`המסמך הועלה, נקרא אוטומטית ונותח לפי אלגוריתם SafeDeal (נוצרו ${data.analysis.findingsCreated ?? 0} ממצאים משוקללים).`);
+      } else if (data.analysis?.error) {
+        setNotice(`המסמך נשמר בתיק, אך הניתוח האוטומטי לא הושלם (${data.analysis.error}).`);
+      } else {
+        setNotice("המסמך הועלה ונשמר בתיק.");
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "לא הצלחנו להעלות את המסמך.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const renderStepUploader = (docType: string, defaultSource: string, uploadLabel: string) => {
+    const uploadedDocs = (detail?.documents ?? []).filter((d) => d.documentType === docType);
+    return (
+      <>
+        <label className="workflow-action" style={{ cursor: busy ? "wait" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <input
+            type="file"
+            accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
+            style={{ display: "none" }}
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void uploadStepDocument(file, docType, defaultSource);
+            }}
+          />
+          {uploadedDocs.length > 0 ? `העלאת קובץ נוסף (${uploadLabel})` : uploadLabel}
+        </label>
+        {uploadedDocs.map((doc) => (
+          <button key={doc.id} type="button" className="workflow-action" onClick={() => setPreviewDoc(doc)}>
+            צפייה: {doc.filename}
+          </button>
+        ))}
+      </>
+    );
+  };
+
   const updateChecklist = async (itemKey: ChecklistKey, completed: boolean) => {
     if (!selectedId) return;
     setBusy(true);
@@ -721,7 +779,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
               <nav className="case-panel-nav" aria-label="אזורי התיק">{([{ id: "workflow", label: "תהליך עבודה" }, { id: "intake", label: "פרטי הבקשה" }, { id: "documents", label: `מסמכים (${detail.documents.length})` }, { id: "findings", label: `ממצאים ודוח (${detail.findings.length})` }, { id: "activity", label: "היסטוריה" }] as const).map((item) => <button type="button" key={item.id} className={casePanel === item.id ? "active" : ""} aria-current={casePanel === item.id ? "page" : undefined} onClick={() => setCasePanel(item.id)}>{item.label}</button>)}</nav>
               {casePanel === "workflow" && (selectedCase.status === "חדש" ? <section className="workflow-launch"><div><span className="workflow-kicker">התחלת טיפול</span><h3>התיק מוכן למעבר לאנליסט</h3><p>נעבור יחד על פרטי הבקשה, נאסוף את המסמכים ונכין את התיק לניתוח.</p></div><button className="button-primary" disabled={busy} onClick={() => void updateCase({ status: "באיסוף מידע" })}><Activity size={16} />תחילת תהליך אנליזה</button></section> : <section className="analysis-workflow workflow-focus-shell" aria-label="מסלול אנליזה"><div className="workflow-progress" aria-label={`הושלמו ${workflowCompletedCount} מתוך 6 שלבים`}><div className="workflow-progress-copy"><b>{workflowCurrentStep >= 0 ? `השלב הבא: ${workflowStepTitles[workflowCurrentStep]}` : "כל שלבי העבודה הושלמו"}</b><span>{workflowCompletedCount} מתוך 6 שלבים הושלמו</span></div><div className="workflow-progress-track"><i style={{ width: `${workflowCompletedCount / 6 * 100}%` }} /></div></div><nav className="workflow-step-nav workflow-step-nav-horizontal" aria-label="שלבי הבדיקה">{workflowStepTitles.map((title, index) => <button key={title} type="button" className={`${activeWorkflowStep === index ? "active" : ""} ${workflowDone[index] ? "done" : ""}`} aria-current={activeWorkflowStep === index ? "step" : undefined} onClick={() => setWorkflowStepOverride(index)}><span>{workflowDone[index] ? <Check size={13} /> : String(index + 1).padStart(2, "0")}</span><b>{title}</b></button>)}</nav><div className="workflow-focus-grid"><div className="workflow-stage"><div className="workflow-grid">
                 <article hidden={activeWorkflowStep !== 0} className={["workflow-step", workflowDone[0] ? "is-done" : "", workflowCurrentStep === 0 ? "is-active" : ""].filter(Boolean).join(" ")}><span className="workflow-step-number">01</span><div className="workflow-step-content"><b>בדיקת פרטי הלקוח והנכס</b><p>בדוק שהטופס מלא. גוש וחלקה נדרשים לפני הפקת נסח; תת־חלקה נשארת אופציונלית.</p><div className="cadastral-entry"><label>גוש<input inputMode="numeric" value={propertyIds.block} onChange={(event) => setPropertyIds((current) => ({ ...current, block: event.target.value }))} placeholder="מספר גוש" /></label><label>חלקה<input inputMode="numeric" value={propertyIds.parcel} onChange={(event) => setPropertyIds((current) => ({ ...current, parcel: event.target.value }))} placeholder="מספר חלקה" /></label><label>תת־חלקה <small>אופציונלי</small><input inputMode="numeric" value={propertyIds.subParcel} onChange={(event) => setPropertyIds((current) => ({ ...current, subParcel: event.target.value }))} placeholder="אם ידוע" /></label></div><div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", marginTop: "8px" }}><button type="button" className="workflow-action" disabled={busy} onClick={() => void lookupCadastralAuto()}>איתור גוש/חלקה אוטומטי מ-GovMap</button><a className="workflow-source-link" href="https://www.gov.il/apps/mapi/parcel_address/parcel_address.html" target="_blank" rel="noopener noreferrer">איתור ידני באתר gov.il <ChevronLeft size={14} /></a></div><div className="workflow-step-actions"><button type="button" className="workflow-action strong" disabled={busy || !propertyIds.block.trim() || !propertyIds.parcel.trim()} onClick={() => void completeAddressReview()}>{busy ? "שומר…" : workflowDone[0] ? "עדכון גוש וחלקה" : "שמירת פרטים והמשך"}</button><button type="button" className="workflow-action" onClick={() => setCasePanel("intake")}>הצגת הטופס המלא</button></div></div><span className="workflow-check">{workflowDone[0] ? <Check size={16} /> : "1"}</span></article>
-                <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח בתיק. בדוק כתובת, גוש וחלקה, תת־חלקה ובעלי זכויות." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, ואז העלה אותו לתיק."}</p>{sellerNames.length > 0 && <small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small>}<a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a><button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[0]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[0])}>{hasDocumentType(requiredDocumentTypes[0]) ? "בדיקת הנסח בתיק" : "העלאת נסח טאבו"}</button></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
+                <article hidden={activeWorkflowStep !== 1} className={`workflow-step ${workflowDone[1] ? "is-done" : ""} ${workflowCurrentStep === 1 ? "is-active" : ""}`}><span className="workflow-step-number">02</span><div><b>נסח טאבו ובעלי הזכויות</b><p>{hasDocumentType(requiredDocumentTypes[0]) ? "הנסח הועלה לתיק ונותח אוטומטית לפי אלגוריתם SafeDeal." : "היכנס לשירות, הפק נסח לפי הגוש והחלקה, והעלה אותו כאן לניתוח אוטומטי."}</p>{sellerNames.length > 0 && <small className="workflow-sellers">שמות המוכרים מהטופס: {sellerNames.join(" · ")}</small>}<div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}><a className="workflow-action workflow-link" href="https://www.gov.il/he/service/land_registration_extract" target="_blank" rel="noopener noreferrer">פתיחת שירות הפקת נסח טאבו</a>{renderStepUploader(requiredDocumentTypes[0], "הרשם המקרקעין / טאבו", "העלאת נסח טאבו")}</div></div><span className="workflow-check">{hasDocumentType(requiredDocumentTypes[0]) ? <Check size={16} /> : "2"}</span></article>
                 <article hidden={activeWorkflowStep !== 2} className={`workflow-step ${workflowDone[2] ? "is-done" : ""} ${workflowCurrentStep === 2 ? "is-active" : ""}`}>
                   <span className="workflow-step-number">03</span>
                   <div style={{ width: "100%" }}>
@@ -750,7 +808,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                           ) : null}
                           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
                             <a className="workflow-action workflow-link" href="https://ica.justice.gov.il/SearchPledge/PledgeBrowse?grdPledgeBrowse-sort=State-asc" target="_blank" rel="noopener noreferrer">פתיחת מרשם הבטוחות</a>
-                            <button type="button" className="workflow-action" onClick={() => hasPledgeDoc ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[1])}>{hasPledgeDoc ? "צפייה במסמך שהועלה" : "העלאת דוח רשם המשכונות"}</button>
+                            {renderStepUploader(requiredDocumentTypes[1], "רשם המשכונות — משרד המשפטים", "העלאת דוח רשם המשכונות")}
                           </div>
                         </>
                       );
@@ -799,7 +857,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                     )}
                     {insolvencyCheckStatus === "found" && (
                       <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#991b1b" }}>
-                        <b>נמצאו הליכים:</b> יש להעלות את המסמך הרלוונטי לתיק ולתעד ממצא בלשונית הממצאים כדי שישוקלל בסיכון (הליך פעיל מפעיל תקרת ציון 39).
+                        <b>נמצאו הליכים:</b> יש להעלות את המסמך הרלוונטי כאן — המערכת תקרא אותו ותשקלל את הסיכון אוטומטית (הליך פעיל מפעיל תקרת ציון 39).
                       </div>
                     )}
                     {sellerNames.length > 0 && <small className="workflow-sellers">בדיקה לפי שמות המוכרים: {sellerNames.join(" · ")}</small>}
@@ -807,14 +865,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                       <a className="workflow-action workflow-link" href="https://insolvency.justice.gov.il/" target="_blank" rel="noopener noreferrer">
                         פתיחת מאגר חדלות פירעון <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
                       </a>
-                      <button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[2]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[2])}>
-                        {hasDocumentType(requiredDocumentTypes[2]) ? "צפייה בדוח חדלות פירעון" : "העלאת מסמך (במידת הצורך)"}
-                      </button>
-                      {insolvencyCheckStatus === "found" && (
-                        <button type="button" className="workflow-action strong" onClick={() => { setFinding({ category: "חדלות פירעון", title: "", note: "", severity: "גבוהה", source: "משרד המשפטים — insolvency.justice.gov.il" }); setFindingForm(true); setCasePanel("findings"); }}>
-                          תיעוד ממצא חדלות פירעון
-                        </button>
-                      )}
+                      {renderStepUploader(requiredDocumentTypes[2], "משרד המשפטים — insolvency.justice.gov.il", "העלאת דוח חדלות פירעון")}
                     </div>
                   </div>
                   <span className="workflow-check">{workflowDone[3] ? <Check size={16} /> : "4"}</span>
@@ -861,7 +912,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                     )}
                     {legalCheckStatus === "found" && (
                       <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#991b1b" }}>
-                        <b>נמצאו ממצאים משפטיים:</b> יש להעלות את המסמך המשפטי שהתקבל ולתעד את הממצאים בתיק לשקלול בדוח.
+                        <b>נמצאו ממצאים משפטיים:</b> יש להעלות את המסמך המשפטי כאן — המערכת תקרא אותו ותשקלל את הממצאים אוטומטית בדוח.
                       </div>
                     )}
                     {sellerNames.length > 0 && <small className="workflow-sellers">מומלץ לחפש כל בעל/ת זכויות בנפרד לפי השם המלא שמופיע בנסח: {sellerNames.join(" · ")}</small>}
@@ -869,14 +920,7 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                       <a className="workflow-action workflow-link" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer">
                         פתיחת מאגר נבו <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
                       </a>
-                      <button type="button" className="workflow-action" onClick={() => hasDocumentType(requiredDocumentTypes[3]) ? setCasePanel("documents") : setDocumentForUpload(requiredDocumentTypes[3])}>
-                        {hasDocumentType(requiredDocumentTypes[3]) ? "צפייה בדוח המשפטי" : "העלאת מסמך משפטי"}
-                      </button>
-                      {legalCheckStatus === "found" && (
-                        <button type="button" className="workflow-action strong" onClick={() => { setFinding({ category: "רקע משפטי", title: "", note: "", severity: "בינונית", source: "נבו / נט המשפט" }); setFindingForm(true); setCasePanel("findings"); }}>
-                          תיעוד ממצא משפטי
-                        </button>
-                      )}
+                      {renderStepUploader(requiredDocumentTypes[3], "נבו / נט המשפט", "העלאת מסמך משפטי")}
                     </div>
                   </div>
                   <span className="workflow-check">{workflowDone[4] ? <Check size={16} /> : "5"}</span>

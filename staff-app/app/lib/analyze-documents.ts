@@ -1,4 +1,5 @@
 import { getDb } from "../../db";
+import { analyzeWithBuiltInPdfParser } from "./pdf-risk-parser";
 import { getFilesBucket } from "./storage";
 
 export const safeDealRiskModel = {
@@ -70,9 +71,13 @@ function asText(value: unknown, limit: number) {
 async function analyzeWithGeminiDirect(params: {
   caseData: Record<string, unknown>;
   loadedFiles: Array<{ filename: string; contentType: string; bytes: ArrayBuffer; documentType: string }>;
-}): Promise<AnalysisResponsePayload | null> {
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!geminiKey) return null;
+}): Promise<{ payload: AnalysisResponsePayload | null; reason?: string }> {
+  const geminiKey = (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  )?.trim();
+  if (!geminiKey) return { payload: null, reason: "no_gemini_key" };
 
   const parts: Array<Record<string, unknown>> = [
     {
@@ -89,34 +94,41 @@ async function analyzeWithGeminiDirect(params: {
     });
   }
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.1,
-        },
-      }),
-      signal: AbortSignal.timeout(85_000),
+  for (const model of ["gemini-2.5-flash", "gemini-2.0-flash"]) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.1,
+            },
+          }),
+          signal: AbortSignal.timeout(85_000),
+        }
+      );
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        console.warn(`Gemini ${model} returned ${res.status}: ${errText.slice(0, 200)}`);
+        continue;
+      }
+      const json = (await res.json().catch(() => null)) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      } | null;
+      const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) continue;
+      return { payload: JSON.parse(rawText) as AnalysisResponsePayload };
+    } catch (err) {
+      console.warn(`Gemini ${model} failed:`, err instanceof Error ? err.message : err);
     }
-  );
-
-  if (!res.ok) return null;
-  const json = (await res.json().catch(() => null)) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  } | null;
-  const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) return null;
-
-  try {
-    return JSON.parse(rawText) as AnalysisResponsePayload;
-  } catch {
-    return null;
   }
+
+  return { payload: null, reason: "gemini_request_failed" };
 }
 
 export async function runCaseDocumentAnalysis(params: {
@@ -278,15 +290,25 @@ export async function runCaseDocumentAnalysis(params: {
     }
   }
 
+  let geminiReason: string | undefined;
   if (!analysis || !Array.isArray(analysis.findings)) {
-    analysis = await analyzeWithGeminiDirect({ caseData, loadedFiles });
+    const geminiRes = await analyzeWithGeminiDirect({ caseData, loadedFiles });
+    analysis = geminiRes.payload;
+    geminiReason = geminiRes.reason;
+  }
+
+  if (!analysis || !Array.isArray(analysis.findings)) {
+    analysis = analyzeWithBuiltInPdfParser(loadedFiles);
   }
 
   if (!analysis || !Array.isArray(analysis.findings)) {
     return {
       ok: false as const,
       status: 503,
-      error: "מנוע הניתוח האוטומטי אינו זמין כרגע (חסר חיבור API/Gemini).",
+      error:
+        geminiReason === "no_gemini_key"
+          ? "לא הוגדר מפתח GEMINI_API_KEY ב-Vercel (נדרש לקריאת תמונות/סריקות או PDF מוצפן). הוסיפו GEMINI_API_KEY בהגדרות הפרויקט ב-Vercel."
+          : "מנוע הניתוח האוטומטי לא הצליח לקרוא את הקובץ כרגע. בדקו שמפתח GEMINI_API_KEY תקין ב-Vercel.",
     };
   }
 

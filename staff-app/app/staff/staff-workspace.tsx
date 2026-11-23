@@ -1153,7 +1153,15 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
               <div className="workflow-pager">
                 <button type="button" className="workflow-action" disabled={activeWorkflowStep <= 0} onClick={() => setWorkflowStepOverride(Math.max(0, activeWorkflowStep - 1))}>→ השלב הקודם</button>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>שלב {activeWorkflowStep + 1} מתוך 6</span>
-                <button type="button" className="workflow-action strong" disabled={activeWorkflowStep >= 5} onClick={() => setWorkflowStepOverride(Math.min(5, activeWorkflowStep + 1))}>השלב הבא ←</button>
+                {activeWorkflowStep < 5 ? (
+                  <button type="button" className="workflow-action strong" onClick={() => setWorkflowStepOverride(Math.min(5, activeWorkflowStep + 1))}>השלב הבא ←</button>
+                ) : selectedCase.status === "דוח נשלח" ? (
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#065f46", background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "7px 14px", borderRadius: "8px" }}>✓ התיק טופל</span>
+                ) : (
+                  <button type="button" className="workflow-action strong" disabled={busy} onClick={() => void updateCase({ status: "דוח נשלח" })}>
+                    {busy ? "מעביר לטופל…" : "סימון כטופל ✓"}
+                  </button>
+                )}
               </div>
               </div>
               <aside className="workflow-side-rail">

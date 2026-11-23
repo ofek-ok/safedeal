@@ -340,8 +340,8 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
     Boolean(detail?.case?.block && detail?.case?.parcel),
     hasDocumentType(requiredDocumentTypes[0]),
     hasPledgeDoc && hasPledgeFinding,
-    insolvencyCheckStatus === "none_found" || (insolvencyCheckStatus === "found" && (hasDocumentType(requiredDocumentTypes[2]) || hasInsolvencyFinding)),
-    legalCheckStatus === "none_found" || (legalCheckStatus === "found" && (hasDocumentType(requiredDocumentTypes[3]) || hasLegalFinding)),
+    insolvencyCheckStatus === "none_found" || hasDocumentType(requiredDocumentTypes[2]) || hasInsolvencyFinding,
+    legalCheckStatus === "none_found" || hasDocumentType(requiredDocumentTypes[3]) || hasLegalFinding,
     Boolean(detail?.report || selectedCase?.status === "דוח מוכן" || selectedCase?.status === "דוח נשלח"),
   ];
   const workflowCurrentStep = workflowDone.findIndex((done) => !done);
@@ -602,6 +602,11 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
         analysis?: { ran?: boolean; findingsCreated?: number; error?: string };
       };
       if (!response.ok) throw new Error(data.error || "לא הצלחנו לשמור את המסמך.");
+      if (documentType === requiredDocumentTypes[2] && insolvencyCheckStatus !== "found") {
+        await request(`/api/staff/cases/${selectedId}`, { method: "PATCH", body: JSON.stringify({ insolvencyCheck: { status: "found", note: "" } }) }).catch(() => {});
+      } else if (documentType === requiredDocumentTypes[3] && legalCheckStatus !== "found") {
+        await request(`/api/staff/cases/${selectedId}`, { method: "PATCH", body: JSON.stringify({ legalCheck: { status: "found", note: "" } }) }).catch(() => {});
+      }
       await loadDetail(selectedId);
       await loadCases();
       if (data.analysis?.ran) {
@@ -820,52 +825,22 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                   <span className="workflow-step-number">04</span>
                   <div>
                     <b>בדיקת חדלות פירעון (משרד המשפטים)</b>
-                    <p>איתור תיקי חדלות פירעון ופשיטת רגל של המוכר/היזם במאגר הממונה. בחר את מצב הבדיקה המדויק — אין צורך לצרף מסמך ריק כאשר לא נמצאו הליכים.</p>
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", margin: "10px 0" }}>
-                      {([
-                        { key: "found", label: "נמצאו הליכים", bg: "#fef2f2", color: "#991b1b", border: "#fecaca" },
-                        { key: "none_found", label: "לא נמצאו הליכים (הושלמה)", bg: "#ecfdf5", color: "#065f46", border: "#a7f3d0" },
-                        { key: "incomplete", label: "הבדיקה לא הושלמה", bg: "#fffbeb", color: "#92400e", border: "#fde68a" },
-                      ] as const).map((opt) => {
-                        const active = insolvencyCheckStatus === opt.key;
-                        return (
-                          <button
-                            key={opt.key}
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void saveCheckStatus("insolvencyCheck", opt.key)}
-                            style={{
-                              fontSize: "12px",
-                              fontWeight: 700,
-                              padding: "6px 12px",
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              border: `1.5px solid ${active ? opt.border : "#e2e8f0"}`,
-                              background: active ? opt.bg : "#fff",
-                              color: active ? opt.color : "#475569",
-                            }}
-                          >
-                            {active ? "✓ " : ""}{opt.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {insolvencyCheckStatus === "incomplete" && (
-                      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#92400e" }}>
-                        <b>סטטוס: הבדיקה לא הושלמה.</b> המערכת לא תציג מצב זה כאילו לא נמצאו הליכים. יש להשלים את הבדיקה ולעדכן את הסטטוס.
-                      </div>
-                    )}
-                    {insolvencyCheckStatus === "found" && (
-                      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#991b1b" }}>
-                        <b>נמצאו הליכים:</b> יש להעלות את המסמך הרלוונטי כאן — המערכת תקרא אותו ותשקלל את הסיכון אוטומטית (הליך פעיל מפעיל תקרת ציון 39).
-                      </div>
-                    )}
+                    <p>איתור תיקי חדלות פירעון ופשיטת רגל של המוכר/היזם במאגר הממונה. אם נמצאו נתונים — העלה כאן את הדוח לניתוח אוטומטי; אם אין — סמן שלא נמצאו הליכים.</p>
                     {sellerNames.length > 0 && <small className="workflow-sellers">בדיקה לפי שמות המוכרים: {sellerNames.join(" · ")}</small>}
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
                       <a className="workflow-action workflow-link" href="https://insolvency.justice.gov.il/" target="_blank" rel="noopener noreferrer">
                         פתיחת מאגר חדלות פירעון <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
                       </a>
                       {renderStepUploader(requiredDocumentTypes[2], "משרד המשפטים — insolvency.justice.gov.il", "העלאת דוח חדלות פירעון")}
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="workflow-action"
+                        onClick={() => void saveCheckStatus("insolvencyCheck", insolvencyCheckStatus === "none_found" ? "incomplete" : "none_found")}
+                        style={insolvencyCheckStatus === "none_found" ? { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" } : undefined}
+                      >
+                        {insolvencyCheckStatus === "none_found" ? "✓ לא נמצאו הליכים" : "לא נמצאו הליכים"}
+                      </button>
                     </div>
                   </div>
                   <span className="workflow-check">{workflowDone[3] ? <Check size={16} /> : "4"}</span>
@@ -875,52 +850,22 @@ export default function StaffWorkspace({ initialStaff }: { initialStaff: Staff }
                   <span className="workflow-step-number">05</span>
                   <div>
                     <b>הליכים משפטיים וסכסוכים</b>
-                    <p>בדוק ב-Nevo / נט המשפט הליכים ותיקים רלוונטיים על שם המוכרים ובעלי הזכויות, וסמן את מצב הבדיקה באותו מנגנון.</p>
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", margin: "10px 0" }}>
-                      {([
-                        { key: "found", label: "נמצאו ממצאים משפטיים", bg: "#fef2f2", color: "#991b1b", border: "#fecaca" },
-                        { key: "none_found", label: "לא נמצאו ממצאים (הושלמה)", bg: "#ecfdf5", color: "#065f46", border: "#a7f3d0" },
-                        { key: "incomplete", label: "הבדיקה לא הושלמה", bg: "#fffbeb", color: "#92400e", border: "#fde68a" },
-                      ] as const).map((opt) => {
-                        const active = legalCheckStatus === opt.key;
-                        return (
-                          <button
-                            key={opt.key}
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void saveCheckStatus("legalCheck", opt.key)}
-                            style={{
-                              fontSize: "12px",
-                              fontWeight: 700,
-                              padding: "6px 12px",
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              border: `1.5px solid ${active ? opt.border : "#e2e8f0"}`,
-                              background: active ? opt.bg : "#fff",
-                              color: active ? opt.color : "#475569",
-                            }}
-                          >
-                            {active ? "✓ " : ""}{opt.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {legalCheckStatus === "incomplete" && (
-                      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#92400e" }}>
-                        <b>סטטוס: הבדיקה לא הושלמה.</b> חסר אימות משפטי — יש להשלים את הבדיקה או להעלות את המסמך מהשירות החיצוני.
-                      </div>
-                    )}
-                    {legalCheckStatus === "found" && (
-                      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "8px 12px", borderRadius: "8px", margin: "8px 0", fontSize: "12px", color: "#991b1b" }}>
-                        <b>נמצאו ממצאים משפטיים:</b> יש להעלות את המסמך המשפטי כאן — המערכת תקרא אותו ותשקלל את הממצאים אוטומטית בדוח.
-                      </div>
-                    )}
+                    <p>בדוק ב-Nevo / נט המשפט הליכים ותיקים רלוונטיים על שם המוכרים ובעלי הזכויות. אם נמצאו נתונים — העלה כאן את המסמך לניתוח אוטומטי; אם אין — סמן שלא נמצאו ממצאים.</p>
                     {sellerNames.length > 0 && <small className="workflow-sellers">מומלץ לחפש כל בעל/ת זכויות בנפרד לפי השם המלא שמופיע בנסח: {sellerNames.join(" · ")}</small>}
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "8px" }}>
                       <a className="workflow-action workflow-link" href="https://www.nevo.co.il/" target="_blank" rel="noopener noreferrer">
                         פתיחת מאגר נבו <ExternalLink size={13} style={{ display: "inline", verticalAlign: "middle" }} />
                       </a>
                       {renderStepUploader(requiredDocumentTypes[3], "נבו / נט המשפט", "העלאת מסמך משפטי")}
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="workflow-action"
+                        onClick={() => void saveCheckStatus("legalCheck", legalCheckStatus === "none_found" ? "incomplete" : "none_found")}
+                        style={legalCheckStatus === "none_found" ? { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" } : undefined}
+                      >
+                        {legalCheckStatus === "none_found" ? "✓ לא נמצאו ממצאים" : "לא נמצאו ממצאים"}
+                      </button>
                     </div>
                   </div>
                   <span className="workflow-check">{workflowDone[4] ? <Check size={16} /> : "5"}</span>

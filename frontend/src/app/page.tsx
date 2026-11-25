@@ -664,9 +664,12 @@ export default function HomePage() {
           </p>
 
           <div className="flex gap-6 text-xs text-slate-400 font-normal">
-            <Link href="/staff" className="hover:text-white transition-colors duration-200 ease-out">
+            <a
+              href={`${(process.env.NEXT_PUBLIC_SAFEDEAL_STAFF_API_URL ?? "https://safedeal-staff.vercel.app").replace(/\/+$/, "")}/staff`}
+              className="hover:text-white transition-colors duration-200 ease-out"
+            >
               פורטל עובדים (Staff)
-            </Link>
+            </a>
             <a href="#legal" className="hover:text-white transition-colors duration-200 ease-out">
               גילוי נאות משפטי
             </a>

@@ -156,6 +156,9 @@ export default function HomePage() {
             <a href="#comparison" className="hover:text-white transition-colors duration-200 ease-out">
               השוואה
             </a>
+            <a href="#pricing" className="hover:text-white transition-colors duration-200 ease-out">
+              מחירים
+            </a>
             <a href="#legal" className="hover:text-white transition-colors duration-200 ease-out">
               גילוי נאות
             </a>
@@ -517,6 +520,133 @@ export default function HomePage() {
                 <div className="col-span-4 text-slate-100 leading-relaxed">{row.safedeal}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 6.5 — PRICING
+      ═══════════════════════════════════════════════════════ */}
+      <section id="pricing" className="px-6 py-16 sm:py-24 border-t border-white/[0.08]">
+        <div className="max-w-5xl mx-auto">
+          <div className="max-w-2xl mb-12 text-right">
+            <p className="text-sm font-medium text-[#00C896] mb-3">
+              עלות הבדיקה
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-medium leading-[1.2] mb-4 text-white">
+              בדיקה קטנה שמונעת טעות של מאות אלפי שקלים
+            </h2>
+            <p className="text-base text-slate-300 leading-relaxed font-normal">
+              תשלום חד־פעמי לנכס, ללא מנוי וללא התחייבות. בוחרים את המסלול שמתאים לכם ומקבלים תשובה ברורה לפני החתימה.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+            {/* Most Popular Plan — ₪197 */}
+            <div className="rounded-2xl bg-[#121C2D] border border-[#00C896]/45 p-8 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <span className="text-xs font-medium text-[#00C896] bg-[#00C896]/10 border border-[#00C896]/30 px-3 py-1 rounded-lg">
+                    הכי פופולרי
+                  </span>
+                  <span className="text-xs text-slate-400">תשלום חד־פעמי</span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-medium text-white mb-2">
+                  דוח נאותות מקיף עם הכוונה מדויקת
+                </h3>
+                <p className="text-sm text-slate-300 leading-relaxed mb-6">
+                  המסלול המבוקש ביותר: דוח מלא ומפורט עם הסברים ברורים בעברית והכוונה מדויקת מה לבדוק ולדרוש לפני שמתחייבים לעסקה.
+                </p>
+
+                <div className="flex items-baseline gap-2 pb-6 mb-6 border-b border-white/[0.08]">
+                  <span className="text-4xl sm:text-5xl font-medium tabular-nums text-white">
+                    ₪197
+                  </span>
+                  <span className="text-xs text-slate-400">/ בדיקת נכס מלאה</span>
+                </div>
+
+                <ul className="space-y-3 text-sm text-slate-200 mb-8">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[#00C896] shrink-0 mt-0.5" />
+                    <span>דוח נאותות מלא עם ציון SafeScore מ-0 עד 100</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[#00C896] shrink-0 mt-0.5" />
+                    <span>הסברים ברורים על כל ממצא, שעבוד או דגל אדום בעסקה</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[#00C896] shrink-0 mt-0.5" />
+                    <span>בדיקת שווי הוגן והכוונה מדויקת למשא ומתן</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[#00C896] shrink-0 mt-0.5" />
+                    <span>רשימת פעולות ושאלות מוכנה להעברה לעורך הדין שלכם</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/analyze?plan=report"
+                className="sd-btn-primary w-full justify-center"
+              >
+                <span>התחילו בדיקה והפיקו דוח</span>
+                <ArrowLeft size={16} />
+              </Link>
+            </div>
+
+            {/* Report + Analyst Consultation Plan — ₪397 */}
+            <div className="rounded-2xl bg-[#0D1522] border border-white/10 p-8 flex flex-col justify-between hover:border-white/20 transition-colors duration-200 ease-out">
+              <div>
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <span className="text-xs font-medium text-slate-300 border border-white/10 px-3 py-1 rounded-lg">
+                    ליווי אישי
+                  </span>
+                  <span className="text-xs text-slate-400">תשלום חד־פעמי</span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-medium text-white mb-2">
+                  דוח מקיף + שיחת ייעוץ עם אנליסט סיכונים
+                </h3>
+                <p className="text-sm text-slate-300 leading-relaxed mb-6">
+                  מעבר לדוח המקיף, מקבלים שיחה אישית עם אנליסט סיכונים שעובר איתכם על כל סעיף ועוזר לכם לקבל החלטה בראש שקט.
+                </p>
+
+                <div className="flex items-baseline gap-2 pb-6 mb-6 border-b border-white/[0.08]">
+                  <span className="text-4xl sm:text-5xl font-medium tabular-nums text-white">
+                    ₪397
+                  </span>
+                  <span className="text-xs text-slate-400">/ דוח + שיחת ייעוץ</span>
+                </div>
+
+                <ul className="space-y-3 text-sm text-slate-300 mb-8">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[#00C896] shrink-0 mt-0.5" />
+                    <span>כל מה שכלול במסלול הדוח המקיף (₪197)</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[#00C896] shrink-0 mt-0.5" />
+                    <span>שיחת ייעוץ אישית (1 על 1) עם אנליסט סיכונים מומחה</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[#00C896] shrink-0 mt-0.5" />
+                    <span>הסבר ממוקד על המשמעות הכלכלית והמשפטית של הממצאים</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[#00C896] shrink-0 mt-0.5" />
+                    <span>הכנה מלאה למו״מ ולפגישת החתימה מול המוכר והעו״ד</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/analyze?plan=consultation"
+                className="sd-btn-ghost w-full justify-center"
+              >
+                <span>בחרו דוח + שיחת ייעוץ אישית</span>
+                <ArrowLeft size={16} />
+              </Link>
+            </div>
           </div>
         </div>
       </section>

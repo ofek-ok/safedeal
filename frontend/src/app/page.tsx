@@ -684,6 +684,24 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+
+          <div className="mt-8 rounded-2xl bg-[#0D1522] border border-white/[0.08] p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="text-right">
+              <p className="text-base sm:text-lg font-medium text-white mb-1">
+                יזמים, עורכי דין, מתווכים ואנשי מקצוע בנדל״ן?
+              </p>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                מלווים רוכשים בעסקאות ומעוניינים בבדיקות מוקדמות ללקוחות שלכם או בחבילות עסקיות מותאמות? פנו אלינו במייל לשיתופי פעולה.
+              </p>
+            </div>
+            <a
+              href="mailto:support@safedeal.co.il?subject=%D7%A9%D7%99%D7%AA%D7%95%D7%A3%20%D7%A4%D7%A2%D7%95%D7%9C%D7%94%20%D7%A2%D7%A1%D7%A7%D7%99%20-%20SafeDeal"
+              className="sd-btn-ghost shrink-0 w-full md:w-auto justify-center"
+            >
+              <Mail size={15} />
+              <span>פנו במייל לשיתופי פעולה</span>
+            </a>
+          </div>
         </div>
       </section>
 

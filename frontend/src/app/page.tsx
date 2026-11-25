@@ -209,19 +209,24 @@ export default function HomePage() {
       <section className="px-6 py-16 sm:py-24 max-w-6xl mx-auto">
         <div className="max-w-3xl text-right">
           <p className="text-sm font-medium text-[#00C896] mb-4">
-            בדיקת נאותות לנדל״ן בישראל · הצלבת מאגרי מידע רשמיים
+            בדיקת נכס לפני רכישה · הצלבת מאגרי מידע רשמיים
+          </p>
+
+          <p className="text-xl sm:text-2xl font-normal text-slate-300 mb-3">
+            לפני שחותמים על דירה, בודקים מה באמת קונים
           </p>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-medium leading-[1.15] text-white mb-6">
             לא קונים דירה לפני שעושים{" "}
-            <span className="text-[#00C896]">SafeDeal</span>.
-            <span className="block text-slate-300 font-normal text-2xl sm:text-3xl md:text-4xl mt-4 leading-[1.3]">
-              כי יש דברים שאסור לגלות אחרי שחותמים על החוזה.
-            </span>
+            <span className="text-[#00C896]">SafeDeal</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed mb-8 font-normal">
+          <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed mb-4 font-normal">
             הצלבת נתונים ממאגרים ממשלתיים ומשפטיים לאיתור שעבודים, עיקולים, הליכי חדלות פירעון, פערי שווי והערות אזהרה — בדוח נאותות אחד עם ציון SafeScore, לפני שמתחייבים לעסקה.
+          </p>
+
+          <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed mb-8 font-normal">
+            SafeDeal משלבת טכנולוגיה לאיסוף ולהצלבת מידע על הנכס עם בדיקה ידנית של אנליסט שעובר על כל טופס. אתם מקבלים דוח אחד שמרכז את הממצאים ואת הנקודות שכדאי לברר לפני החתימה.
           </p>
 
           {/* Fast Address Search Box — Single Primary CTA on Page */}
@@ -244,7 +249,7 @@ export default function HomePage() {
               className="sd-btn-primary w-full sm:w-auto shrink-0"
             >
               <Search size={16} />
-              <span>התחילו בדיקה (כ-3 דקות)</span>
+              <span>בדקו את הנכס עכשיו (2 דקות)</span>
               <ArrowLeft size={16} />
             </button>
           </form>
@@ -265,9 +270,9 @@ export default function HomePage() {
           </p>
 
           <h2 className="text-3xl sm:text-4xl font-medium leading-[1.2] mb-4 max-w-3xl text-white">
-            רוב הרוכשים בודקים את המטבח ואת הנוף.
+            הסיכונים שאתם לא רוצים לגלות מאוחר מדי
             <span className="block text-slate-400 font-normal text-xl sm:text-2xl mt-2">
-              מעטים בודקים את המלכודות המשפטיות שעלולות לעלות מאות אלפי שקלים.
+              רוב הרוכשים בודקים את המטבח ואת הנוף — מעטים בודקים את המלכודות המשפטיות שעלולות לעלות מאות אלפי שקלים.
             </span>
           </h2>
 
@@ -320,34 +325,43 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 3 — HOW IT WORKS (3 STEPS)
+          SECTION 3 — HOW IT WORKS (4 STEPS)
       ═══════════════════════════════════════════════════════ */}
       <section id="how-it-works" className="px-6 py-16 sm:py-24 bg-[#0D1522] border-y border-white/[0.08]">
         <div className="max-w-6xl mx-auto">
           <p className="text-sm font-medium text-[#00C896] mb-3">
-            תהליך הבדיקה
+            איך זה עובד
           </p>
 
-          <h2 className="text-3xl sm:text-4xl font-medium leading-[1.2] mb-12 text-white">
-            שלושה שלבים מהכתובת ועד לדוח הנאותות
+          <h2 className="text-3xl sm:text-4xl font-medium leading-[1.2] mb-4 text-white">
+            ארבעה שלבים לדעת מה באמת אתם קונים.
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <p className="text-base text-slate-300 max-w-3xl mb-12 leading-relaxed font-normal">
+            טכנולוגיה מתקדמת, מאגרי מידע רשמיים ובדיקה אישית של אנליסט מקצועי — הכל בדוח אחד, לפני שאתם מקבלים את אחת ההחלטות הכלכליות הגדולות בחייכם.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 step: "01",
                 title: "ממלאים פרטים בסיסיים על הנכס",
-                desc: "כתובת, קומה (או סימון ׳לא ידוע׳), ומחיר מבוקש. ללא שדות חובה מיותרים — ממלאים את מה שידוע לכם תוך כ-3 דקות.",
+                desc: "כתובת, קומה ומחיר מבוקש. ללא שדות חובה מיותרים — ממלאים את מה שידוע לכם תוך כ־3 דקות.",
               },
               {
                 step: "02",
                 title: "הצלבת מאגרי מידע רשמיים",
-                desc: "איסוף והצלבה של נתוני טאבו, רשם המשכונות, תיקי חדלות פירעון, עסקאות רשות המסים, תוכניות XPLAN ותביעות משפטיות.",
+                desc: "הטכנולוגיה שלנו אוספת, מצליבה ומנתחת נתונים ממאגרי מידע רשמיים, לרבות נתוני טאבו, רשם המשכונות, עסקאות רשות המסים, תוכניות בנייה ותביעות משפטיות.",
               },
               {
                 step: "03",
-                title: "קבלת דוח נאותות מסודר",
-                desc: "ציון SafeScore, מפת סיכונים לפי תחום, 5 ממצאי מפתח והנחיות לבדיקה שניתן להעביר ישירות לעורך הדין.",
+                title: "בדיקה ובקרה של אנליסט מקצועי",
+                desc: "אנליסט אנושי עובר באופן אישי על כלל הממצאים, בוחן את הנתונים, מזהה אי־התאמות וסיכונים פוטנציאליים ומבצע בקרה מקצועית לפני מסירת הדוח.",
+              },
+              {
+                step: "04",
+                title: "מקבלים את התמונה המלאה על הנכס",
+                desc: "דוח מקיף הכולל ציון SafeScore, מפת סיכונים, ממצאים מרכזיים והמלצות להמשך בדיקה לפני הרכישה.",
               },
             ].map(({ step, title, desc }) => (
               <div
@@ -361,6 +375,10 @@ export default function HomePage() {
                 <p className="text-sm text-slate-300 leading-relaxed font-normal">{desc}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-8 p-4 rounded-xl bg-[#080D16] border border-white/[0.08] text-xs sm:text-sm text-slate-300 text-center">
+            ממלאים את פרטי הדירה ← המערכת אוספת ומצליבה מידע ← אנליסט בודק את הטופס ידנית ← מקבלים דוח מסודר
           </div>
         </div>
       </section>
@@ -672,27 +690,52 @@ export default function HomePage() {
           SECTION 9 — FINAL CTA
       ═══════════════════════════════════════════════════════ */}
       <section className="px-6 py-16 sm:py-24 border-t border-white/[0.08]">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="max-w-2xl text-right">
-            <h2 className="text-3xl sm:text-4xl font-medium leading-[1.2] mb-4 text-white">
-              בדקו את העסקה לפני שמתחייבים למיליונים.
-            </h2>
+        <div className="max-w-5xl mx-auto space-y-8">
+          <div className="max-w-3xl text-right space-y-4">
             <p className="text-base text-slate-300 leading-relaxed font-normal">
-              SafeDeal מצליבה את הממצאים המשפטיים, התכנוניים והשמאיים בדוח אחד ברור, כדי שתגיעו לשולחן החתימות עם כל הנתונים.
+              כי כשמדובר באחת העסקאות הגדולות בחיים שלכם, אנחנו לא מסתמכים על טכנולוגיה בלבד.{" "}
+              <span className="text-white font-medium underline decoration-[#00C896]/60 underline-offset-4">
+                כל דוח עובר גם בדיקה אנושית ומקצועית של אנליסט מומחה.
+              </span>
             </p>
+            <ul className="space-y-2 text-sm text-slate-300">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-[#00C896] shrink-0" />
+                <span>ניתוח נתונים באמצעות טכנולוגיה מתקדמת</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-[#00C896] shrink-0" />
+                <span>כל בדיקה עוברת ניתוח ידני של אנליסט מקצועי</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-[#00C896] shrink-0" />
+                <span>דוח מותאם אישית לנכס שלכם</span>
+              </li>
+            </ul>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0">
-            <Link
-              href="/analyze"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#0D1522] border border-[#00C896]/50 text-[#00C896] hover:bg-[#121C2D] text-sm font-medium transition-colors duration-200 ease-out"
-            >
-              <span>התחילו בדיקה (ללא שדות חובה)</span>
-              <ArrowLeft size={16} />
-            </Link>
-            <Link href="/report" className="sd-btn-ghost">
-              ראו דוח לדוגמה
-            </Link>
+          <div className="rounded-2xl bg-[#0D1522] border border-white/10 p-8 sm:p-10 text-center space-y-5">
+            <h2 className="text-2xl sm:text-3xl font-medium text-white">
+              לפני שקונים דירה, יודעים מה באמת קונים.
+            </h2>
+            <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto">
+              טכנולוגיה מתקדמת ובדיקה אישית של אנליסט מקצועי. כל המידע החשוב על הנכס בדוח אחד.
+            </p>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 max-w-xl mx-auto pt-2">
+              <Link
+                href="/analyze"
+                className="sd-btn-primary w-full sm:w-auto justify-center"
+              >
+                <span>בדקו את הדירה שלי</span>
+                <ArrowLeft size={16} />
+              </Link>
+              <Link href="/report" className="sd-btn-ghost w-full sm:w-auto justify-center">
+                צפו בדוח לדוגמה
+              </Link>
+            </div>
+            <p className="text-xs text-slate-400">
+              ללא מנוי · בדיקת אנליסט אנושי · תשלום חד־פעמי
+            </p>
           </div>
         </div>
       </section>

@@ -120,6 +120,27 @@ const FAQS = [
   },
 ];
 
+const TESTIMONIALS = [
+  {
+    name: "דנה ורוני כ.",
+    city: "תל אביב · דירת 4 חדרים",
+    quote:
+      "רגע לפני שהעברנו מקדמה, הדוח סימן לנו שעבוד על המוכר שלא ידענו עליו בכלל. העברנו את זה לעו״ד שלנו, הכול הוסדר לפני החתימה — וחסכנו כאב ראש אדיר.",
+  },
+  {
+    name: "עומר מ.",
+    city: "ראשון לציון · דירה להשקעה",
+    quote:
+      "המוכר התעקש שהמחיר שלו מציאה. הדוח הראה לנו בדיוק מה השווי הריאלי של הדירה באזור — והגענו למו״מ עם מספרים שהורידו 115,000 ₪ מהמחיר.",
+  },
+  {
+    name: "נועה ש.",
+    city: "חיפה · דירת גן",
+    quote:
+      "הכי אהבתי שהשורה התחתונה ברורה. במקום לשבור את הראש, קיבלתי ציון, הסבר פשוט בעברית והכוונה מדויקת מה לשאול ולדרוש לפני שחותמים.",
+  },
+];
+
 export default function HomePage() {
   const router = useRouter();
   const [fastAddress, setFastAddress] = useState("");
@@ -166,12 +187,12 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/report"
+            <a
+              href="#sample-report"
               className="hidden sm:inline text-sm font-normal text-slate-300 hover:text-white transition-colors duration-200 ease-out"
             >
-              דוח לדוגמה
-            </Link>
+              הצצה לדוח
+            </a>
             <Link
               href="/analyze"
               className="text-sm font-medium text-[#080D16] bg-[#00C896] hover:bg-[#00b386] px-4 py-2 rounded-lg transition-colors duration-200 ease-out"
@@ -353,30 +374,44 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 5 — THE BRIGHT PRODUCT MOMENT (ACTUAL REPORT)
+          SECTION 5 — THE BRIGHT PRODUCT MOMENT (PROTECTED PREVIEW)
       ═══════════════════════════════════════════════════════ */}
-      <section className="px-6 py-16 sm:py-24 bg-[#0D1522] border-y border-white/[0.08]">
+      <section id="sample-report" className="px-6 py-16 sm:py-24 bg-[#0D1522] border-y border-white/[0.08]">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
               <p className="text-sm font-medium text-[#00C896] mb-3">
-                תוצר הבדיקה
+                הצצה לתוצר הבדיקה
               </p>
               <h2 className="text-3xl sm:text-4xl font-medium leading-[1.2] text-white">
-                דוח נאותות מנהלים — כפי שהוא מתקבל בפועל
+                כך נראה השקט הנפשי שלכם: דוח ברור שמחליט בשבילכם אם להתקדם
               </h2>
             </div>
             <Link
-              href="/report"
-              className="sd-btn-ghost self-start md:self-auto shrink-0"
+              href="/analyze"
+              className="sd-btn-primary self-start md:self-auto shrink-0"
             >
               <FileText size={16} />
-              <span>צפייה בדוח מלא לדוגמה</span>
+              <span>הזמינו דוח לנכס שלכם</span>
+              <ArrowLeft size={16} />
             </Link>
           </div>
 
-          {/* Bright Product Moment — Crisp Light Paper Document Surface */}
-          <div className="rounded-2xl bg-[#FAF8F5] text-slate-900 border border-slate-200 overflow-hidden">
+          {/* Bright Product Moment — Copy-Protected Preview Surface */}
+          <div
+            onContextMenu={(e) => e.preventDefault()}
+            className="relative select-none rounded-2xl bg-[#FAF8F5] text-slate-900 border border-slate-200 overflow-hidden"
+          >
+            {/* Subtle Watermark Overlay */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-[0.06]"
+            >
+              <span className="text-4xl sm:text-6xl font-bold tracking-widest text-slate-900 -rotate-12 whitespace-nowrap">
+                SafeDeal · להמחשה בלבד
+              </span>
+            </div>
+
             {/* Document Metadata Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-white border-b border-slate-200">
               <div className="flex items-center gap-3">
@@ -385,7 +420,7 @@ export default function HomePage() {
                 </span>
                 <span className="text-slate-300">|</span>
                 <span className="text-xs text-slate-600">
-                  דוח בדיקת נאותות מוקדמת
+                  דוח בדיקת נאותות · להמחשה בלבד
                 </span>
               </div>
               <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg font-medium">
@@ -414,10 +449,10 @@ export default function HomePage() {
 
                 <div className="text-right">
                   <p className="text-base font-medium text-slate-900">
-                    רחוב רוטשילד 45, תל אביב-יפו
+                    נכס לדוגמה · תל אביב-יפו
                   </p>
-                  <p className="text-sm text-slate-600 mt-1 tabular-nums">
-                    גוש 6158 · חלקה 42 · דירת 4 חדרים (קומה 4 מתוך 8)
+                  <p className="text-sm text-slate-600 mt-1">
+                    דירת 4 חדרים · קומה 4 מתוך 8
                   </p>
                 </div>
               </div>
@@ -429,11 +464,11 @@ export default function HomePage() {
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                   {[
-                    { label: "זיהוי קדסטרלי", ok: true },
-                    { label: "בעלות בטאבו", ok: true },
-                    { label: "רשם המשכונות", ok: true },
-                    { label: "חדלות פירעון", ok: true },
-                    { label: "תכנון ותב״ע", ok: false, sub: "בירור היתר" },
+                    { label: "זיהוי הנכס", ok: true },
+                    { label: "בעלות וזכויות", ok: true },
+                    { label: "שעבודים", ok: true },
+                    { label: "כשירות מוכר", ok: true },
+                    { label: "תכנון והנדסה", ok: false, sub: "לבירור" },
                     { label: "התאמת שווי", ok: true },
                   ].map((item, idx) => (
                     <div
@@ -457,34 +492,34 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Key Findings List */}
-              <div className="border border-slate-200 rounded-xl p-6 bg-white">
+              {/* Protected / Blurred Detailed Findings Preview */}
+              <div className="relative border border-slate-200 rounded-xl p-6 bg-white overflow-hidden">
                 <p className="text-xs font-medium text-slate-600 mb-4">
-                  ממצאי מפתח מרכזיים
+                  פירוט ממצאים והכוונה אישית לעסקה
                 </p>
-                <ul className="space-y-3 text-sm text-slate-700">
+                <ul className="space-y-3 text-sm text-slate-700 blur-[4px] pointer-events-none" aria-hidden="true">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 size={16} className="text-[#008763] shrink-0 mt-1" />
-                    <span>
-                      <span className="font-medium text-slate-900">חדלות פירעון:</span>{" "}
-                      לא אותרו הליכי חדלות פירעון פעילים על שם המוכר במאגר משרד המשפטים.
-                    </span>
+                    <span>בדיקת כשירות המוכר והיעדר הליכים פעילים הושלמה בהצלחה.</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 size={16} className="text-[#008763] shrink-0 mt-1" />
-                    <span>
-                      <span className="font-medium text-slate-900">התאמת קומה:</span>{" "}
-                      נתוני קומה מלאים (קומה 4 מתוך 8 עם מעלית) — המחיר המבוקש תואם את עסקאות הסביבה.
-                    </span>
+                    <span>ניתוח שווי העסקה ביחס לעסקאות דומות בסביבה והמלצת משא ומתן.</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <AlertTriangle size={16} className="text-amber-700 shrink-0 mt-1" />
-                    <span>
-                      <span className="font-medium text-slate-900">הערה משפטית:</span>{" "}
-                      קיימת משכנתה קיימת לטובת בנק לאומי — מומלץ לוודא מכתב כוונות מסודר.
-                    </span>
+                    <span>פירוט נקודות לבדיקה מול המוכר והבנק טרם חתימת הסכם המכר.</span>
                   </li>
                 </ul>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/75 px-4 text-center">
+                  <p className="text-xs sm:text-sm font-medium text-slate-900 mb-3">
+                    הפירוט המלא, ההסברים וההכוונה המדויקת נפתחים בדוח האישי של הדירה שלכם
+                  </p>
+                  <Link href="/analyze" className="sd-btn-primary text-xs sm:text-sm">
+                    <span>הפיקו דוח לנכס שלכם</span>
+                    <ArrowLeft size={15} />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -653,6 +688,39 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
+          SECTION 6.8 — BUYER TESTIMONIALS
+      ═══════════════════════════════════════════════════════ */}
+      <section className="px-6 py-16 sm:py-24 border-t border-white/[0.08]">
+        <div className="max-w-6xl mx-auto">
+          <div className="max-w-2xl mb-12 text-right">
+            <p className="text-sm font-medium text-[#00C896] mb-3">
+              רוכשים שכבר בדקו
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-medium leading-[1.2] text-white">
+              מה אומרים קונים שעשו SafeDeal לפני החתימה
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((item, idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl bg-[#0D1522] border border-white/[0.08] p-6 flex flex-col justify-between gap-6"
+              >
+                <p className="text-sm text-slate-200 leading-relaxed font-normal">
+                  &ldquo;{item.quote}&rdquo;
+                </p>
+                <div className="pt-4 border-t border-white/[0.06]">
+                  <p className="text-sm font-medium text-white">{item.name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{item.city}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
           SECTION 7 — FREQUENTLY ASKED QUESTIONS (FAQ)
       ═══════════════════════════════════════════════════════ */}
       <section className="px-6 py-16 sm:py-24 bg-[#0D1522] border-y border-white/[0.08]">
@@ -772,9 +840,9 @@ export default function HomePage() {
                 <span>בדקו את הדירה שלי עכשיו</span>
                 <ArrowLeft size={16} />
               </Link>
-              <Link href="/report" className="sd-btn-ghost w-full sm:w-auto justify-center">
-                צפו בדוח לדוגמה
-              </Link>
+              <a href="#sample-report" className="sd-btn-ghost w-full sm:w-auto justify-center">
+                הצצה לדוח לדוגמה
+              </a>
             </div>
             <p className="text-xs text-slate-400">
               תשלום חד־פעמי · מילוי מהיר ב־2 דקות
